@@ -5,8 +5,14 @@ Unit tests for analytical ion-impact MCC ionization rate formulas,
 species cross-section ratios, and time-step probability calculations.
 """
 
+import sys
+from pathlib import Path
 import math
 import pytest
+
+# Ensure project root is in sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from scripts.run_mcc_verification import compute_analytic_mcc_rates
 from plasma_column.gas import get_h2_cross_section, get_kr_cross_section
 

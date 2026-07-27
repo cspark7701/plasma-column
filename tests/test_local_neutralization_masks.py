@@ -67,7 +67,8 @@ def test_overcompensation_flagging():
 
 def test_missing_local_diagnostics_warning(capsys):
     """Verify missing local diagnostics emits explicit limitation warning."""
-    warn_global_count_limitation()
+    with pytest.warns(UserWarning, match="Global particle-number ratios"):
+        warn_global_count_limitation()
     captured = capsys.readouterr()
     assert GLOBAL_WARNING_MSG in captured.out
 
