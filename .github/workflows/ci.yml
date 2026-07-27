@@ -32,7 +32,7 @@ jobs:
 
     - name: Run pytest
       run: |
-        pytest -q
+        python -m pytest -q
 
     - name: Run dry-run cases
       run: |
