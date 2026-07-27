@@ -24,7 +24,8 @@ def test_warpx_patch_file_exists():
 
 def test_warpx_git_tracking():
     warpx_dir = Path("/home/cspark/Work/simulation_codes-working/warpx")
-    git_info = get_git_info(warpx_dir)
+    target_dir = warpx_dir if warpx_dir.is_dir() else project_root
+    git_info = get_git_info(target_dir)
 
     assert "commit" in git_info
     assert "branch" in git_info
