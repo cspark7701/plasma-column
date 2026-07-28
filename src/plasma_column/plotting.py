@@ -128,6 +128,495 @@ def plot_keff_over_k0(
     return save_figure(fig, out_basename)
 
 
+# ── NEW PLOTTING FUNCTIONS ────────────────────────────────────────────────────
+
+
+def plot_multi_case_neutralization(
+    cases: list[tuple[str, pd.DataFrame]],
+    output_dir: str | Path,
+    column: str = "eta_net",
+    time_column: str = "time",
+    time_scale: float = 1.0e9,
+    time_unit: str = "ns",
+    ylabel: str = r"Net Neutralization $(N_e - N_i) / N_p$",
+    title: str = "Neutralization History — All Cases",
+    output_name: str = "multi_case_neutralization",
+    ylim: tuple[float, float] = (-0.05, 1.15),
+    show_legend: bool = True,
+) -> tuple[Path, Path]:
+    """
+    Overlay neutralization time histories from multiple cases on a single axes.
+
+    Parameters
+    ----------
+    cases : list of (label, DataFrame)
+        Each DataFrame must have `time_column` and `column` columns.
+    column : str
+        Which neutralization column to plot (e.g. 'eta_net', 'eta_electron_only',
+        'keff_over_k0', 'global_net_neutralization').
+    time_scale : float
+        Multiply raw time values by this factor (default 1e9 → ns).
+    """
+    _COLORS = [
+        "tab:blue", "tab:orange", "tab:green", "tab:red",
+        "tab:purple", "tab:brown", "tab:pink", "tab:gray",
+        "tab:olive", "tab:cyan",
+    ]
+    _STYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1))]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    plotted = 0
+    for i, (label, df) in enumerate(cases):
+        if column not in df.columns:
+            continue
+        t = df[time_column].values * time_scale if time_column in df.columns else np.arange(len(df))
+        y = df[column].values
+        color  = _COLORS[i % len(_COLORS)]
+        lstyle = _STYLES[i // len(_COLORS) % len(_STYLES)]
+        ax.plot(t, y, label=label, color=color, ls=lstyle, lw=2)
+        plotted += 1
+
+    if plotted == 0:
+        ax.text(0.5, 0.5, f"No data found\n(column: '{column}')",
+                ha="center", va="center", transform=ax.transAxes, fontsize=12, color="gray")
+
+    ax.set_xlabel(f"Time [{time_unit}]", fontsize=12)
+    ax.set_ylabel(ylabel, fontsize=12)
+    ax.set_ylim(*ylim)
+    ax.set_title(title, fontsize=13)
+    ax.grid(True, ls="--", alpha=0.5)
+    if show_legend and plotted > 0:
+        ax.legend(fontsize=9, loc="best")
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
+def plot_species_growth_rates(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    time_column: str = "time",
+    ne_column: str = "Ne",
+    ni_column: str = "Ni",
+    smooth_window: int = 5,
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """
+    Plot dNe/dt and dNi/dt (ionisation-rate proxies) versus time.
+
+    Uses central-difference numerical differentiation; optionally applies
+    a rolling-mean smoothing window to reduce step noise.
+
+    Parameters
+    ----------
+    smooth_window : int
+        Rolling-average window in steps (1 = no smoothing).
+    """
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    t = df[time_column].values if time_column in df.columns else np.arange(len(df))
+    t_ns = t * 1.0e9
+
+    def _rate(y: np.ndarray, t: np.ndarray, window: int) -> np.ndarray:
+        dy = np.gradient(y, t)
+        if window > 1:
+            dy = pd.Series(dy).rolling(window, center=True, min_periods=1).mean().values
+        return dy
+
+    if ne_column in df.columns:
+        dNe = _rate(df[ne_column].values, t, smooth_window)
+        ax.plot(t_ns, dNe, label=r"$dN_e/dt$", color="tab:green", lw=1.8)
+
+    if ni_column in df.columns:
+        dNi = _rate(df[ni_column].values, t, smooth_window)
+        ax.plot(t_ns, dNi, label=r"$dN_i/dt$  (gas ions)", color="tab:red", lw=1.8, ls="--")
+
+    ax.axhline(0, color="black", lw=0.8, ls=":")
+    ax.set_xlabel("Time [ns]", fontsize=12)
+    ax.set_ylabel("Growth Rate [particles / s]", fontsize=12)
+    ax.set_title(title or f"Species Growth Rates — {case_name}", fontsize=13)
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.legend(fontsize=10)
+
+    if smooth_window > 1:
+        ax.text(0.98, 0.02, f"Smoothed (window={smooth_window})",
+                transform=ax.transAxes, ha="right", va="bottom",
+                fontsize=8, color="gray", style="italic")
+
+    out_basename = Path(output_dir) / f"{case_name}_species_growth_rates"
+    return save_figure(fig, out_basename)
+
+
+def plot_radial_density_profile(
+    radial_df: pd.DataFrame,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    r_unit: float = 1.0e3,
+    r_unit_label: str = "mm",
+    title: Optional[str] = None,
+    highlight_core_r: Optional[float] = None,
+) -> tuple[Path, Path]:
+    """
+    Plot radial density profiles ne(r), ni(r), np(r) from compute_radial_density_profiles().
+
+    Parameters
+    ----------
+    radial_df : pd.DataFrame
+        Output of diagnostics.compute_radial_density_profiles(); must contain columns
+        r, ne_r, ni_r, np_r.
+    r_unit : float
+        Multiply r values by this (default 1e3 → mm).
+    highlight_core_r : float, optional
+        If given, draw a vertical dashed line marking the beam-core radius [same units as r column].
+    """
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    r_mm = radial_df["r"].values * r_unit
+
+    if "np_r" in radial_df.columns:
+        ax.semilogy(r_mm, radial_df["np_r"].clip(lower=1), label=r"Protons $n_p(r)$",
+                    color="tab:blue", lw=2)
+    if "ne_r" in radial_df.columns:
+        ax.semilogy(r_mm, radial_df["ne_r"].clip(lower=1), label=r"Electrons $n_e(r)$",
+                    color="tab:green", lw=2)
+    if "ni_r" in radial_df.columns:
+        ax.semilogy(r_mm, radial_df["ni_r"].clip(lower=1), label=r"Gas ions $n_i(r)$",
+                    color="tab:red", lw=2, ls="--")
+
+    if highlight_core_r is not None:
+        ax.axvline(highlight_core_r * r_unit, color="gray", lw=1.2, ls=":",
+                   label=f"Core radius ({highlight_core_r*r_unit:.1f} {r_unit_label})")
+
+    ax.set_xlabel(f"Radius $r$ [{r_unit_label}]", fontsize=12)
+    ax.set_ylabel(r"Number density [m$^{-3}$]", fontsize=12)
+    ax.set_title(title or f"Radial Density Profiles — {case_name}", fontsize=13)
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.legend(fontsize=10)
+
+    out_basename = Path(output_dir) / f"{case_name}_radial_density_profile"
+    return save_figure(fig, out_basename)
+
+
+def plot_neutralization_vs_z(
+    z_df: pd.DataFrame,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    z_unit: float = 1.0e2,
+    z_unit_label: str = "cm",
+    z_col_range: Optional[tuple[float, float]] = None,
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """
+    Plot local neutralization η(z) and K_eff/K0(z) along the beam axis.
+
+    Parameters
+    ----------
+    z_df : pd.DataFrame
+        Output of diagnostics.compute_local_neutralization_vs_z(); columns:
+        z, eta_net_local_z, eta_electron_only_local_z, keff_over_k0_local_z.
+    z_col_range : tuple (z_min, z_max), optional
+        If given, shade the plasma-column region.
+    """
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
+
+    z_u = z_df["z"].values * z_unit
+
+    if "eta_electron_only_local_z" in z_df.columns:
+        ax1.plot(z_u, z_df["eta_electron_only_local_z"], label=r"$\eta_e(z) = n_e/n_p$",
+                 color="tab:green", lw=2)
+    if "eta_net_local_z" in z_df.columns:
+        ax1.plot(z_u, z_df["eta_net_local_z"], label=r"$\eta_\mathrm{net}(z) = (n_e-n_i)/n_p$",
+                 color="tab:purple", lw=2, ls="--")
+
+    ax1.axhline(1.0, color="black", lw=0.8, ls=":", label="Full compensation")
+    ax1.set_ylabel("Local Neutralization Fraction", fontsize=11)
+    ax1.set_ylim(-0.05, 1.2)
+    ax1.legend(fontsize=9, loc="upper right")
+    ax1.grid(True, ls="--", alpha=0.5)
+    ax1.set_title(title or f"Axial Neutralization Profile — {case_name}", fontsize=13)
+
+    if "keff_over_k0_local_z" in z_df.columns:
+        ax2.plot(z_u, z_df["keff_over_k0_local_z"],
+                 label=r"$K_\mathrm{eff}/K_0(z)$", color="tab:red", lw=2)
+
+    ax2.axhline(0.0, color="black", lw=0.8, ls=":", label="Full compensation")
+    ax2.axhline(1.0, color="gray", lw=0.8, ls="--", label="No compensation")
+    ax2.set_xlabel(f"Axial Position $z$ [{z_unit_label}]", fontsize=11)
+    ax2.set_ylabel(r"$K_\mathrm{eff}/K_0$", fontsize=11)
+    ax2.set_ylim(-0.1, 1.15)
+    ax2.legend(fontsize=9, loc="upper right")
+    ax2.grid(True, ls="--", alpha=0.5)
+
+    # Shade plasma-column region on both axes
+    if z_col_range is not None:
+        z_lo, z_hi = z_col_range[0] * z_unit, z_col_range[1] * z_unit
+        for ax in (ax1, ax2):
+            ax.axvspan(z_lo, z_hi, alpha=0.08, color="tab:blue", label="Plasma cell")
+
+    fig.tight_layout()
+    out_basename = Path(output_dir) / f"{case_name}_neutralization_vs_z"
+    return save_figure(fig, out_basename)
+
+
+def plot_phase_space(
+    x: np.ndarray,
+    px: np.ndarray,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    x_label: str = r"$x$ [mm]",
+    px_label: str = r"$p_x / p_0$ [mrad]",
+    species_label: str = "beam protons",
+    title: Optional[str] = None,
+    max_points: int = 20_000,
+    alpha: float = 0.25,
+    color: str = "tab:blue",
+    rms_ellipse: bool = True,
+    output_name: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """
+    Plot a transverse phase-space scatter (x, px) with optional RMS ellipse overlay.
+
+    Parameters
+    ----------
+    x  : array-like, positions [already in display units, e.g. mm]
+    px : array-like, momenta / divergence [already in display units, e.g. mrad]
+    max_points : int
+        Maximum number of points to scatter (randomly sub-sampled if larger).
+    rms_ellipse : bool
+        If True, overlay 1-sigma RMS ellipse computed from the data.
+    """
+    fig, ax = plt.subplots(figsize=(7, 6))
+
+    x  = np.asarray(x, dtype=float)
+    px = np.asarray(px, dtype=float)
+
+    # Sub-sample to keep the plot responsive
+    n = len(x)
+    if n > max_points:
+        idx = np.random.default_rng(42).choice(n, max_points, replace=False)
+        x_plot, px_plot = x[idx], px[idx]
+    else:
+        x_plot, px_plot = x, px
+
+    ax.scatter(x_plot, px_plot, s=1.5, alpha=alpha, color=color, rasterized=True,
+               label=f"{species_label} (N={n:,})")
+
+    # 1-σ RMS ellipse
+    if rms_ellipse and len(x) > 3:
+        from matplotlib.patches import Ellipse
+        cov = np.cov(x, px)
+        sigma_x  = np.sqrt(cov[0, 0])
+        sigma_px = np.sqrt(cov[1, 1])
+        rho      = cov[0, 1] / (sigma_x * sigma_px + 1e-30)
+        angle_rad = 0.5 * np.arctan2(2 * rho * sigma_x * sigma_px,
+                                      sigma_x**2 - sigma_px**2)
+        ell = Ellipse(
+            xy=(np.mean(x), np.mean(px)),
+            width=2 * sigma_x,
+            height=2 * sigma_px,
+            angle=np.degrees(angle_rad),
+            edgecolor="black", facecolor="none", lw=1.5, ls="--", label=r"1-$\sigma$ RMS ellipse",
+        )
+        ax.add_patch(ell)
+        emittance = np.sqrt(max(np.linalg.det(cov), 0.0))
+        ax.text(0.02, 0.97,
+                rf"$\varepsilon_\mathrm{{rms}} = {emittance:.3g}$ mm·mrad",
+                transform=ax.transAxes, va="top", ha="left", fontsize=9, color="black")
+
+    ax.set_xlabel(x_label, fontsize=12)
+    ax.set_ylabel(px_label, fontsize=12)
+    ax.set_title(title or f"Transverse Phase Space — {case_name}", fontsize=13)
+    ax.legend(fontsize=9, loc="lower right", markerscale=4)
+    ax.grid(True, ls="--", alpha=0.4)
+
+    stem = output_name or f"{case_name}_phase_space"
+    out_basename = Path(output_dir) / stem
+    return save_figure(fig, out_basename)
+
+
+def plot_keff_pressure_scan(
+    scan_df: pd.DataFrame,
+    output_dir: str | Path,
+    output_name: str = "keff_pressure_scan",
+    pressure_col: str = "pressure_torr",
+    keff_col: str = "keff_over_k0",
+    gas_col: Optional[str] = "gas",
+    title: str = r"Effective Perveance vs Gas Pressure",
+) -> tuple[Path, Path]:
+    """
+    Plot K_eff/K0 versus gas pressure from a parameter-scan summary DataFrame.
+
+    Supports grouping by gas species (H2, Kr) with distinct markers/colors.
+
+    Parameters
+    ----------
+    scan_df : pd.DataFrame
+        Must contain at minimum `pressure_col` and `keff_col`.
+        Optional `gas_col` groups curves by species.
+    """
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    GAS_STYLE: dict[str, dict] = {
+        "H2": {"color": "tab:blue",   "marker": "o", "label": r"H$_2$"},
+        "Kr": {"color": "tab:orange", "marker": "s", "label": "Kr"},
+    }
+    DEFAULT_STYLE = {"color": "tab:gray", "marker": "D", "label": "unknown"}
+
+    if gas_col and gas_col in scan_df.columns:
+        groups = scan_df.groupby(gas_col)
+        for gas, gdf in groups:
+            style = GAS_STYLE.get(str(gas), {**DEFAULT_STYLE, "label": str(gas)})
+            gdf_s = gdf.sort_values(pressure_col)
+            ax.semilogx(
+                gdf_s[pressure_col], gdf_s[keff_col],
+                marker=style["marker"], color=style["color"],
+                label=style["label"], lw=2, markersize=7,
+            )
+    else:
+        dfs = scan_df.sort_values(pressure_col)
+        ax.semilogx(dfs[pressure_col], dfs[keff_col], marker="o", lw=2, markersize=7,
+                    color="tab:blue", label="")
+
+    ax.axhline(1.0, color="gray", lw=1, ls="--", label="No compensation")
+    ax.axhline(0.0, color="black", lw=1, ls=":", label="Full compensation")
+    ax.set_xlabel("Gas Pressure [Torr]", fontsize=12)
+    ax.set_ylabel(r"Effective Perveance $K_\mathrm{eff}/K_0$", fontsize=12)
+    ax.set_title(title, fontsize=13)
+    ax.set_ylim(-0.05, 1.15)
+    ax.legend(fontsize=10)
+    ax.grid(True, ls="--", alpha=0.5, which="both")
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
+def plot_bunched_beam_keff(
+    time_ns: np.ndarray,
+    eta_avg: np.ndarray,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    bunching_factors: Sequence[float] = (1.0, 2.0, 3.0, 5.0),
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """
+    Plot effective perveance K_eff/K0 for peak-bunch case versus time,
+    given average neutralization eta_avg(t) and several bunching factors B_f.
+
+    Physics:
+        K_eff,peak / K0,peak ≈ 1 − eta_avg / B_f
+
+    This illustrates the fundamental limitation: a plasma that reaches
+    average neutralization η̄ only reduces the peak-bunch perveance by η̄/B_f.
+
+    Parameters
+    ----------
+    eta_avg : np.ndarray
+        Average neutralization fraction over the RF period (from global ParticleNumber).
+    bunching_factors : Sequence[float]
+        List of B_f values to overlay.
+    """
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    _COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
+
+    for i, Bf in enumerate(bunching_factors):
+        keff_peak = 1.0 - eta_avg / Bf
+        keff_peak = np.clip(keff_peak, 0.0, None)   # physical floor
+        label = rf"$B_f = {Bf:.1f}$  →  $K_{{\rm eff,peak}}/K_0$"
+        ax.plot(time_ns, keff_peak, label=label,
+                color=_COLORS[i % len(_COLORS)], lw=1.8,
+                ls="-" if i % 2 == 0 else "--")
+
+    # Reference: uncompensated DC beam
+    ax.plot(time_ns, np.ones_like(time_ns), color="black", lw=1, ls=":",
+            label=r"$K_{\rm eff}/K_0 = 1$ (no compensation)")
+
+    ax.set_xlabel("Time [ns]", fontsize=12)
+    ax.set_ylabel(r"$K_{\rm eff,peak} / K_0$", fontsize=12)
+    ax.set_ylim(-0.05, 1.15)
+    ax.set_title(title or f"Bunched-Beam Effective Perveance — {case_name}", fontsize=13)
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.legend(fontsize=9, loc="upper right")
+
+    note = (r"$K_{\rm eff,peak}/K_0 \approx 1 - \bar{\eta}/B_f$"
+            "\n(plasma reaches avg neutralization only)")
+    ax.text(0.02, 0.05, note, transform=ax.transAxes, fontsize=8,
+            color="gray", style="italic", va="bottom")
+
+    out_basename = Path(output_dir) / f"{case_name}_bunched_beam_keff"
+    return save_figure(fig, out_basename)
+
+
+def plot_neutralization_panel(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+    case_name: str = "simulation_case",
+    time_column: str = "time",
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """
+    3-panel summary figure per case:
+      (a) Species counts  N_p, N_e, N_i
+      (b) Neutralization  η_e, η_net
+      (c) K_eff/K0 ratio
+
+    Useful for a quick one-shot overview of a single simulation run.
+    """
+    fig, axes = plt.subplots(3, 1, figsize=(9, 10), sharex=True)
+
+    t_ns = df[time_column].values * 1.0e9 if time_column in df.columns else np.arange(len(df))
+
+    # (a) Species populations
+    ax = axes[0]
+    for col, label, color in [
+        ("Np", r"Protons $N_p$",   "tab:blue"),
+        ("Ne", r"Electrons $N_e$", "tab:green"),
+        ("Ni", r"Gas ions $N_i$",  "tab:red"),
+    ]:
+        if col in df.columns:
+            ax.plot(t_ns, df[col], label=label, color=color, lw=1.8)
+    ax.set_ylabel("Global Particle Count", fontsize=11)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.set_title(title or f"Simulation Summary — {case_name}", fontsize=12)
+
+    # (b) Neutralization
+    ax = axes[1]
+    for col, label, color, ls in [
+        ("eta_electron_only", r"$\eta_e = N_e/N_p$",          "tab:green",  "-"),
+        ("eta_net",           r"$\eta_\mathrm{net}=(N_e-N_i)/N_p$", "tab:purple", "--"),
+    ]:
+        if col in df.columns:
+            ax.plot(t_ns, df[col], label=label, color=color, lw=1.8, ls=ls)
+    ax.axhline(1.0, color="gray", lw=0.8, ls=":")
+    ax.set_ylabel("Neutralization Fraction", fontsize=11)
+    ax.set_ylim(-0.05, 1.2)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    # (c) K_eff/K0
+    ax = axes[2]
+    for col, label, color in [
+        ("keff_over_k0",               r"$K_\mathrm{eff}/K_0$ (net)",            "tab:red"),
+        ("keff_over_k0_electron_only", r"$K_\mathrm{eff}/K_0$ (e-only)",         "tab:orange"),
+    ]:
+        if col in df.columns:
+            ax.plot(t_ns, df[col], label=label, color=color, lw=1.8)
+    ax.axhline(1.0, color="gray", lw=0.8, ls="--", label="No compensation")
+    ax.axhline(0.0, color="black", lw=0.8, ls=":", label="Full compensation")
+    ax.set_xlabel("Time [ns]", fontsize=11)
+    ax.set_ylabel(r"$K_\mathrm{eff}/K_0$", fontsize=11)
+    ax.set_ylim(-0.05, 1.2)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    fig.tight_layout()
+    out_basename = Path(output_dir) / f"{case_name}_neutralization_panel"
+    return save_figure(fig, out_basename)
+
+
 def write_plot_manifest(manifest_entries: list[dict[str, str]], output_file: str | Path) -> Path:
     """Writes manifest.csv recording generated figures, titles, and descriptions."""
     path = Path(output_file)
