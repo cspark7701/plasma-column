@@ -55,5 +55,6 @@ plots/
 paper/figures/
 paper/data/
 
-00_plasma_column_antigravity_tasks/
-01_plasma_column_publication_antigravity_tasks/
+docs/00_plasma_column_antigravity_tasks/
+docs/01_plasma_column_publication_antigravity_tasks/
+docs/02_plasma_column_simulation_ready/
