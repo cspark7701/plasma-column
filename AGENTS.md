@@ -108,8 +108,17 @@ plasma_column/
     slides/
     antigravity_tasks/
   notebooks/
-    analysis/
     runs/
+      nb_vacuum_reference.ipynb
+      nb_seeded_h2.ipynb
+      nb_seeded_kr.ipynb
+      nb_callback_h2.ipynb
+      nb_callback_kr.ipynb
+    analysis/
+      nb_analysis_plots.ipynb
+      nb_bunched_beam_perveance.ipynb
+      nb_cross_section_comparison.ipynb
+      nb_local_neutralization_profiles.ipynb
   src/
     plasma_column/
       __init__.py
@@ -217,7 +226,7 @@ This is an important interpretation limit for any H2/Kr neutralization result.
 - Avoid hidden global state in reusable modules.
 - Use type hints for public functions.
 - Use NumPy/Pandas/Matplotlib for analysis.
-- Do not require Jupyter to run core analysis.
+- Jupyter notebooks are first-class production tools for simulation runs and analysis; use them freely.
 - Keep plotting functions deterministic and scriptable.
 - Use clear figure labels with units.
 

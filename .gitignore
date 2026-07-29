@@ -41,7 +41,7 @@ archives
 data
 logs
 logs_tmp
-runs
+/runs
 tests/Backtrace*
 tests/inputs_*
 tests/warpx
