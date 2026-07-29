@@ -37,6 +37,12 @@ from plasma_column.plotting import (
     plot_keff_pressure_scan,
     plot_bunched_beam_keff,
     plot_neutralization_panel,
+    plot_scan_eta_vs_pressure,
+    plot_scan_keff_vs_pressure,
+    plot_scan_method_comparison_bar,
+    plot_scan_heatmap,
+    plot_scan_neutralization_timeseries_grid,
+    plot_scan_final_eta_bar_by_gas,
     write_plot_manifest,
     setup_publication_style,
 )
@@ -337,6 +343,84 @@ def main() -> None:
         rms_ellipse=True,
         alpha=0.15,
     )
+    plt.close("all")
+
+    # ── 10. Parameter-scan comparison plots (synthetic) ───────────────────────
+    print("  [10/6] Parameter-scan comparison plots …")
+
+    # Build a 24-row synthetic scan summary DataFrame (H2+Kr × seeded+callback × 6 pressures)
+    _PRESSURES = [1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4]
+    _scan_rows = []
+    for _gas, _eta_scale in [("H2", 0.60), ("Kr", 0.87)]:
+        for _method, _boost in [("seeded", 1.00), ("callback", 1.12)]:
+            for _p in _PRESSURES:
+                _eta = float(np.clip(_eta_scale * _boost * (_p / 1e-5) ** 0.45, 0.0, 0.98))
+                _scan_rows.append({
+                    "case_name":             f"{_method}_{_gas}_{_p:.0e}",
+                    "gas":                   _gas,
+                    "method":                _method,
+                    "pressure_torr":         _p,
+                    "final_eta_net":         _eta,
+                    "final_eta_electron_only": _eta * 0.97,
+                    "final_keff_over_k0":    1.0 - _eta,
+                })
+    _scan_df = pd.DataFrame(_scan_rows)
+
+    # 10a. η vs pressure
+    _reg("scan_eta_vs_pressure",
+         "Final η_net vs Pressure — H2 and Kr",
+         "Semi-log plot of final neutralisation vs pressure for seeded and callback methods")
+    plot_scan_eta_vs_pressure(_scan_df, output_dir)
+    plt.close("all")
+
+    # 10b. K_eff vs pressure
+    _reg("scan_keff_vs_pressure",
+         "K_eff/K0 vs Pressure — Method Comparison",
+         "Semi-log K_eff/K0 vs pressure; H2 vs Kr; seeded vs callback")
+    plot_scan_keff_vs_pressure(_scan_df, output_dir)
+    plt.close("all")
+
+    # 10c. Method comparison bar chart
+    _reg("scan_method_comparison_bar",
+         "Method Comparison Bar Chart",
+         "Final K_eff/K0 for every case; bars coloured by gas")
+    plot_scan_method_comparison_bar(
+        _scan_df.sort_values(["method", "gas", "pressure_torr"]),
+        output_dir,
+    )
+    plt.close("all")
+
+    # 10d. Heatmap: gas × pressure per method
+    for _m in _scan_df["method"].unique():
+        _sub = _scan_df[_scan_df["method"] == _m]
+        _reg(f"scan_heatmap_{_m}",
+             f"K_eff Heatmap — {_m}",
+             f"Gas × pressure heatmap of final K_eff/K0 for method={_m}")
+        plot_scan_heatmap(_sub, output_dir,
+                          output_name=f"scan_heatmap_{_m}")
+        plt.close("all")
+
+    # 10e. Small-multiple timeseries grid (synthetic)
+    _reg("scan_timeseries_grid",
+         "Neutralisation Timeseries Grid — Scan Overview",
+         "Small-multiple η(t) panels for all 24 scan cases")
+    _ts_pairs = []
+    _rng2 = np.random.default_rng(7)
+    for _, _row in _scan_df.iterrows():
+        _t = np.linspace(0, 400e-9, 120)
+        _eta_f = _row["final_eta_net"]
+        _tau = 80e-9 + _rng2.uniform(-20e-9, 20e-9)
+        _eta_t = _eta_f * (1 - np.exp(-_t / _tau))
+        _df_ts = pd.DataFrame({"time": _t, "eta_net": _eta_t})
+        _ts_pairs.append((_row["case_name"].replace("_", " "), _df_ts))
+    plot_scan_neutralization_timeseries_grid(_ts_pairs, output_dir, ncols=4)
+    plt.close("all")
+
+    # 10f. Final η grouped bar by gas
+    _reg("scan_final_eta_bar",
+         "Final Neutralisation Grouped by Method and Gas",
+         "Clustered bar chart: one cluster per method, H2 vs Kr coloured")
+    plot_scan_final_eta_bar_by_gas(_scan_df, output_dir)
     plt.close("all")
 
     # ── Manifest ──────────────────────────────────────────────────────────────

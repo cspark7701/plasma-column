@@ -1,0 +1,107 @@
+# Pressure scan matrix: H2 and Kr over 6 pressure decades
+# Usage:
+#   python scripts/run_scan.py --matrix cases/pressure_scan_h2_kr.yaml --dry_run
+#   python scripts/run_scan.py --matrix cases/pressure_scan_h2_kr.yaml --run
+
+matrix_name: pressure_scan_h2_kr
+description: >
+  Systematic pressure scan for H2 and Kr using the seeded compensation model.
+  Sweeps 6 pressure values from 1e-6 to 3e-4 Torr for each gas to map
+  K_eff/K0 vs pressure for both species.
+
+defaults:
+  beam:
+    energy_keV: 30.0
+    current_mA: 10.0
+    radius_m: 0.002
+    rms_divergence: 0.0
+  plasma:
+    neutralization: 0.5
+    plasma_age_s: 2.0e-4
+    column_length_m: 0.20
+    electron_temperature_eV: 1.0
+  solenoid:
+    Bz_T: 0.15
+  numerics:
+    nx: 32
+    ny: 32
+    nz: 256
+    max_steps: 2000    # increase to 120000 for production
+    diag_period: 500
+    reduced_diag_period: 100
+    mcc: electron_impact
+
+cases:
+  # ── H2 pressure sweep ──────────────────────────────────────────────────────
+  - case_name: seeded_H2_1e-6Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-6
+
+  - case_name: seeded_H2_3e-6Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-6
+
+  - case_name: seeded_H2_1e-5Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-5
+
+  - case_name: seeded_H2_3e-5Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-5
+
+  - case_name: seeded_H2_1e-4Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-4
+
+  - case_name: seeded_H2_3e-4Torr
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-4
+
+  # ── Kr pressure sweep ──────────────────────────────────────────────────────
+  - case_name: seeded_Kr_1e-6Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-6
+
+  - case_name: seeded_Kr_3e-6Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-6
+
+  - case_name: seeded_Kr_1e-5Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-5
+
+  - case_name: seeded_Kr_3e-5Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-5
+
+  - case_name: seeded_Kr_1e-4Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-4
+
+  - case_name: seeded_Kr_3e-4Torr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 3.0e-4

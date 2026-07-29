@@ -1,0 +1,66 @@
+# Method-comparison scan: vacuum / seeded / callback for H2 and Kr at baseline pressure
+# Usage:
+#   python scripts/run_scan.py --matrix cases/method_scan_baseline.yaml --dry_run
+
+matrix_name: method_scan_baseline
+description: >
+  Side-by-side comparison of simulation methods (vacuum, seeded, callback)
+  for H2 (1e-5 Torr) and Kr (1e-6 Torr) at the nominal 30 keV / 10 mA beam.
+
+defaults:
+  beam:
+    energy_keV: 30.0
+    current_mA: 10.0
+    radius_m: 0.002
+  solenoid:
+    Bz_T: 0.15
+  numerics:
+    nx: 32
+    ny: 32
+    nz: 256
+    max_steps: 2000    # increase to full for production
+    diag_period: 500
+    reduced_diag_period: 100
+
+cases:
+  # ── Vacuum reference ───────────────────────────────────────────────────────
+  - case_name: method_vacuum_reference
+    gas: none
+    method: vacuum
+    method_category: baseline_reference
+    pressure_torr: 0.0
+    physics_note: "Exact uncompensated vacuum beam propagation; K_eff/K0 = 1"
+
+  # ── Seeded H2 ──────────────────────────────────────────────────────────────
+  - case_name: method_seeded_H2
+    gas: H2
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-5
+    neutralization: 0.5
+    physics_note: "Analytic/data-driven seeded source — not self-consistent MCC"
+
+  # ── Seeded Kr ──────────────────────────────────────────────────────────────
+  - case_name: method_seeded_Kr
+    gas: Kr
+    method: seeded
+    method_category: static_analytic_seeded
+    pressure_torr: 1.0e-6
+    neutralization: 0.5
+    physics_note: "Analytic/data-driven seeded source — not self-consistent MCC"
+
+  # ── Callback H2 ────────────────────────────────────────────────────────────
+  - case_name: method_callback_H2
+    gas: H2
+    method: callback
+    method_category: python_callback_source
+    pressure_torr: 1.0e-5
+    physics_note: "Python-callback proton-impact ionisation; data-driven, not self-consistent MCC"
+
+  # ── Callback Kr ────────────────────────────────────────────────────────────
+  - case_name: method_callback_Kr
+    gas: Kr
+    method: callback
+    method_category: python_callback_source
+    pressure_torr: 1.0e-6
+    physics_note: "Python-callback proton-impact ionisation; data-driven, not self-consistent MCC"
