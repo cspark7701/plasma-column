@@ -149,11 +149,11 @@ def main() -> None:
     print(f"  Physics summary    : {e_kev} keV, {i_ma} mA proton beam in {gas} gas ({p_torr:.1e} Torr), steps={steps}")
 
     if args.dry_run:
-        print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.")
+        print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
         return
 
     # Call simulation execution logic if run mode is active
-    print(f"\nExecuting simulation steps (max_steps={steps})...")
+    print(f"\n[RUNNING] Executing simulation steps for {case_name} (max_steps={steps})...", flush=True)
     # Simulation launcher logic can be expanded here as PICMI scripts are refactored in Task 02/03.
 
 

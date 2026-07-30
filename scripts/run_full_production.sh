@@ -110,19 +110,20 @@ run_step() {
   local title="$2"
   shift 2
 
+  local clean_step=$(echo "$step_num" | tr '/ ' '__')
+  local log_file="$LOG_DIR/step_${clean_step}.log"
+
   echo ""
   echo "[$step_num] $title"
   echo "    Command: $*"
-
-  local clean_step=$(echo "$step_num" | tr '/ ' '__')
-  local log_file="$LOG_DIR/step_${clean_step}.log"
+  echo "    [RUNNING] Executing step $step_num: $title..."
 
   if [ "$VERBOSE" = true ]; then
     "$@" 2>&1 | tee "$log_file"
   else
     "$@" > "$log_file" 2>&1
-    echo "    [SUCCESS] Finished step $step_num (Log: logs/step_${clean_step}.log)"
   fi
+  echo "    [SUCCESS] Finished step $step_num (Log: logs/step_${clean_step}.log)"
 }
 
 # ==============================================================================
