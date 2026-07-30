@@ -1,4 +1,23 @@
 filename_png,filename_pdf,figure_title,description
-axial_injection_layout.png,axial_injection_layout.pdf,Axial Injection Beamline Layout,Schematic layout: buncher -> plasma neutralizer -> solenoid -> Q1 -> Q2 -> inflector
+axial_injection_layout.png,axial_injection_layout.pdf,Axial Injection Beamline Layout,Schematic layout: buncher → plasma neutralizer → solenoid → Q1 → Q2 → inflector
 h2_kr_cross_sections.png,h2_kr_cross_sections.pdf,H2 vs Kr Cross Section Comparison,Proton-impact ionization cross sections and 30 keV operating points for H2 and Kr
 bunched_beam_perveance.png,bunched_beam_perveance.pdf,RF-Bunched Beam Peak Space-Charge Reduction,"Peak effective perveance ratio K_eff,peak / K0,peak vs bunching factor B_f"
+synthetic_h2_particle_counts.png,synthetic_h2_particle_counts.pdf,Species Populations (synthetic H2),"Np, Ne, Ni vs time for a synthetic H2 seeded case"
+synthetic_h2_neutralization_panel.png,synthetic_h2_neutralization_panel.pdf,3-Panel Simulation Summary (synthetic H2),"Species counts, neutralisation η, and K_eff/K0 on shared time axis"
+synthetic_h2_neutralization_evolution.png,synthetic_h2_neutralization_evolution.pdf,Neutralisation Evolution (synthetic H2),eta_electron_only and eta_net vs time
+synthetic_h2_keff_over_k0.png,synthetic_h2_keff_over_k0.pdf,Effective Perveance Ratio (synthetic H2),K_eff/K0 = 1 - eta_net vs time
+synthetic_h2_species_growth_rates.png,synthetic_h2_species_growth_rates.pdf,Species Growth Rates (synthetic H2),dNe/dt and dNi/dt vs time — ionisation-rate proxy
+multi_case_neutralization.png,multi_case_neutralization.pdf,Multi-Case Neutralisation Overlay,Overlay of eta_net(t) for H2 and Kr synthetic cases
+multi_keff.png,multi_keff.pdf,Multi-Case K_eff/K0 Overlay,K_eff/K0 for all synthetic cases on one axes
+synthetic_h2_bunched_beam_keff.png,synthetic_h2_bunched_beam_keff.pdf,Bunched-Beam Effective Perveance,"K_eff,peak/K0 for Bf = 1,2,3,5,8 using average neutralisation"
+keff_pressure_scan.png,keff_pressure_scan.pdf,K_eff/K0 vs Gas Pressure — H2 and Kr,"Pressure scan summary for H2 and Kr, synthetic scaling"
+synthetic_eta70_radial_density_profile.png,synthetic_eta70_radial_density_profile.pdf,Radial Density Profiles (synthetic η=0.7),"ne(r), ni(r), np(r) from synthetic Gaussian beam column"
+synthetic_eta70_neutralization_vs_z.png,synthetic_eta70_neutralization_vs_z.pdf,Axial Neutralisation Profile (synthetic η=0.7),η_e(z) and η_net(z) along beam axis; shaded plasma-cell region
+synthetic_beam_phase_space.png,synthetic_beam_phase_space.pdf,Transverse Phase-Space Scatter (synthetic beam),x–x′ scatter with 1-σ RMS ellipse and emittance annotation
+scan_eta_vs_pressure.png,scan_eta_vs_pressure.pdf,Final η_net vs Pressure — H2 and Kr,Semi-log plot of final neutralisation vs pressure for seeded and callback methods
+scan_keff_vs_pressure.png,scan_keff_vs_pressure.pdf,K_eff/K0 vs Pressure — Method Comparison,Semi-log K_eff/K0 vs pressure; H2 vs Kr; seeded vs callback
+scan_method_comparison_bar.png,scan_method_comparison_bar.pdf,Method Comparison Bar Chart,Final K_eff/K0 for every case; bars coloured by gas
+scan_heatmap_seeded.png,scan_heatmap_seeded.pdf,K_eff Heatmap — seeded,Gas × pressure heatmap of final K_eff/K0 for method=seeded
+scan_heatmap_callback.png,scan_heatmap_callback.pdf,K_eff Heatmap — callback,Gas × pressure heatmap of final K_eff/K0 for method=callback
+scan_timeseries_grid.png,scan_timeseries_grid.pdf,Neutralisation Timeseries Grid — Scan Overview,Small-multiple η(t) panels for all 24 scan cases
+scan_final_eta_bar.png,scan_final_eta_bar.pdf,Final Neutralisation Grouped by Method and Gas,"Clustered bar chart: one cluster per method, H2 vs Kr coloured"
