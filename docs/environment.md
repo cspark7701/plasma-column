@@ -25,10 +25,11 @@ If using `miniforge3` directly:
 source /home/cspark/Work/simulation_codes-working/miniforge3/bin/activate warpx-dev
 ```
 
-Alternatively, use the provided helper script:
+Alternatively, to perform automated environment setup, dependency installation, and verification on any new machine, run:
 ```bash
-source ./setup.sh
+bash scripts/install.sh
 ```
+For detailed multi-platform installation options, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma_column/docs/installation.md).
 
 ### Python Dependencies
 - **Python**: 3.10+ (tested on Python 3.13.13)

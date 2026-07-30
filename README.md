@@ -29,7 +29,22 @@ buncher -> plasma neutralizer -> solenoid -> quadrupole Q1 -> quadrupole Q2 -> s
 
 ---
 
-## 4. Step-by-Step Publication Workflow
+## 4. Quickstart & Installation
+
+For a full step-by-step installation guide, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma_column/docs/installation.md) or [`INSTALL.md`](file:///home/cspark/Work/projects/plasma_column/INSTALL.md).
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/cspark7701/plasma_column.git
+cd plasma_column
+
+# 2. Run automated setup & verification script
+bash scripts/install.sh
+```
+
+---
+
+## 5. Step-by-Step Publication Workflow
 
 For detailed instructions on running simulations for publication-quality figures, papers, and presentations, see [`docs/publication_workflow.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication_workflow.md).
 
