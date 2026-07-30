@@ -2,6 +2,9 @@
 
 ## Project
 
+Author: Chong Shik Park
+Affiliation: Department of Accelerator Science and Center for Accelerator Research, Korea University, Sejong, 30019 Republic of Korea
+
 Repository:
 
 - Remote: `https://github.com/cspark7701/plasma_column.git`
@@ -92,6 +95,12 @@ Important limitation to preserve in documentation and code comments:
    - grid and time-step parameters.
 
 10. Do not silently rescale physics curves. If a plot uses artificial scaling, label it as rescaled or illustrative.
+
+11. Do not `git push` and do not check GitHub Actions in remote. You are allowed to modify GitHub Actions in local repository files (`.github/workflows/`) only.
+
+12. All executed tasks must be summarized and saved into `docs/exec-plans/completed/` following strict numeric sequential order in that folder.
+
+13. Created HTML pages must follow `github.io` project webpage style using existing templates (`docs/index.html` and `docs/style.css`).
 
 ## Recommended repository organization
 
