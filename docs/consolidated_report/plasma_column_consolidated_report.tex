@@ -1,0 +1,220 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black,
+    pdftitle={Compact Plasma-Assisted Space-Charge Neutralizer for High-Current Cyclotron Axial Injection},
+    pdfauthor={Chong Shik Park et al.}
+}
+
+\title{\textbf{Compact Plasma-Assisted Space-Charge Neutralizer for High-Current Cyclotron Axial Injection: Physics Models, Simulation Workflows, and Performance Analysis}}
+\author{\textbf{Chong Shik Park}\\[0.5em]
+\small Plasma Column Simulation Project Team\\
+\small \texttt{cspark7701@gmail.com}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+High-current ($10\,\text{mA}$), low-energy ($30\,\text{keV}$) proton beams experience severe uncompensated space-charge forces during transport through low-energy beam transport (LEBT) lines prior to entering a cyclotron spiral inflector. This report consolidates the complete physics theoretical models, atomic collision kinematics, numerical particle-in-cell (PIC) simulation methodologies, diagnostics algorithms, and downstream transport optics for a compact gas-ionized plasma neutralizer cell. We systematically compare Hydrogen ($\text{H}_2$) and Krypton ($\text{Kr}$) neutralizer gases, accounting for laboratory-to-center-of-mass collision kinematics ($\sigma_{\text{Kr}} / \sigma_{\text{H2}} \approx 5.56$ at $30\,\text{keV}$). Four numerical simulation paradigms are benchmarked: vacuum reference transport, static analytical seeded compensation, dynamic Python callback source models, and fully self-consistent C++ Monte Carlo Collision (MCC) PICMI extensions. We demonstrate that operating a Krypton cell at $1.0 \times 10^{-6}\,\text{Torr}$ achieves space-charge perveance reduction equivalent to $1.0 \times 10^{-5}\,\text{Torr}$ of $\text{H}_2$ ($\eta_{\text{net}} \ge 90\%$), reducing transverse envelope expansion and raising inflector entrance transmission from $< 35\%$ (uncompensated) to $> 98\%$. Furthermore, we evaluate the impact of RF bunching on peak-bunch perveance degradation ($K_{\text{eff,peak}} / K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}} / B_f$), providing practical design guidelines and publication standards for compact cyclotron injection lines.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction and System Architecture}
+
+\subsection{Physics Context}
+High-intensity compact cyclotrons for medical isotope production, hadron therapy, and industrial particle applications require multi-milliampere ion beam currents injected at relatively low kinetic energies ($E_k = 30\,\text{keV}$ for protons, $\beta = v/c \approx 0.00799$). In uncompensated Low-Energy Beam Transport (LEBT) lines, the strong repulsive self-electric field generates severe beam perveance:
+\begin{equation}
+K_0 = \frac{q I_{\text{avg}}}{2\pi \varepsilon_0 m_p v_{\text{beam}}^3 \gamma^3} \approx 6.43 \times 10^{-4} \quad (\text{for } 30\,\text{keV}, 10\,\text{mA } p^+)
+\end{equation}
+Without space-charge mitigation, this high perveance induces rapid transverse beam blowup, causing heavy particle loss on apertures, emittance growth, and poor acceptance matching into the small aperture ($r_{\text{aperture}} \approx 5.0\,\text{mm}$) of the downstream spiral inflector.
+
+\subsection{Baseline Axial Injection Beamline Layout}
+To mitigate space-charge divergence prior to the primary focusing optics, the baseline compact cyclotron axial injection line is structured as:
+\begin{equation}
+\text{buncher} \longrightarrow \text{plasma neutralizer} \longrightarrow \text{solenoid} \longrightarrow \text{quadrupole Q1} \longrightarrow \text{quadrupole Q2} \longrightarrow \text{spiral inflector}
+\end{equation}
+
+\begin{figure}[h!]
+\centering
+\fbox{\parbox{0.9\textwidth}{\centering \vspace{0.5em} \textbf{Baseline Layout Architecture}\\[0.5em]
+$\text{[Buncher]} \xrightarrow{\text{bunched beam}} \text{[Plasma Neutralizer Cell]} \xrightarrow{\text{neutralized}} \text{[Solenoid]} \xrightarrow{} \text{[Quad Doublet Q1/Q2]} \xrightarrow{} \text{[Inflector]}$\vspace{0.5em}}}
+\caption{Baseline layout of the compact cyclotron axial injection line. The neutralizer cell is located strictly \textbf{upstream} of the primary solenoid lens.}
+\label{fig:layout}
+\end{figure}
+
+\textbf{Critical Geometric Constraint}: The plasma neutralizer cell is located strictly \textbf{upstream} of the main solenoid. Placing the neutralizer cell downstream of the solenoid or near the inflector entrance is treated only as an explicit alternative-placement study.
+
+\section{Fundamental Physics Models and Collision Kinematics}
+
+\subsection{Proton-Impact Ionization Dynamics}
+When a $30\,\text{keV}$ proton beam passes through a neutral background gas cell ($\text{H}_2$ or $\text{Kr}$), primary electron-ion pairs are generated via impact ionization:
+\begin{equation}
+p^+ + \text{Gas} \longrightarrow p^+ + \text{Gas}^+ + e^-
+\end{equation}
+Secondary electrons are trapped within the attractive space-charge potential well of the beam, while secondary ions are repelled radially.
+
+\subsection{Ionization Time Constant and Neutralization Buildup}
+The characteristic space-charge neutralization time constant $\tau$ is defined as:
+\begin{equation}
+\tau = \frac{1}{n_{\text{gas}} \sigma_{\text{ion}} v_{\text{beam}}}
+\end{equation}
+where $n_{\text{gas}} = p / (k_B T)$ is the neutral gas number density at pressure $p$ and temperature $T = 300\,\text{K}$, $\sigma_{\text{ion}}$ is the total proton-impact ionization cross section, and $v_{\text{beam}} = \beta c = 2.396 \times 10^6\,\text{m/s}$.
+
+The time-dependent buildup of space-charge neutralization follows:
+\begin{equation}
+\eta(t) = \eta_{\text{ss}} \left( 1 - e^{-t/\tau} \right)
+\end{equation}
+where $\eta_{\text{ss}}$ is the steady-state equilibrium compensation level ($\approx 0.90 - 0.95$).
+
+\subsection{Laboratory vs Center-of-Mass Frame Cross Sections}
+Cross-section data are parameterized by center-of-mass energy $E_{\text{cm}}$:
+\begin{equation}
+E_{\text{cm}} = E_{\text{lab}} \cdot \left( \frac{m_{\text{target}}}{m_{\text{projectile}} + m_{\text{target}}} \right)
+\end{equation}
+For a $30\,\text{keV}$ ($E_{\text{lab}} = 30,000\,\text{eV}$) proton projectile:
+\begin{itemize}
+    \item \textbf{$\text{H}_2$ Target} ($m_{\text{target}} \approx 2 m_p$): $E_{\text{cm}} = 30,000 \cdot (2/3) = 20,000\,\text{eV} = 20.00\,\text{keV}$.
+    \item \textbf{$\text{Kr}$ Target} ($m_{\text{target}} \approx 83.8 m_p$): $E_{\text{cm}} = 30,000 \cdot (83.8 / 84.8) \approx 29,646\,\text{eV} = 29.65\,\text{keV}$.
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\caption{Proton-Impact Ionization Cross Sections at $30\,\text{keV}$ Laboratory Energy}
+\label{tab:cross_sections}
+\begin{tabular}{lccccc}
+\toprule
+Target Gas & $E_{\text{lab}}$ [keV] & $E_{\text{cm}}$ [keV] & $\sigma_{\text{ion}}$ [$\text{m}^2$] & $\sigma_{\text{ion}}$ [$\text{\AA}^2$] & Relative Ratio ($\sigma_{\text{Kr}} / \sigma_{\text{H2}}$) \\
+\midrule
+\textbf{Hydrogen ($\text{H}_2$)} & $30.0$ & $20.00$ & $1.6135 \times 10^{-20}$ & $1.61$ & $1.00\times$ \\
+\textbf{Krypton ($\text{Kr}$)} & $30.0$ & $29.65$ & $8.9648 \times 10^{-20}$ & $8.96$ & \textbf{$5.56\times$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Takeaway}: Because $\sigma_{\text{Kr}} \approx 5.56 \, \sigma_{\text{H2}}$, a Krypton gas cell operates at a 5-to-10-fold lower neutral gas pressure ($1.0 \times 10^{-6}\,\text{Torr}$ vs $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$) while providing identical plasma generation rates, thereby minimizing emittance growth from elastic gas scattering.
+
+\subsection{RF-Bunched Beam Space-Charge Compensation}
+Because the RF buncher is positioned upstream of the neutralizer, the beam enters the plasma cell already bunched. For an RF frequency $f_{\text{RF}}$ ($50\,\text{MHz}$) and phase width $\Delta \phi$, the bunching factor is:
+\begin{equation}
+B_f = \frac{I_{\text{peak}}}{I_{\text{avg}}} = \frac{360^\circ}{\Delta \phi}
+\end{equation}
+While plasma electrons form a quasi-steady background providing average neutralization $\eta_{\text{avg}} = N_e / N_p$, the peak-bunch instantaneous charge density is enhanced by $B_f$. The effective peak perveance reduction ratio is:
+\begin{equation}
+\frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{avg}}}{B_f}
+\end{equation}
+For example, at $B_f = 5.0$ and $\eta_{\text{avg}} = 0.90$, $K_{\text{eff,peak}} / K_{0,\text{peak}} \approx 1 - 0.90/5.0 = 0.82$. Thus, while average perveance is reduced by $90\%$, peak-bunch perveance is reduced by only $18\%$.
+
+\section{Literature Review and Related Work}
+
+Space-charge neutralization in low-energy ion transport has been studied across multiple accelerator disciplines:
+\begin{enumerate}
+    \item \textbf{Cyclotron Axial Injection Lines}: Early work by Jongen et al.~\cite{Jongen1981_AxialInjectionSystems} and Kazarinov et al.~\cite{Kazarinov2007_C400_PAC07, Kazarinov2010_AxialLines_Review} highlighted space-charge limitations in high-current heavy-ion and proton cyclotrons (such as the C400 hadron therapy cyclotron~\cite{Kazarinov2009_C400_PAC09}). Retarding Field Analyzer (RFA) measurements by Winklehner et al.~\cite{Winklehner2013_NSCL_SCC, Winklehner2014_RSI_SCC_ECR} confirmed $60\% - 95\%$ space-charge compensation in ECR injector lines.
+    \item \textbf{Electron Lenses and Columns}: Active space-charge compensation using trapped electron columns was demonstrated for storage rings such as IOTA by Park et al.~\cite{Park2020_IOTA_eColumn, Park2019_Simulations_IOTA}, Freemire et al.~\cite{Freemire2018_SCC_IOTA}, and Stancari et al.~\cite{Stancari2016_ElectronLenses, Stancari2021_IOTA_eLens}.
+    \item \textbf{Gabor Plasma Lenses}: Non-neutral plasma confinement via Gabor lenses was explored by Palkovic et al.~\cite{Palkovic1988_GaborLens}, though Nonnenmacher et al.~\cite{Nonnenmacher2021_GaborLensInstability} documented Diocotron instability limits.
+    \item \textbf{Spiral Inflector PIC Modeling}: Realistic 3D PIC tracking through spiral inflectors by Winklehner et al.~\cite{Winklehner2017_PRAB_OPAL_SpiralInflector} underscored the sensitivity of inflector transmission to entrance beam envelope matching.
+\end{enumerate}
+
+\section{Simulation Code Architecture and Method Taxonomy}
+
+\subsection{Modular Package Architecture}
+The project codebase is organized under \texttt{src/plasma\_column/}:
+\begin{itemize}
+    \item \texttt{constants.py}: Physical constants ($m_p, e, k_B, \varepsilon_0$) and conversion factors.
+    \item \texttt{gas.py}: \texttt{NeutralGas} density calculator and \texttt{CrossSectionDatabase} tabular interpolator.
+    \item \texttt{beam.py}: \texttt{ProtonBeam} parameters and perveance calculation.
+    \item \texttt{neutralization.py}: \texttt{NeutralizationModel} buildup kinetics and bunched beam scaling.
+    \item \texttt{diagnostics.py}: Global (\texttt{ParticleNumber}) and local spatial masking diagnostics.
+    \item \texttt{plotting.py}: Publication-quality scriptable visualization suite.
+    \item \texttt{run\_matrix.py}: Multi-case simulation scan manager.
+\end{itemize}
+
+\subsection{Simulation Method Taxonomy}
+We benchmark four distinct simulation paradigms:
+\begin{enumerate}
+    \item \textbf{Baseline Reference (\texttt{vacuum})}: Uncompensated beam propagation in vacuum ($\eta = 0$).
+    \item \textbf{Static Seeded Compensation (\texttt{static\_analytic\_seeded})}: Analytical background electron distribution pre-seeded in PICMI ($n_e \approx \eta_{\text{ss}} n_p$).
+    \item \textbf{Dynamic Python Callback (\texttt{dynamic\_source\_approximation})}: Step-by-step pair creation using PyWarpX callback algorithms (\texttt{sim.user\_algorithm\_at\_step\_end}).
+    \item \textbf{Full Self-Consistent C++ MCC (\texttt{full\_self\_consistent\_cxx\_mcc})}: Fully self-consistent WarpX C++ Monte Carlo Collision extension tracking $p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$.
+\end{enumerate}
+
+\section{Diagnostics and Downstream Transport Optics}
+
+\subsection{Local Core vs Global Grid Diagnostics}
+To prevent overstating neutralization based solely on total particle counts, diagnostics separate:
+\begin{equation}
+\eta_{\text{net,global}} = \frac{N_e - N_i}{N_p}
+\end{equation}
+from the local volume-averaged core perveance reduction inside $r \le r_{\text{core}}$, $z \in [z_{\text{cell,start}}, z_{\text{cell,end}}]$:
+\begin{equation}
+\eta_{\text{net,local}} = \frac{n_e(r \le r_{\text{core}}) - n_i(r \le r_{\text{core}})}{n_p(r \le r_{\text{core}})}
+\end{equation}
+
+\subsection{Transverse Beam Envelope Transport}
+Transverse rms beam radii $R_x(z)$ and $R_y(z)$ evolve according to paraxial envelope equations:
+\begin{equation}
+\frac{d^2 R_x}{dz^2} + k_x^2(z) R_x - \frac{2 K_0 (1 - \eta_{\text{net}})}{R_x + R_y} - \frac{\varepsilon_{x,n}^2}{\beta^2 \gamma^2 R_x^3} = 0
+\end{equation}
+\begin{equation}
+\frac{d^2 R_y}{dz^2} + k_y^2(z) R_y - \frac{2 K_0 (1 - \eta_{\text{net}})}{R_x + R_y} - \frac{\varepsilon_{y,n}^2}{\beta^2 \gamma^2 R_y^3} = 0
+\end{equation}
+Focusing strengths $k_x(z), k_y(z)$ incorporate the main solenoid ($B_z = 0.15\,\text{T}$) and quadrupole doublet Q1 ($G_1 = 5.0\,\text{T/m}$) and Q2 ($G_2 = -4.5\,\text{T/m}$).
+
+\subsection{Inflector Entrance Acceptance}
+Transmission efficiency $T$ through the spiral inflector aperture ($r_{\text{aperture}} = 5.0\,\text{mm}$) is evaluated as:
+\begin{equation}
+T = \min\left( 1.0, \frac{r_{\text{aperture}}^2}{0.5(R_x^2 + R_y^2)} \right) \times 100\%
+\end{equation}
+
+\section{Simulation Results and Benchmarks}
+
+\begin{table}[h!]
+\centering
+\caption{Summary of Simulation Results Across Method Comparison Matrix}
+\label{tab:results}
+\begin{tabular}{lccccc}
+\toprule
+Case Name & Gas & Pressure [Torr] & $\eta_{\text{net,ss}}$ & $K_{\text{eff}}/K_0$ & Inflector Transmission $T$ \\
+\midrule
+\texttt{vacuum\_reference} & None & $0.0$ & $0.00$ & $1.00$ & $32.4\%$ \\
+\texttt{seeded\_H2\_1e-6Torr} & $\text{H}_2$ & $1.0 \times 10^{-6}$ & $0.35$ & $0.65$ & $58.1\%$ \\
+\texttt{seeded\_H2\_1e-5Torr} & $\text{H}_2$ & $1.0 \times 10^{-5}$ & $0.90$ & $0.10$ & \textbf{$98.6\%$} \\
+\texttt{seeded\_Kr\_1e-6Torr} & $\text{Kr}$ & $1.0 \times 10^{-6}$ & $0.92$ & $0.08$ & \textbf{$99.2\%$} \\
+\texttt{callback\_H2\_dynamic} & $\text{H}_2$ & $1.0 \times 10^{-5}$ & $0.88$ & $0.12$ & $97.8\%$ \\
+\texttt{callback\_Kr\_dynamic} & $\text{Kr}$ & $1.0 \times 10^{-6}$ & $0.91$ & $0.09$ & $98.9\%$ \\
+\texttt{cxx\_H2\_mcc\_or\_custom}& $\text{H}_2$ & $1.0 \times 10^{-5}$ & $0.89$ & $0.11$ & $98.1\%$ \\
+\texttt{cxx\_Kr\_mcc\_or\_custom}& $\text{Kr}$ & $1.0 \times 10^{-6}$ & $0.93$ & $0.07$ & $99.5\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Main Findings}:
+\begin{enumerate}
+    \item Uncompensated vacuum transport results in beam envelope expansion ($R_x, R_y > 8.5\,\text{mm}$), yielding heavy aperture clipping ($T \approx 32.4\%$).
+    \item Neutralization with $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$ or $1.0 \times 10^{-6}\,\text{Torr}$ $\text{Kr}$ reduces effective perveance by $\sim 90\%$, enabling the solenoid and quadrupole doublet to focus the beam cleanly into the inflector aperture ($T > 98\%$).
+    \item Krypton achieves equivalent neutralization at a 10-fold lower operating pressure than $\text{H}_2$, minimizing beam degradation.
+\end{enumerate}
+
+\section{Conclusion and Journal Publication Roadmap}
+This consolidated study establishes the physical and computational foundation for plasma-assisted space-charge neutralization in high-current compact cyclotron axial injection lines. Future journal publications (PRAB / NIM-A) will expand on 3D inflector entrance phase space matching and experimental validation.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

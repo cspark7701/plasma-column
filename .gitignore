@@ -50,7 +50,16 @@ warpx_ion_impact_ionization_patch
 
 *.png
 *.pdf
-plots/
+!docs/plasma_column_consolidated_report.pdf
+!docs/consolidated_report/*.pdf
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
 paper/figures/
 paper/data/
 

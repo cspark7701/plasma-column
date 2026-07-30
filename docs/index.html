@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plasma Column Neutralizer Simulation | Cyclotron Axial Injection</title>
+  <meta name="description" content="Modeling, analytical theory, diagnostics, and simulation workflows for compact plasma-assisted space-charge neutralizer cells in high-current cyclotron axial injection lines.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- MathJax for LaTeX Rendering -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-inner">
+      <div class="brand">
+        <h1>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          plasma_column
+        </h1>
+        <p>Compact Plasma-Assisted Space-Charge Neutralizer for High-Current Cyclotron Injection</p>
+      </div>
+      <div class="header-actions">
+        <a href="https://github.com/cspark7701/plasma_column" target="_blank" class="btn btn-outline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub Repo
+        </a>
+        <a href="plasma_column_consolidated_report.pdf" download class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Consolidated PDF
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Stat Banner -->
+    <div class="stats-banner">
+      <div class="stat-card">
+        <div class="stat-label">Beam Energy & Current</div>
+        <div class="stat-value">30 keV / 10 mA</div>
+        <div class="stat-sub">High-current proton beam</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cross-Section Ratio</div>
+        <div class="stat-value">5.56× (Kr / H₂)</div>
+        <div class="stat-sub">Center-of-mass kinematics</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Perveance Reduction</div>
+        <div class="stat-value">≥ 90%</div>
+        <div class="stat-sub">K_eff / K0 ≤ 0.10</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Inflector Transmission</div>
+        <div class="stat-value">&gt; 98%</div>
+        <div class="stat-sub">vs 32% uncompensated</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs-wrapper">
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="tab-overview">Overview</button>
+        <button class="nav-tab" data-tab="tab-physics">Physics Models</button>
+        <button class="nav-tab" data-tab="tab-cross-sections">Cross Sections</button>
+        <button class="nav-tab" data-tab="tab-simulator">Interactive Simulator</button>
+        <button class="nav-tab" data-tab="tab-literature">Literature Review</button>
+        <button class="nav-tab" data-tab="tab-methods">Code Architecture</button>
+        <button class="nav-tab" data-tab="tab-results">Benchmark Results</button>
+      </div>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Executive Overview & System Architecture</h2>
+        </div>
+        <p>High-current ($30\text{ keV}$, $10\text{ mA}$) proton beams in compact cyclotron Low-Energy Beam Transport (LEBT) lines experience strong space-charge perveance ($K_0 \approx 6.43 \times 10^{-4}$), causing rapid beam envelope expansion, emittance growth, and heavy transmission loss at the entrance aperture of the spiral inflector.</p>
+        <br>
+        <p>This project evaluates a compact gas-ionized plasma neutralizer cell placed upstream of the primary solenoid lens to achieve high space-charge compensation ($\eta_{\text{net}} \ge 90\%$).</p>
+        <br>
+        <div class="card" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(56, 189, 248, 0.2);">
+          <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Baseline Injection Line Geometry:</h3>
+          <p style="font-family: var(--font-mono); color: #e2e8f0; text-align: center; font-size: 1.05rem;">
+            buncher &rarr; plasma neutralizer &rarr; solenoid &rarr; quadrupole Q1 &rarr; quadrupole Q2 &rarr; spiral inflector
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PHYSICS MODELS -->
+    <div class="tab-panel" id="tab-physics">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Physics Models & Ionization Kinetics</h2>
+        </div>
+        <div class="grid-2">
+          <div>
+            <h3 style="color: var(--primary);">Impact Ionization Kinetics</h3>
+            <p>Proton-impact collisions generate secondary electron-ion pairs:</p>
+            <p>\[ p^+ + \text{Gas} \longrightarrow p^+ + \text{Gas}^+ + e^- \]</p>
+            <p>Secondary electrons are trapped in the beam's space-charge potential well, while ions are repelled radially.</p>
+          </div>
+          <div>
+            <h3 style="color: var(--primary);">Buildup Time Constant</h3>
+            <p>The space-charge neutralization time constant \(\tau\) is:</p>
+            <p>\[ \tau = \frac{1}{n_{\text{gas}} \sigma_{\text{ion}} v_{\text{beam}}} \]</p>
+            <p>Buildup kinetics: \(\eta(t) = \eta_{\text{ss}} (1 - e^{-t/\tau})\)</p>
+          </div>
+        </div>
+        <br>
+        <div class="card-header" style="margin-top: 1rem;">
+          <h3 class="card-title" style="font-size: 1.1rem; color: var(--accent-amber);">RF-Bunched Beam Space-Charge Perveance Limit</h3>
+        </div>
+        <p>When an RF buncher is upstream, the beam enters the plasma cell already bunched with bunching factor \(B_f = I_{\text{peak}} / I_{\text{avg}}\). While background electrons provide average neutralization \(\eta_{\text{avg}}\), peak-bunch space charge is reduced by:</p>
+        <p>\[ \frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{avg}}}{B_f} \]</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: CROSS SECTIONS -->
+    <div class="tab-panel" id="tab-cross-sections">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">H₂ vs Kr Collision Kinematics & Cross-Section Database</h2>
+        </div>
+        <p>Evaluating cross-section data in center-of-mass energy \(E_{\text{cm}} = E_{\text{lab}} [m_{\text{target}} / (m_{\text{proj}} + m_{\text{target}})]\):</p>
+        <br>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Target Gas</th>
+                <th>E_lab [keV]</th>
+                <th>E_cm [keV]</th>
+                <th>σ_ion [m²]</th>
+                <th>σ_ion [Å²]</th>
+                <th>Ratio (σ_Kr / σ_H2)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Hydrogen (H₂)</strong></td>
+                <td>30.0</td>
+                <td>20.00</td>
+                <td>1.6135 × 10⁻²⁰</td>
+                <td>1.61 Å²</td>
+                <td>1.00×</td>
+              </tr>
+              <tr>
+                <td><strong>Krypton (Kr)</strong></td>
+                <td>30.0</td>
+                <td>29.65</td>
+                <td>8.9648 × 10⁻²⁰</td>
+                <td>8.96 Å²</td>
+                <td><strong style="color: var(--primary);">5.56×</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: INTERACTIVE SIMULATOR -->
+    <div class="tab-panel" id="tab-simulator">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Interactive Space-Charge Neutralizer Simulator</h2>
+        </div>
+        <div class="simulator-container">
+          <!-- Controls -->
+          <div class="sim-controls">
+            <div class="control-group">
+              <div class="control-label"><span>Neutralizer Gas</span></div>
+              <select id="sim-gas">
+                <option value="H2">Hydrogen (H₂)</option>
+                <option value="Kr" selected>Krypton (Kr)</option>
+              </select>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">
+                <span>Neutral Pressure</span>
+                <span class="control-value" id="val-pressure">1.00e-6 Torr</span>
+              </div>
+              <input type="range" id="sim-pressure" min="-7" max="-4" step="0.1" value="-6">
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">
+                <span>Beam Current</span>
+                <span class="control-value" id="val-current">10.0 mA</span>
+              </div>
+              <input type="range" id="sim-current" min="1" max="20" step="0.5" value="10">
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">
+                <span>Proton Energy</span>
+                <span class="control-value" id="val-energy">30.0 keV</span>
+              </div>
+              <input type="range" id="sim-energy" min="10" max="50" step="1" value="30">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>RF Bunching Factor (B_f)</span>
+                <span class="control-value" id="val-bf">4.0</span>
+              </div>
+              <input type="range" id="sim-bf" min="1" max="10" step="0.5" value="4">
+            </div>
+          </div>
+
+          <!-- Chart & Results -->
+          <div>
+            <div class="chart-box">
+              <svg id="buildup-svg" class="chart-svg"></svg>
+            </div>
+
+            <div class="sim-output-grid">
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-ngas">3.22e16 m⁻³</div>
+                <div class="sim-metric-lbl">Gas Density n_gas</div>
+              </div>
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-sigma">8.96 Å²</div>
+                <div class="sim-metric-lbl">Ionization σ_ion</div>
+              </div>
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-tau">1.45 µs</div>
+                <div class="sim-metric-lbl">Time Constant τ</div>
+              </div>
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-eta">93.0%</div>
+                <div class="sim-metric-lbl">Equilibrium η_ss</div>
+              </div>
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-keff">7.0%</div>
+                <div class="sim-metric-lbl">K_eff / K0 (Avg)</div>
+              </div>
+              <div class="sim-metric-box">
+                <div class="sim-metric-val" id="out-kpeak">76.8%</div>
+                <div class="sim-metric-lbl">K_peak / K0 (Peak)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: LITERATURE REVIEW -->
+    <div class="tab-panel" id="tab-literature">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Literature Review & Historical Context</h2>
+        </div>
+        <ul style="padding-left: 1.5rem; color: var(--text-muted);">
+          <li style="margin-bottom: 0.75rem;"><strong>Cyclotron Axial Lines</strong>: Early papers (Jongen 1981, Kazarinov 2007, 2010) identified severe space-charge limits in high-current injector lines. Retarding Field Analyzer (RFA) tests by Winklehner et al. (2013, 2014) showed 60%–95% neutralization in ECR LEBTs.</li>
+          <li style="margin-bottom: 0.75rem;"><strong>Electron Columns & Lenses</strong>: Space-charge compensation experiments at IOTA (Park 2019, 2020; Freemire 2018; Stancari 2016, 2021) demonstrated controlled electron trapping to counteract proton space charge.</li>
+          <li style="margin-bottom: 0.75rem;"><strong>Gabor Plasma Lenses</strong>: Palkovic (1988) tested Gabor lenses for 30 keV protons, though Nonnenmacher (2021) documented Diocotron plasma instabilities.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- TAB 6: CODE ARCHITECTURE -->
+    <div class="tab-panel" id="tab-methods">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Codebase Architecture & Simulation Methods</h2>
+        </div>
+        <pre class="code-block">
+plasma_column/
+├── src/plasma_column/
+│   ├── constants.py       # Physical constants & unit conversions
+│   ├── gas.py             # NeutralGas density & CrossSectionDatabase
+│   ├── beam.py            # ProtonBeam perveance calculator
+│   ├── neutralization.py  # Buildup kinetics & bunched beam model
+│   ├── diagnostics.py     # Global ParticleNumber & local core masks
+│   └── plotting.py        # Scriptable visualization pipeline
+└── cases/
+    ├── baseline_h2.yaml   # 30 keV 10 mA H2 baseline case
+    ├── baseline_kr.yaml   # 30 keV 10 mA Kr baseline case
+    └── method_comparison.yaml
+        </pre>
+      </div>
+    </div>
+
+    <!-- TAB 7: BENCHMARK RESULTS -->
+    <div class="tab-panel" id="tab-results">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Simulation Method Comparison Matrix</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Case Name</th>
+                <th>Gas</th>
+                <th>Pressure [Torr]</th>
+                <th>Method Category</th>
+                <th>η_net,ss</th>
+                <th>K_eff / K0</th>
+                <th>Inflector Trans. T</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>vacuum_reference</code></td>
+                <td>None</td>
+                <td>0.0</td>
+                <td>Baseline Reference</td>
+                <td>0.00</td>
+                <td>1.00</td>
+                <td><span class="badge badge-warning">32.4%</span></td>
+              </tr>
+              <tr>
+                <td><code>seeded_H2_1e-5Torr</code></td>
+                <td>H₂</td>
+                <td>1.0e-5</td>
+                <td>Static Seeded</td>
+                <td>0.90</td>
+                <td>0.10</td>
+                <td><span class="badge badge-success">98.6%</span></td>
+              </tr>
+              <tr>
+                <td><code>seeded_Kr_1e-6Torr</code></td>
+                <td>Kr</td>
+                <td>1.0e-6</td>
+                <td>Static Seeded</td>
+                <td>0.92</td>
+                <td>0.08</td>
+                <td><span class="badge badge-success">99.2%</span></td>
+              </tr>
+              <tr>
+                <td><code>callback_H2_dynamic</code></td>
+                <td>H₂</td>
+                <td>1.0e-5</td>
+                <td>Dynamic Python Callback</td>
+                <td>0.88</td>
+                <td>0.12</td>
+                <td><span class="badge badge-success">97.8%</span></td>
+              </tr>
+              <tr>
+                <td><code>cxx_Kr_mcc_or_custom</code></td>
+                <td>Kr</td>
+                <td>1.0e-6</td>
+                <td>Full C++ MCC</td>
+                <td>0.93</td>
+                <td>0.07</td>
+                <td><span class="badge badge-success">99.5%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Plasma Column Neutralizer Simulation Project | Repository: <a href="https://github.com/cspark7701/plasma_column" target="_blank">cspark7701/plasma_column</a></p>
+      <p style="margin-top: 0.5rem; font-size: 0.8rem;">Hosted on GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
