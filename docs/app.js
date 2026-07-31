@@ -1,89 +1,56 @@
 /* ==========================================================================
-   Plasma Column Neutralizer Simulation — ReadTheDocs Interactive Application
+   Plasma Column Neutralizer Simulation — Interactive Application (synapticTrack style)
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initThemeToggle();
   initNavigation();
   initSearch();
   initSimulator();
 });
 
-// 1. Light / Dark Theme Switcher
-function initThemeToggle() {
-  const toggleBtn = document.getElementById('theme-toggle-btn');
-  const html = document.documentElement;
-  const darkIcon = toggleBtn ? toggleBtn.querySelector('.theme-icon-dark') : null;
-  const lightIcon = toggleBtn ? toggleBtn.querySelector('.theme-icon-light') : null;
-
-  const savedTheme = localStorage.getItem('rtd-theme') || 'dark';
-  setTheme(savedTheme);
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const currentTheme = html.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      setTheme(newTheme);
-    });
-  }
-
-  function setTheme(theme) {
-    html.setAttribute('data-theme', theme);
-    localStorage.setItem('rtd-theme', theme);
-
-    if (darkIcon && lightIcon) {
-      if (theme === 'dark') {
-        darkIcon.style.display = 'inline';
-        lightIcon.style.display = 'none';
-      } else {
-        darkIcon.style.display = 'none';
-        lightIcon.style.display = 'inline';
-      }
-    }
-  }
-}
-
-// 2. Sidebar Navigation & Breadcrumb Controller
+// 1. Navigation & Breadcrumb Controller
 function initNavigation() {
-  const navItems = document.querySelectorAll('.rtd-toc-item[data-tab]');
-  const sections = document.querySelectorAll('.rtd-section');
-  const breadcrumbTitle = document.getElementById('rtd-breadcrumb-title');
+  const navItems = document.querySelectorAll('.toc-nav-item');
+  const panels = document.querySelectorAll('.section-panel');
+  const pageToolsTitle = document.getElementById('page-tools-title');
 
   navItems.forEach(item => {
     item.addEventListener('click', (e) => {
-      const targetId = item.getAttribute('data-tab');
+      e.preventDefault();
+      const targetId = item.getAttribute('data-target');
       if (!targetId) return;
 
       navItems.forEach(i => i.classList.remove('active'));
-      sections.forEach(s => s.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
 
       item.classList.add('active');
 
-      const targetSection = document.getElementById(targetId);
-      if (targetSection) {
-        targetSection.classList.add('active');
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
 
-        // Update Breadcrumbs Title
-        const heading = targetSection.querySelector('.rtd-heading');
-        if (heading && breadcrumbTitle) {
-          // Extract title text without permalink symbol
-          const titleText = heading.childNodes[0].textContent.trim();
-          breadcrumbTitle.textContent = titleText;
+        // Update breadcrumb title
+        const heading = targetPanel.querySelector('h1');
+        if (heading && pageToolsTitle) {
+          pageToolsTitle.textContent = heading.textContent;
         }
+
+        // Scroll main to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
         // Trigger MathJax re-render if available
         if (window.MathJax && window.MathJax.typesetPromise) {
-          window.MathJax.typesetPromise([targetSection]);
+          window.MathJax.typesetPromise([targetPanel]);
         }
       }
     });
   });
 }
 
-// 3. Sidebar Search Filter
+// 2. Sidebar Search Filter
 function initSearch() {
   const searchInput = document.getElementById('rtd-search-input');
-  const navItems = document.querySelectorAll('.rtd-toc-item[data-tab]');
+  const navItems = document.querySelectorAll('.toc-nav-item');
 
   if (!searchInput) return;
 
@@ -92,23 +59,24 @@ function initSearch() {
 
     navItems.forEach(item => {
       const text = item.textContent.toLowerCase();
+      const parentLi = item.parentElement;
       if (text.includes(query)) {
-        item.style.display = 'flex';
+        if (parentLi) parentLi.style.display = 'block';
       } else {
-        item.style.display = 'none';
+        if (parentLi) parentLi.style.display = 'none';
       }
     });
   });
 }
 
-// 4. Physics Constants
+// 3. Physics Constants
 const MP = 1.67262192e-27;
 const QE = 1.602176634e-19;
 const KB = 1.380649e-23;
 const CLIGHT = 299792458.0;
 const EPS0 = 8.8541878128e-12;
 
-// 5. Interactive Neutralization Simulator
+// 4. Interactive Neutralization Simulator
 function initSimulator() {
   const gasSelect = document.getElementById('sim-gas');
   const pressInput = document.getElementById('sim-pressure');
@@ -179,7 +147,7 @@ function initSimulator() {
   update();
 }
 
-// 6. Dynamic SVG Buildup Chart Renderer
+// 5. Dynamic SVG Buildup Chart Renderer
 function drawBuildupChart(tau_us, eta_ss) {
   const svg = document.getElementById('buildup-svg');
   if (!svg) return;
@@ -206,7 +174,7 @@ function drawBuildupChart(tau_us, eta_ss) {
   }
 
   let html = `
-    <rect width="${width}" height="${height}" fill="#090d16" rx="6"/>
+    <rect width="${width}" height="${height}" fill="#090d16" rx="2"/>
     <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
     <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
   `;
@@ -219,7 +187,7 @@ function drawBuildupChart(tau_us, eta_ss) {
   `;
 
   // Curve
-  html += `<path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="3"/>`;
+  html += `<path d="${pathD}" fill="none" stroke="#2980b9" stroke-width="3"/>`;
 
   // Labels
   html += `
