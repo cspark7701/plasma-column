@@ -46,6 +46,7 @@
       <li><a class="toc-nav-item active" href="#overview" data-target="section-overview">Executive Overview</a></li>
       <li><a class="toc-nav-item" href="#physics" data-target="section-physics">Physics Models & Kinetics</a></li>
       <li><a class="toc-nav-item" href="#cross-sections" data-target="section-cross-sections">H₂ vs Kr Cross Sections</a></li>
+      <li><a class="toc-nav-item" href="#pipeline" data-target="section-pipeline">Full Production Pipeline</a></li>
       <li><a class="toc-nav-item" href="#simulator" data-target="section-simulator">Interactive Simulator</a></li>
       <li><a class="toc-nav-item" href="#literature" data-target="section-literature">Literature Review</a></li>
       <li><a class="toc-nav-item" href="#methods" data-target="section-methods">Code Architecture & Repo</a></li>
@@ -153,7 +154,102 @@
       </table>
     </div>
 
-    <!-- SECTION 4: INTERACTIVE SIMULATOR -->
+    <!-- SECTION 4: FULL PRODUCTION PIPELINE -->
+    <div class="section-panel" id="section-pipeline">
+      <h1 id="production-pipeline">Full Production Simulation & Analysis Pipeline</h1>
+
+      <div class="source-note">
+        <strong>Pipeline Overview:</strong> Automated end-to-end simulation, post-processing, figure generation, summary table compilation, dataset freezing, and downstream optics transport analysis in a single reproducible command (<code>run_full_production.sh</code>) or Jupyter notebook (<code>nb_full_production_pipeline.ipynb</code>).
+      </div>
+
+      <h2>Execution Flow & 8 Production Stages</h2>
+      <p>The production pipeline executes eight structured stages sequentially:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Description & Purpose</th>
+            <th>Shell Command / Script</th>
+            <th>Output Log / Deliverables</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Audit</strong></td>
+            <td>Environment audit (Conda, PyWarpX, Python packages, git commit hash, WarpX C++ source diff)</td>
+            <td><code>python3 scripts/print_environment.py</code></td>
+            <td><code>logs/step_1_8.log</code></td>
+          </tr>
+          <tr>
+            <td><strong>2. Scan Setup</strong></td>
+            <td>Matrix scan setup & parameter validation across 9 cases (vacuum, static seeded, callback, C++ MCC)</td>
+            <td><code>python3 scripts/run_scan.py --matrix cases/method_comparison.yaml</code></td>
+            <td><code>logs/step_2_8.log</code>, <code>runs/*/config.yaml</code></td>
+          </tr>
+          <tr>
+            <td><strong>3. Baseline Run</strong></td>
+            <td>Baseline PIC simulation case verification & execution for H₂ / Kr neutralizer cells</td>
+            <td><code>python3 scripts/run_case.py --case cases/baseline_h2.yaml</code></td>
+            <td><code>logs/step_3_8.log</code>, <code>runs/*/metadata.json</code></td>
+          </tr>
+          <tr>
+            <td><strong>4. Post-Process</strong></td>
+            <td>Extract particle count metrics \(N_p, N_e, N_i\), global \(\eta\), local core density, and \(K_{\text{eff}}/K_0\)</td>
+            <td><code>python3 scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline</code></td>
+            <td><code>logs/step_4_8.log</code>, <code>local_neutralization.csv</code></td>
+          </tr>
+          <tr>
+            <td><strong>5. Figures</strong></td>
+            <td>Generate publication figures (cross sections \(\sigma(E)\), buildup curves, spatial density profiles, envelope)</td>
+            <td><code>python3 scripts/make_plots.py</code> &amp; <code>make_paper_figures.py</code></td>
+            <td><code>logs/step_5_8.log</code>, <code>plots/</code>, <code>paper/figures/</code></td>
+          </tr>
+          <tr>
+            <td><strong>6. Tables</strong></td>
+            <td>Compile CSV paper summary tables and freeze canonical publication dataset manifest</td>
+            <td><code>python3 scripts/make_paper_tables.py</code> &amp; <code>freeze_publication_dataset.py</code></td>
+            <td><code>logs/step_6_8.log</code>, <code>paper/tables/</code>, <code>dataset_manifest.json</code></td>
+          </tr>
+          <tr>
+            <td><strong>7. Optics</strong></td>
+            <td>Model RF-bunched beam peak perveance reduction and simulate transport to spiral inflector</td>
+            <td><code>python3 scripts/analyze_bunched_beam_neutralization.py</code> &amp; <code>transport_to_inflector.py</code></td>
+            <td><code>logs/step_7_8.log</code>, <code>beam_envelope.csv</code></td>
+          </tr>
+          <tr>
+            <td><strong>8. Audit</strong></td>
+            <td>Final repository integrity audit (code compileall, pytest, metadata schemas, docs verification)</td>
+            <td><code>python3 scripts/audit_repo.py --root .</code></td>
+            <td><code>logs/step_8_8.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Command Line Options & Token-Conserving Execution</h2>
+      <p>Execute the pipeline from the repository root using the shell script or root wrapper:</p>
+      <pre><code># Standard quiet execution (displays real-time [RUNNING] step indicators, redirects logs to logs/):
+./run_full_production.sh
+
+# Dry-run mode (validates all configurations, matrices, & metadata without heavy PIC steps):
+./run_full_production.sh --dry_run
+
+# Verbose mode (prints full execution logs directly to terminal screen):
+./run_full_production.sh --verbose
+
+# Custom parallel CPU core allocation (e.g. 80%):
+./run_full_production.sh --cpu-pct 80</code></pre>
+
+      <h2>Parallel Hardware Scaling (~90% CPU Allocation)</h2>
+      <p>The script automatically detects system hardware cores and configures target multi-threading OpenMP environment variables:</p>
+      <p>\[ \text{Target Cores} = \left\lfloor \text{nproc} \times \frac{\text{CPU\_PCT}}{100} \right\rfloor \]</p>
+      <p>Automatically exports: <code>OMP_NUM_THREADS</code>, <code>OPENMP_NUM_THREADS</code>, <code>MKL_NUM_THREADS</code>, and <code>NUMEXPR_NUM_THREADS</code>.</p>
+
+      <h2>1-to-1 Consolidated Jupyter Notebook Mirror</h2>
+      <p>The pipeline is mirrored 1-to-1 inside the consolidated Jupyter notebook <code>notebooks/runs/nb_full_production_pipeline.ipynb</code>, containing 17 structured cells across the 8 production sections for interactive execution and visualization.</p>
+    </div>
+
+    <!-- SECTION 5: INTERACTIVE SIMULATOR -->
     <div class="section-panel" id="section-simulator">
       <h1 id="interactive-simulator">Interactive Space-Charge Neutralizer Simulator</h1>
 
@@ -223,7 +319,7 @@
       </div>
     </div>
 
-    <!-- SECTION 5: LITERATURE REVIEW -->
+    <!-- SECTION 6: LITERATURE REVIEW -->
     <div class="section-panel" id="section-literature">
       <h1 id="literature-review">Literature Review & Technical Context</h1>
 
@@ -236,7 +332,7 @@
       </div>
     </div>
 
-    <!-- SECTION 6: CODE ARCHITECTURE -->
+    <!-- SECTION 7: CODE ARCHITECTURE -->
     <div class="section-panel" id="section-methods">
       <h1 id="codebase-architecture">Codebase Architecture & Simulation Methods</h1>
 
@@ -254,7 +350,7 @@
     └── method_comparison.yaml</code></pre>
     </div>
 
-    <!-- SECTION 7: BENCHMARK RESULTS -->
+    <!-- SECTION 8: BENCHMARK RESULTS -->
     <div class="section-panel" id="section-results">
       <h1 id="benchmark-matrix">Simulation Method Comparison Matrix</h1>
 
