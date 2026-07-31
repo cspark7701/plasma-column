@@ -100,7 +100,7 @@ Important limitation to preserve in documentation and code comments:
 
 12. All executed tasks must be summarized and saved into `docs/exec-plans/completed/` following strict numeric sequential order in that folder.
 
-13. Created HTML pages must follow `github.io` project webpage style using existing templates (`docs/index.html` and `docs/style.css`).
+13. Created HTML pages must follow Sphinx / Read The Docs (`readthedocs.org`) project webpage style using existing templates (`docs/index.html` and `docs/style.css`).
 
 ## Recommended repository organization
 

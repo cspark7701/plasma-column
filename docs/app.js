@@ -1,43 +1,114 @@
 /* ==========================================================================
-   Plasma Column Neutralizer Simulation - GitHub Pages Interactive Application
+   Plasma Column Neutralizer Simulation — ReadTheDocs Interactive Application
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTabs();
+  initThemeToggle();
+  initNavigation();
+  initSearch();
   initSimulator();
 });
 
-// 1. Navigation Tab Controller
-function initTabs() {
-  const tabs = document.querySelectorAll('.nav-tab');
-  const panels = document.querySelectorAll('.tab-panel');
+// 1. Light / Dark Theme Switcher
+function initThemeToggle() {
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  const html = document.documentElement;
+  const darkIcon = toggleBtn ? toggleBtn.querySelector('.theme-icon-dark') : null;
+  const lightIcon = toggleBtn ? toggleBtn.querySelector('.theme-icon-light') : null;
 
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      panels.forEach(p => p.classList.remove('active'));
+  const savedTheme = localStorage.getItem('rtd-theme') || 'dark';
+  setTheme(savedTheme);
 
-      tab.classList.add('active');
-      const targetId = tab.getAttribute('data-tab');
-      const targetPanel = document.getElementById(targetId);
-      if (targetPanel) {
-        targetPanel.classList.add('active');
-        if (window.MathJax) {
-          window.MathJax.typesetPromise([targetPanel]);
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    });
+  }
+
+  function setTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('rtd-theme', theme);
+
+    if (darkIcon && lightIcon) {
+      if (theme === 'dark') {
+        darkIcon.style.display = 'inline';
+        lightIcon.style.display = 'none';
+      } else {
+        darkIcon.style.display = 'none';
+        lightIcon.style.display = 'inline';
+      }
+    }
+  }
+}
+
+// 2. Sidebar Navigation & Breadcrumb Controller
+function initNavigation() {
+  const navItems = document.querySelectorAll('.rtd-toc-item[data-tab]');
+  const sections = document.querySelectorAll('.rtd-section');
+  const breadcrumbTitle = document.getElementById('rtd-breadcrumb-title');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      const targetId = item.getAttribute('data-tab');
+      if (!targetId) return;
+
+      navItems.forEach(i => i.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
+
+      item.classList.add('active');
+
+      const targetSection = document.getElementById(targetId);
+      if (targetSection) {
+        targetSection.classList.add('active');
+
+        // Update Breadcrumbs Title
+        const heading = targetSection.querySelector('.rtd-heading');
+        if (heading && breadcrumbTitle) {
+          // Extract title text without permalink symbol
+          const titleText = heading.childNodes[0].textContent.trim();
+          breadcrumbTitle.textContent = titleText;
+        }
+
+        // Trigger MathJax re-render if available
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([targetSection]);
         }
       }
     });
   });
 }
 
-// 2. Physics Constants
+// 3. Sidebar Search Filter
+function initSearch() {
+  const searchInput = document.getElementById('rtd-search-input');
+  const navItems = document.querySelectorAll('.rtd-toc-item[data-tab]');
+
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase().trim();
+
+    navItems.forEach(item => {
+      const text = item.textContent.toLowerCase();
+      if (text.includes(query)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  });
+}
+
+// 4. Physics Constants
 const MP = 1.67262192e-27;
 const QE = 1.602176634e-19;
 const KB = 1.380649e-23;
 const CLIGHT = 299792458.0;
 const EPS0 = 8.8541878128e-12;
 
-// 3. Interactive Neutralization Simulator
+// 5. Interactive Neutralization Simulator
 function initSimulator() {
   const gasSelect = document.getElementById('sim-gas');
   const pressInput = document.getElementById('sim-pressure');
@@ -49,6 +120,8 @@ function initSimulator() {
   const currentVal = document.getElementById('val-current');
   const energyVal = document.getElementById('val-energy');
   const bfVal = document.getElementById('val-bf');
+
+  if (!gasSelect || !pressInput) return;
 
   function update() {
     const gas = gasSelect.value;
@@ -80,13 +153,20 @@ function initSimulator() {
     const keff_ratio = 1.0 - eta_ss;
     const keff_peak_ratio = Math.max(0.0, 1.0 - eta_ss / B_f);
 
-    // Update Output Displays
-    document.getElementById('out-ngas').textContent = n_gas.toExponential(2) + ' m⁻³';
-    document.getElementById('out-sigma').textContent = (sigma_ion * 1e20).toFixed(2) + ' Å²';
-    document.getElementById('out-tau').textContent = tau_us.toFixed(2) + ' µs';
-    document.getElementById('out-eta').textContent = (eta_ss * 100).toFixed(1) + '%';
-    document.getElementById('out-keff').textContent = (keff_ratio * 100).toFixed(1) + '%';
-    document.getElementById('out-kpeak').textContent = (keff_peak_ratio * 100).toFixed(1) + '%';
+    // Output Displays
+    const outNgas = document.getElementById('out-ngas');
+    const outSigma = document.getElementById('out-sigma');
+    const outTau = document.getElementById('out-tau');
+    const outEta = document.getElementById('out-eta');
+    const outKeff = document.getElementById('out-keff');
+    const outKpeak = document.getElementById('out-kpeak');
+
+    if (outNgas) outNgas.textContent = n_gas.toExponential(2) + ' m⁻³';
+    if (outSigma) outSigma.textContent = (sigma_ion * 1e20).toFixed(2) + ' Å²';
+    if (outTau) outTau.textContent = tau_us.toFixed(2) + ' µs';
+    if (outEta) outEta.textContent = (eta_ss * 100).toFixed(1) + '%';
+    if (outKeff) outKeff.textContent = (keff_ratio * 100).toFixed(1) + '%';
+    if (outKpeak) outKpeak.textContent = (keff_peak_ratio * 100).toFixed(1) + '%';
 
     // Draw Chart
     drawBuildupChart(tau_us, eta_ss);
@@ -99,7 +179,7 @@ function initSimulator() {
   update();
 }
 
-// 4. Dynamic SVG Buildup Chart Renderer
+// 6. Dynamic SVG Buildup Chart Renderer
 function drawBuildupChart(tau_us, eta_ss) {
   const svg = document.getElementById('buildup-svg');
   if (!svg) return;
@@ -125,9 +205,8 @@ function drawBuildupChart(tau_us, eta_ss) {
     pathD += (i === 0 ? 'M' : 'L') + ` ${x.toFixed(1)},${y.toFixed(1)}`;
   }
 
-  // Draw Grid & Labels
   let html = `
-    <rect width="${width}" height="${height}" fill="#090d16" rx="8"/>
+    <rect width="${width}" height="${height}" fill="#090d16" rx="6"/>
     <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
     <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
   `;
@@ -136,7 +215,7 @@ function drawBuildupChart(tau_us, eta_ss) {
   const y_ss = margin.top + h - (eta_ss / 1.0) * h;
   html += `
     <line x1="${margin.left}" y1="${y_ss}" x2="${width - margin.right}" y2="${y_ss}" stroke="#f59e0b" stroke-dasharray="4,4" stroke-width="1.5"/>
-    <text x="${width - margin.right - 80}" y="${y_ss - 6}" fill="#f59e0b" font-size="11" font-family="sans-serif">Equilibrium η = ${(eta_ss * 100).toFixed(0)}%</text>
+    <text x="${width - margin.right - 85}" y="${y_ss - 6}" fill="#f59e0b" font-size="11" font-family="sans-serif">Equilibrium η = ${(eta_ss * 100).toFixed(0)}%</text>
   `;
 
   // Curve
