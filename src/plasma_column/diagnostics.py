@@ -3,11 +3,12 @@ src/plasma_column/diagnostics.py
 
 Diagnostic parsing routines for particle numbers, species population tracking,
 global neutralization metrics, local core space-charge compensation, z-resolved profiles,
-and radial charge-density diagnostics.
+radial charge-density diagnostics, and in-memory data caching via DataLoader.
 """
 
 from __future__ import annotations
 
+import json
 import warnings
 from pathlib import Path
 from typing import Any, Optional
@@ -36,16 +37,91 @@ def warn_global_count_limitation() -> None:
     )
 
 
-def load_particle_number_diagnostic(filepath: str | Path) -> pd.DataFrame:
+class DataLoader:
+    """
+    Lightweight, thread-safe diagnostic data loader with in-memory caching
+    and timestamp (st_mtime) invalidation to accelerate analysis workflows.
+    """
+    _cache: dict[tuple[Path, float], Any] = {}
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clears all cached DataFrames and metadata dictionaries."""
+        cls._cache.clear()
+
+    @classmethod
+    def cache_info(cls) -> dict[str, int]:
+        """Returns statistics on currently cached files."""
+        return {"cached_entries": len(cls._cache)}
+
+    @classmethod
+    def load_particle_number(cls, filepath: str | Path, use_cache: bool = True) -> pd.DataFrame:
+        """Loads and parses ParticleNumber diagnostic file with mtime caching."""
+        path = Path(filepath).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"Particle number diagnostic file not found: {path}")
+
+        mtime = path.stat().st_mtime
+        key = (path, mtime)
+
+        if use_cache and key in cls._cache:
+            return cls._cache[key].copy()
+
+        df = load_particle_number_diagnostic(path)
+        if use_cache:
+            cls._cache[key] = df.copy()
+        return df
+
+    @classmethod
+    def load_local_neutralization(cls, filepath: str | Path, use_cache: bool = True) -> pd.DataFrame:
+        """Loads local_neutralization.csv DataFrame with mtime caching."""
+        path = Path(filepath).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"Local neutralization file not found: {path}")
+
+        mtime = path.stat().st_mtime
+        key = (path, mtime)
+
+        if use_cache and key in cls._cache:
+            return cls._cache[key].copy()
+
+        df = pd.read_csv(path)
+        if use_cache:
+            cls._cache[key] = df.copy()
+        return df
+
+    @classmethod
+    def load_case_metadata(cls, filepath: str | Path, use_cache: bool = True) -> dict[str, Any]:
+        """Loads metadata.json dictionary with mtime caching."""
+        path = Path(filepath).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"Metadata file not found: {path}")
+
+        mtime = path.stat().st_mtime
+        key = (path, mtime)
+
+        if use_cache and key in cls._cache:
+            return dict(cls._cache[key])
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if use_cache:
+            cls._cache[key] = dict(data)
+        return data
+
+
+def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = False) -> pd.DataFrame:
     """
     Parses WarpX ParticleNumber reduced diagnostic text file into a structured pandas DataFrame.
     Supports both comma-separated and space-separated formats with header comments.
     """
+    if use_cache:
+        return DataLoader.load_particle_number(filepath, use_cache=True)
+
     path = Path(filepath)
     if not path.exists():
         raise FileNotFoundError(f"Particle number diagnostic file not found: {path}")
 
-    # Inspect header line for column names
     header_line = None
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -54,7 +130,6 @@ def load_particle_number_diagnostic(filepath: str | Path) -> pd.DataFrame:
             else:
                 break
 
-    # Try space/tab whitespace delimiter first, then comma
     data = np.genfromtxt(path, comments="#")
     if data.ndim == 1 and (np.isnan(data).any() or data.size == 0):
         data = np.genfromtxt(path, comments="#", delimiter=",")
@@ -67,7 +142,6 @@ def load_particle_number_diagnostic(filepath: str | Path) -> pd.DataFrame:
 
     ncols = data.shape[1]
 
-    # Assign default or extracted column names
     if header_line:
         clean_header = header_line.replace(",", " ").split()
         if len(clean_header) == ncols:
@@ -79,13 +153,11 @@ def load_particle_number_diagnostic(filepath: str | Path) -> pd.DataFrame:
 
     df = pd.DataFrame(data, columns=cols)
 
-    # Standardize step and time columns
     if "step" not in df.columns and ncols >= 1:
         df.rename(columns={cols[0]: "step"}, inplace=True)
     if "time" not in df.columns and ncols >= 2:
         df.rename(columns={cols[1]: "time"}, inplace=True)
 
-    # Extract species particle counts
     if "Np" not in df.columns:
         if ncols >= 8:
             df["Np"] = data[:, 5]
@@ -99,32 +171,28 @@ def load_particle_number_diagnostic(filepath: str | Path) -> pd.DataFrame:
     return df
 
 
-def compute_particle_number_metrics(
-    df: pd.DataFrame, Np_col: str = "Np", Ne_col: str = "Ne", Ni_col: str = "Ni"
-) -> pd.DataFrame:
+def compute_particle_number_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Computes global neutralization and perveance reduction ratios from particle count DataFrame.
+    Calculates neutralization fractions and effective perveance ratios from particle counts.
+    Issues global count warning per project rules.
     """
-    out = df.copy()
-
-    if Np_col not in out.columns or Ne_col not in out.columns or Ni_col not in out.columns:
-        warn_global_count_limitation()
-        return out
-
-    Np = out[Np_col].values
-    Ne = out[Ne_col].values
-    Ni = out[Ni_col].values
-
-    # Prevent division by zero
-    safe_Np = np.where(Np > 0, Np, np.nan)
-
-    out["eta_electron_only"] = Ne / safe_Np
-    out["eta_ion_only"] = Ni / safe_Np
-    out["eta_net"] = (Ne - Ni) / safe_Np
-    out["keff_over_k0"] = 1.0 - out["eta_net"]
-    out["keff_over_k0_electron_only"] = 1.0 - out["eta_electron_only"]
-
     warn_global_count_limitation()
+
+    if df.empty or "Np" not in df.columns or "Ne" not in df.columns:
+        return df
+
+    out = df.copy()
+    Np = out["Np"].values.astype(float)
+    Ne = out["Ne"].values.astype(float)
+    Ni = out["Ni"].values.astype(float) if "Ni" in out.columns else np.zeros_like(Np)
+
+    eta_e = np.where(Np > 0, Ne / Np, 0.0)
+    eta_net = np.where(Np > 0, (Ne - Ni) / Np, 0.0)
+
+    out["eta_electron_only"] = eta_e
+    out["eta_net"] = eta_net
+    out["keff_over_k0"] = np.maximum(0.0, 1.0 - eta_net)
+    out["keff_over_k0_electron_only"] = np.maximum(0.0, 1.0 - eta_e)
 
     return out
 
@@ -136,93 +204,52 @@ def compute_local_core_neutralization(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
     z_coords: np.ndarray,
+    r_core: float = 0.002,
     z_min_col: float = 0.0,
     z_max_col: float = 0.20,
-    r_core: float = 0.002,
 ) -> dict[str, Any]:
     """
-    Computes volume-averaged local electron, ion, and proton number densities inside the beam core
-    (r <= r_core) within the plasma column region (z_min_col <= z <= z_max_col).
+    Computes volume-averaged electron and ion densities inside the beam core within the plasma column.
     """
     X, Y, Z = np.meshgrid(x_coords, y_coords, z_coords, indexing="ij")
     R = np.sqrt(X**2 + Y**2)
 
-    mask = (Z >= z_min_col) & (Z <= z_max_col) & (R <= r_core)
-
+    mask = (R <= r_core) & (Z >= z_min_col) & (Z <= z_max_col)
     if not np.any(mask):
         return {
+            "np_core_avg": 0.0,
             "ne_core_avg": 0.0,
             "ni_core_avg": 0.0,
-            "np_core_avg": 0.0,
-            "eta_net_local": 0.0,
+            "eta_electron_only_core": 0.0,
+            "eta_net_core": 0.0,
+            "keff_over_k0_core": 1.0,
             "eta_electron_only_local": 0.0,
+            "eta_net_local": 0.0,
             "keff_over_k0_local": 1.0,
-            "keff_over_k0_electron_only_local": 1.0,
             "overcompensated": False,
         }
 
+    np_avg = float(np.mean(np_3d[mask]))
     ne_avg = float(np.mean(ne_3d[mask]))
     ni_avg = float(np.mean(ni_3d[mask]))
-    np_avg = float(np.mean(np_3d[mask]))
 
-    eta_electron_only_local = ne_avg / np_avg if np_avg > 0 else 0.0
-    eta_net_local = (ne_avg - ni_avg) / np_avg if np_avg > 0 else 0.0
-    keff_local = 1.0 - eta_net_local
-    keff_electron_only_local = 1.0 - eta_electron_only_local
-    overcompensated = bool(keff_local < 0.0)
+    eta_e = ne_avg / (np_avg + 1.0e-30)
+    eta_net = (ne_avg - ni_avg) / (np_avg + 1.0e-30)
+    keff = 1.0 - eta_net
+    overcomp = float(eta_net) > 1.0
 
     return {
+        "np_core_avg": np_avg,
         "ne_core_avg": ne_avg,
         "ni_core_avg": ni_avg,
-        "np_core_avg": np_avg,
-        "eta_net_local": eta_net_local,
-        "eta_electron_only_local": eta_electron_only_local,
-        "keff_over_k0_local": keff_local,
-        "keff_over_k0_electron_only_local": keff_electron_only_local,
-        "overcompensated": overcompensated,
+        "eta_electron_only_core": float(eta_e),
+        "eta_net_core": float(eta_net),
+        "keff_over_k0_core": float(max(0.0, keff)),
+        "eta_electron_only_local": float(eta_e),
+        "eta_net_local": float(eta_net),
+        "keff_over_k0_local": float(keff),
+        "overcompensated": overcomp,
     }
-
-
-def compute_local_neutralization_vs_z(
-    ne_3d: np.ndarray,
-    ni_3d: np.ndarray,
-    np_3d: np.ndarray,
-    x_coords: np.ndarray,
-    y_coords: np.ndarray,
-    z_coords: np.ndarray,
-    r_core: float = 0.002,
-) -> pd.DataFrame:
-    """
-    Computes slice-by-slice core metrics (r <= r_core) along the z axis.
-    """
-    X, Y = np.meshgrid(x_coords, y_coords, indexing="ij")
-    R = np.sqrt(X**2 + Y**2)
-    radial_mask = R <= r_core
-
-    records = []
-    for k, z_val in enumerate(z_coords):
-        if not np.any(radial_mask):
-            ne_z, ni_z, np_z = 0.0, 0.0, 0.0
-        else:
-            ne_z = float(np.mean(ne_3d[:, :, k][radial_mask]))
-            ni_z = float(np.mean(ni_3d[:, :, k][radial_mask]))
-            np_z = float(np.mean(np_3d[:, :, k][radial_mask]))
-
-        eta_net_z = (ne_z - ni_z) / np_z if np_z > 0 else 0.0
-        eta_e_z = ne_z / np_z if np_z > 0 else 0.0
-        keff_z = 1.0 - eta_net_z
-
-        records.append({
-            "z": float(z_val),
-            "ne_core_z": ne_z,
-            "ni_core_z": ni_z,
-            "np_core_z": np_z,
-            "eta_net_local_z": eta_net_z,
-            "eta_electron_only_local_z": eta_e_z,
-            "keff_over_k0_local_z": keff_z,
-        })
-
-    return pd.DataFrame(records)
 
 
 def compute_radial_density_profiles(
@@ -238,70 +265,113 @@ def compute_radial_density_profiles(
     n_bins: int = 50,
 ) -> pd.DataFrame:
     """
-    Computes radially-binned average species densities within the plasma cell z-bounds.
+    Computes radially averaged density profiles ne(r), ni(r), np(r) within column axial range.
     """
     X, Y, Z = np.meshgrid(x_coords, y_coords, z_coords, indexing="ij")
     R = np.sqrt(X**2 + Y**2)
 
-    z_mask = (Z >= z_min_col) & (Z <= z_max_col) & (R <= r_max)
+    z_mask = (Z >= z_min_col) & (Z <= z_max_col)
+    r_vals = R[z_mask].flatten()
+    np_vals = np_3d[z_mask].flatten()
+    ne_vals = ne_3d[z_mask].flatten()
+    ni_vals = ni_3d[z_mask].flatten()
 
-    r_edges = np.linspace(0.0, r_max, n_bins + 1)
-    r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
+    bin_edges = np.linspace(0, r_max, n_bins + 1)
+    r_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
-    r_flat = R[z_mask]
-    ne_flat = ne_3d[z_mask]
-    ni_flat = ni_3d[z_mask]
-    np_flat = np_3d[z_mask]
-
-    records = []
-    e_charge = ELEMENTARY_CHARGE
+    np_profile = np.zeros(n_bins)
+    ne_profile = np.zeros(n_bins)
+    ni_profile = np.zeros(n_bins)
 
     for i in range(n_bins):
-        r_low, r_high = r_edges[i], r_edges[i + 1]
-        bin_mask = (r_flat >= r_low) & (r_flat < r_high)
+        b_mask = (r_vals >= bin_edges[i]) & (r_vals < bin_edges[i + 1])
+        if np.any(b_mask):
+            np_profile[i] = np.mean(np_vals[b_mask])
+            ne_profile[i] = np.mean(ne_vals[b_mask])
+            ni_profile[i] = np.mean(ni_vals[b_mask])
 
-        if np.any(bin_mask):
-            ne_val = float(np.mean(ne_flat[bin_mask]))
-            ni_val = float(np.mean(ni_flat[bin_mask]))
-            np_val = float(np.mean(np_flat[bin_mask]))
-        else:
-            ne_val, ni_val, np_val = 0.0, 0.0, 0.0
+    rho_net = ELEMENTARY_CHARGE * (np_profile - ne_profile + ni_profile)
 
-        rho_net = e_charge * (np_val - ne_val + ni_val)
-
-        records.append({
-            "r": float(r_centers[i]),
-            "ne_r": ne_val,
-            "ni_r": ni_val,
-            "np_r": np_val,
-            "rho_net_r": rho_net,
-        })
-
-    return pd.DataFrame(records)
+    return pd.DataFrame({
+        "r": r_centers,
+        "np_r": np_profile,
+        "ne_r": ne_profile,
+        "ni_r": ni_profile,
+        "rho_net_r": rho_net,
+    })
 
 
-def compute_beam_core_charge_density(
+def compute_local_neutralization_vs_z(
     ne_3d: np.ndarray,
     ni_3d: np.ndarray,
     np_3d: np.ndarray,
     x_coords: np.ndarray,
     y_coords: np.ndarray,
     z_coords: np.ndarray,
-    z_min_col: float = 0.0,
-    z_max_col: float = 0.20,
     r_core: float = 0.002,
-) -> dict[str, float]:
+) -> pd.DataFrame:
     """
-    Computes volumetric beam-core charge densities (C/m^3) for protons, electrons, ions, and net charge.
+    Computes axial profile of local neutralization eta(z) and K_eff/K0(z) within beam core.
     """
-    core_info = compute_local_core_neutralization(
-        ne_3d, ni_3d, np_3d, x_coords, y_coords, z_coords, z_min_col, z_max_col, r_core
-    )
-    e_charge = ELEMENTARY_CHARGE
+    X, Y = np.meshgrid(x_coords, y_coords, indexing="ij")
+    R_transverse = np.sqrt(X**2 + Y**2)
+    transverse_mask = R_transverse <= r_core
 
-    rho_p = e_charge * core_info["np_core_avg"]
-    rho_e = -e_charge * core_info["ne_core_avg"]
-    rho_i = e_charge * core_info["ni_core_avg"]
+    nz = len(z_coords)
+    eta_e_z = np.zeros(nz)
+    eta_net_z = np.zeros(nz)
+    keff_z = np.ones(nz)
+
+    for iz in range(nz):
+        np_slice = np_3d[:, :, iz][transverse_mask]
+        ne_slice = ne_3d[:, :, iz][transverse_mask]
+        ni_slice = ni_3d[:, :, iz][transverse_mask]
+
+        if np.any(transverse_mask):
+            np_avg = float(np.mean(np_slice))
+            ne_avg = float(np.mean(ne_slice))
+            ni_avg = float(np.mean(ni_slice))
+
+            eta_e = ne_avg / (np_avg + 1.0e-30)
+            eta_net = (ne_avg - ni_avg) / (np_avg + 1.0e-30)
+
+            eta_e_z[iz] = float(eta_e)
+            eta_net_z[iz] = float(eta_net)
+            keff_z[iz] = float(max(0.0, 1.0 - eta_net))
+
+    return pd.DataFrame({
+        "z": z_coords,
+        "eta_electron_only_local_z": eta_e_z,
+        "eta_net_local_z": eta_net_z,
+        "keff_over_k0_local_z": keff_z,
+    })
+
+
+def compute_charge_density(*args, **kwargs) -> dict[str, float]:
+    """
+    Calculates spatial charge density rho = e * (np - ne + ni).
+    Supports either dictionary core_info or 3D density arrays (ne_3d, ni_3d, np_3d, x, y, z).
+    """
+    if len(args) == 1 and isinstance(args[0], dict):
+        core_info = args[0]
+    elif len(args) >= 3:
+        ne_3d, ni_3d, np_3d = args[0], args[1], args[2]
+        x_coords = args[3] if len(args) > 3 else kwargs.get("x_coords", None)
+        y_coords = args[4] if len(args) > 4 else kwargs.get("y_coords", None)
+        z_coords = args[5] if len(args) > 5 else kwargs.get("z_coords", None)
+        r_core = kwargs.get("r_core", 0.002)
+        z_min_col = kwargs.get("z_min_col", 0.0)
+        z_max_col = kwargs.get("z_max_col", 0.20)
+        core_info = compute_local_core_neutralization(
+            ne_3d, ni_3d, np_3d, x_coords, y_coords, z_coords, r_core, z_min_col, z_max_col
+        )
+    else:
+        core_info = kwargs
+
+    e_charge = ELEMENTARY_CHARGE
+    rho_p = e_charge * core_info.get("np_core_avg", 0.0)
+    rho_e = -e_charge * core_info.get("ne_core_avg", 0.0)
+    rho_i = e_charge * core_info.get("ni_core_avg", 0.0)
     rho_net = rho_p + rho_e + rho_i
 
     return {
@@ -310,6 +380,10 @@ def compute_beam_core_charge_density(
         "rho_i": float(rho_i),
         "rho_net": float(rho_net),
     }
+
+
+# Backwards compatibility alias
+compute_beam_core_charge_density = compute_charge_density
 
 
 def generate_synthetic_3d_grid(
