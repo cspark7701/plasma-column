@@ -6,6 +6,7 @@ Unit tests for ScanParameter, ScanMatrix dataclasses, matrix DataFrame building,
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 import pandas as pd
 import pytest
@@ -64,7 +65,9 @@ def test_collect_scan_results_empty(tmp_path: Path):
         runs_root=tmp_path,
     )
     df_scan = build_scan_dataframe(matrix)
-    # No actual runs exist in tmp_path -> gracefully fills with NaN/fallback values
-    df_res = collect_scan_results(df_scan, runs_root=tmp_path)
+    # Suppress domain-wide particle count limitation warning during test assertion
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        df_res = collect_scan_results(df_scan, runs_root=tmp_path)
     assert len(df_res) == 1
     assert "case_name" in df_res.columns

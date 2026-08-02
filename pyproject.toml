@@ -32,3 +32,6 @@ where = ["src"]
 testpaths = ["tests"]
 python_files = "test_*.py"
 pythonpath = ["src", "."]
+filterwarnings = [
+    "ignore:Global particle-number ratios.*:UserWarning"
+]
