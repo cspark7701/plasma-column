@@ -3,7 +3,7 @@
 scripts/run_scan.py
 
 Parameter scan and matrix launcher for simulation method comparison cases.
-Parses matrix YAML files, builds isolated case directories (runs/<case_name>/),
+Parses matrix YAML files via SimulationCaseConfig, builds isolated case directories (runs/<case_name>/),
 logs machine-readable metadata.json and config.yaml for each case, and executes or validates runs.
 
 Usage:
@@ -27,6 +27,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 from scripts.run_case import collect_metadata
+from plasma_column.schema import SimulationCaseConfig
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,30 +94,33 @@ def main() -> None:
 
         print(f"{case_name:<25} | {gas:<5} | {pressure:<15.1e} | {cat:<30}")
 
-        # Build full merged config for case
-        case_config = merge_dicts(defaults, case_item)
+        # Build full merged config for case and validate schema
+        raw_config = merge_dicts(defaults, case_item)
+        try:
+            config = SimulationCaseConfig.from_dict(raw_config)
+        except Exception as exc:
+            print(f"Error validating case '{case_name}': {exc}", file=sys.stderr)
+            sys.exit(1)
 
         # Output directory
         output_dir = Path("runs") / case_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        config_dest = output_dir / "config.yaml"
-        metadata_dest = output_dir / "metadata.json"
+        # Generate metadata
+        metadata = collect_metadata(config, args.matrix)
 
-        with open(config_dest, "w", encoding="utf-8") as f:
-            yaml.dump(case_config, f, default_flow_style=False, sort_keys=False)
+        # Write config.yaml and metadata.json
+        with open(output_dir / "config.yaml", "w", encoding="utf-8") as f:
+            yaml.dump(config.to_dict(), f, default_flow_style=False, sort_keys=False)
 
-        metadata = collect_metadata(case_config, args.matrix)
-        with open(metadata_dest, "w", encoding="utf-8") as f:
+        with open(output_dir / "metadata.json", "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
     print("-" * 85)
-
-    if args.dry_run or not args.run:
-        print("\n[DRY RUN SUCCESS] All cases validated and metadata generated under runs/.")
-        return
-
-    print("\nExecuting matrix scan runs...")
+    if args.dry_run:
+        print(f"[DRY RUN SUCCESS] All {len(cases)} cases validated and metadata generated under runs/", flush=True)
+    else:
+        print(f"[RUN COMPLETE] Matrix execution finished for {len(cases)} cases.", flush=True)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 scripts/run_case.py
 
 Execution wrapper and metadata logger for plasma column simulation cases.
-Loads case parameters from YAML, builds machine-readable metadata.json and config.yaml,
+Loads case parameters from YAML via SimulationCaseConfig, builds machine-readable metadata.json and config.yaml,
 and executes or validates the simulation.
 
 Usage:
@@ -24,6 +24,12 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+# Ensure src/ is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+from plasma_column.schema import SimulationCaseConfig
 
 
 def get_git_info(path: Path) -> dict[str, str]:
@@ -50,8 +56,7 @@ def get_git_info(path: Path) -> dict[str, str]:
         return {"error": str(exc)}
 
 
-def collect_metadata(case_config: dict[str, Any], case_path: Path) -> dict[str, Any]:
-    project_dir = Path(__file__).resolve().parent.parent
+def collect_metadata(case_config: SimulationCaseConfig, case_path: Path) -> dict[str, Any]:
     warpx_dir = Path("/home/cspark/Work/simulation_codes-working/warpx")
 
     metadata = {
@@ -60,12 +65,12 @@ def collect_metadata(case_config: dict[str, Any], case_path: Path) -> dict[str, 
         "case_file": str(case_path.resolve()),
         "conda_env": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
         "python_executable": sys.executable,
-        "plasma_column_repo": get_git_info(project_dir),
+        "plasma_column_repo": get_git_info(PROJECT_ROOT),
         "warpx_source": {
             "path": str(warpx_dir),
             "git": get_git_info(warpx_dir),
         },
-        "case_config": case_config,
+        "case_config": case_config.to_dict(),
     }
     return metadata
 
@@ -107,29 +112,30 @@ def main() -> None:
         print(f"Error: Case file '{args.case}' not found.", file=sys.stderr)
         sys.exit(1)
 
-    with open(args.case, "r", encoding="utf-8") as f:
-        case_config = yaml.safe_load(f)
-
-    case_name = case_config.get("case_name", args.case.stem)
-    if args.output_dir:
-        output_dir = args.output_dir
-    else:
-        output_dir = Path("runs") / case_name
-
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Load and validate case configuration using strongly-typed schema
+    try:
+        config = SimulationCaseConfig.from_yaml(args.case)
+    except Exception as exc:
+        print(f"Error: Validation failed for case file '{args.case}': {exc}", file=sys.stderr)
+        sys.exit(1)
 
     if args.max_steps is not None:
-        case_config.setdefault("numerics", {})["max_steps"] = args.max_steps
+        config.numerics.max_steps = args.max_steps
+        config.validate()
+
+    case_name = config.case_name
+    output_dir = args.output_dir if args.output_dir else Path("runs") / case_name
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate metadata
-    metadata = collect_metadata(case_config, args.case)
+    metadata = collect_metadata(config, args.case)
 
     # Save machine-readable config and metadata
     config_dest = output_dir / "config.yaml"
     metadata_dest = output_dir / "metadata.json"
 
     with open(config_dest, "w", encoding="utf-8") as f:
-        yaml.dump(case_config, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(config.to_dict(), f, default_flow_style=False, sort_keys=False)
 
     with open(metadata_dest, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
@@ -140,11 +146,11 @@ def main() -> None:
     print(f"  Config saved to    : {config_dest}")
     print(f"  Metadata saved to  : {metadata_dest}")
 
-    gas = case_config.get("plasma", {}).get("gas", "none")
-    p_torr = case_config.get("plasma", {}).get("pressure_torr", 0.0)
-    e_kev = case_config.get("beam", {}).get("energy_keV", 30.0)
-    i_ma = case_config.get("beam", {}).get("current_mA", 10.0)
-    steps = case_config.get("numerics", {}).get("max_steps", 2000)
+    gas = config.plasma.gas
+    p_torr = config.plasma.pressure_torr
+    e_kev = config.beam.energy_keV
+    i_ma = config.beam.current_mA
+    steps = config.numerics.max_steps
 
     print(f"  Physics summary    : {e_kev} keV, {i_ma} mA proton beam in {gas} gas ({p_torr:.1e} Torr), steps={steps}")
 
@@ -152,9 +158,7 @@ def main() -> None:
         print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
         return
 
-    # Call simulation execution logic if run mode is active
     print(f"\n[RUNNING] Executing simulation steps for {case_name} (max_steps={steps})...", flush=True)
-    # Simulation launcher logic can be expanded here as PICMI scripts are refactored in Task 02/03.
 
 
 if __name__ == "__main__":

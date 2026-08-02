@@ -1,7 +1,7 @@
 """
 src/plasma_column/warpx_io.py
 
-WarpX plotfile / openPMD diagnostic reader wrappers and metadata I/O utilities.
+WarpX plotfile / openPMD diagnostic reader wrappers, metadata I/O utilities, and schema validation.
 """
 
 from __future__ import annotations
@@ -9,6 +9,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+
+from .schema import (
+    SimulationCaseConfig,
+    BeamConfig,
+    PlasmaConfig,
+    SolenoidConfig,
+    NumericsConfig,
+)
 
 
 def save_metadata(metadata: dict[str, Any], output_path: str | Path) -> Path:
@@ -59,8 +67,6 @@ def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
     try:
         import yt  # type: ignore
         ds = yt.load(str(p))
-        # Extract domain boundaries and grid shapes if yt is available
-        cg = ds.all_data()
         return {
             "plotfile": str(p),
             "time": float(ds.current_time),
@@ -69,3 +75,14 @@ def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
     except Exception:
         return None
 
+
+__all__ = [
+    "save_metadata",
+    "find_plotfiles",
+    "load_plotfile_densities",
+    "SimulationCaseConfig",
+    "BeamConfig",
+    "PlasmaConfig",
+    "SolenoidConfig",
+    "NumericsConfig",
+]
