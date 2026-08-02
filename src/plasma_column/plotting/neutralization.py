@@ -1,9 +1,8 @@
 """
-src/plasma_column/plotting.py
+src/plasma_column/plotting/neutralization.py
 
-Deterministic plotting pipeline for plasma column analysis figures.
-Generates publication- and presentation-ready plots for notebooks, proceedings, and slides.
-Always exports both PNG (300 DPI) and PDF formats.
+Plotting pipeline routines for space-charge neutralization kinetics, species populations,
+K_eff/K0 ratios, growth rates, spatial profiles, and parameter-scan overlays.
 """
 
 from __future__ import annotations
@@ -46,6 +45,21 @@ def save_figure(fig: plt.Figure, output_path_basename: str | Path) -> tuple[Path
     fig.savefig(pdf_path, bbox_inches="tight")
 
     return png_path, pdf_path
+
+
+def write_plot_manifest(manifest_entries: list[dict[str, str]], output_file: str | Path) -> Path:
+    """Writes manifest.csv recording generated figures, titles, and descriptions."""
+    path = Path(output_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = ["filename_png", "filename_pdf", "figure_title", "description"]
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for entry in manifest_entries:
+            writer.writerow(entry)
+
+    return path
 
 
 def plot_particle_counts(
@@ -128,9 +142,6 @@ def plot_keff_over_k0(
     return save_figure(fig, out_basename)
 
 
-# ── NEW PLOTTING FUNCTIONS ────────────────────────────────────────────────────
-
-
 def plot_multi_case_neutralization(
     cases: list[tuple[str, pd.DataFrame]],
     output_dir: str | Path,
@@ -144,19 +155,7 @@ def plot_multi_case_neutralization(
     ylim: tuple[float, float] = (-0.05, 1.15),
     show_legend: bool = True,
 ) -> tuple[Path, Path]:
-    """
-    Overlay neutralization time histories from multiple cases on a single axes.
-
-    Parameters
-    ----------
-    cases : list of (label, DataFrame)
-        Each DataFrame must have `time_column` and `column` columns.
-    column : str
-        Which neutralization column to plot (e.g. 'eta_net', 'eta_electron_only',
-        'keff_over_k0', 'global_net_neutralization').
-    time_scale : float
-        Multiply raw time values by this factor (default 1e9 → ns).
-    """
+    """Overlay neutralization time histories from multiple cases on a single axes."""
     _COLORS = [
         "tab:blue", "tab:orange", "tab:green", "tab:red",
         "tab:purple", "tab:brown", "tab:pink", "tab:gray",
@@ -203,17 +202,7 @@ def plot_species_growth_rates(
     smooth_window: int = 5,
     title: Optional[str] = None,
 ) -> tuple[Path, Path]:
-    """
-    Plot dNe/dt and dNi/dt (ionisation-rate proxies) versus time.
-
-    Uses central-difference numerical differentiation; optionally applies
-    a rolling-mean smoothing window to reduce step noise.
-
-    Parameters
-    ----------
-    smooth_window : int
-        Rolling-average window in steps (1 = no smoothing).
-    """
+    """Plot dNe/dt and dNi/dt (ionisation-rate proxies) versus time."""
     fig, ax = plt.subplots(figsize=(9, 5))
 
     t = df[time_column].values if time_column in df.columns else np.arange(len(df))
@@ -258,32 +247,17 @@ def plot_radial_density_profile(
     title: Optional[str] = None,
     highlight_core_r: Optional[float] = None,
 ) -> tuple[Path, Path]:
-    """
-    Plot radial density profiles ne(r), ni(r), np(r) from compute_radial_density_profiles().
-
-    Parameters
-    ----------
-    radial_df : pd.DataFrame
-        Output of diagnostics.compute_radial_density_profiles(); must contain columns
-        r, ne_r, ni_r, np_r.
-    r_unit : float
-        Multiply r values by this (default 1e3 → mm).
-    highlight_core_r : float, optional
-        If given, draw a vertical dashed line marking the beam-core radius [same units as r column].
-    """
+    """Plot radial density profiles ne(r), ni(r), np(r)."""
     fig, ax = plt.subplots(figsize=(8, 5))
 
     r_mm = radial_df["r"].values * r_unit
 
     if "np_r" in radial_df.columns:
-        ax.semilogy(r_mm, radial_df["np_r"].clip(lower=1), label=r"Protons $n_p(r)$",
-                    color="tab:blue", lw=2)
+        ax.semilogy(r_mm, radial_df["np_r"].clip(lower=1), label=r"Protons $n_p(r)$", color="tab:blue", lw=2)
     if "ne_r" in radial_df.columns:
-        ax.semilogy(r_mm, radial_df["ne_r"].clip(lower=1), label=r"Electrons $n_e(r)$",
-                    color="tab:green", lw=2)
+        ax.semilogy(r_mm, radial_df["ne_r"].clip(lower=1), label=r"Electrons $n_e(r)$", color="tab:green", lw=2)
     if "ni_r" in radial_df.columns:
-        ax.semilogy(r_mm, radial_df["ni_r"].clip(lower=1), label=r"Gas ions $n_i(r)$",
-                    color="tab:red", lw=2, ls="--")
+        ax.semilogy(r_mm, radial_df["ni_r"].clip(lower=1), label=r"Gas ions $n_i(r)$", color="tab:red", lw=2, ls="--")
 
     if highlight_core_r is not None:
         ax.axvline(highlight_core_r * r_unit, color="gray", lw=1.2, ls=":",
@@ -308,27 +282,15 @@ def plot_neutralization_vs_z(
     z_col_range: Optional[tuple[float, float]] = None,
     title: Optional[str] = None,
 ) -> tuple[Path, Path]:
-    """
-    Plot local neutralization η(z) and K_eff/K0(z) along the beam axis.
-
-    Parameters
-    ----------
-    z_df : pd.DataFrame
-        Output of diagnostics.compute_local_neutralization_vs_z(); columns:
-        z, eta_net_local_z, eta_electron_only_local_z, keff_over_k0_local_z.
-    z_col_range : tuple (z_min, z_max), optional
-        If given, shade the plasma-column region.
-    """
+    """Plot local neutralization η(z) and K_eff/K0(z) along beam axis."""
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
 
     z_u = z_df["z"].values * z_unit
 
     if "eta_electron_only_local_z" in z_df.columns:
-        ax1.plot(z_u, z_df["eta_electron_only_local_z"], label=r"$\eta_e(z) = n_e/n_p$",
-                 color="tab:green", lw=2)
+        ax1.plot(z_u, z_df["eta_electron_only_local_z"], label=r"$\eta_e(z) = n_e/n_p$", color="tab:green", lw=2)
     if "eta_net_local_z" in z_df.columns:
-        ax1.plot(z_u, z_df["eta_net_local_z"], label=r"$\eta_\mathrm{net}(z) = (n_e-n_i)/n_p$",
-                 color="tab:purple", lw=2, ls="--")
+        ax1.plot(z_u, z_df["eta_net_local_z"], label=r"$\eta_\mathrm{net}(z) = (n_e-n_i)/n_p$", color="tab:purple", lw=2, ls="--")
 
     ax1.axhline(1.0, color="black", lw=0.8, ls=":", label="Full compensation")
     ax1.set_ylabel("Local Neutralization Fraction", fontsize=11)
@@ -338,8 +300,7 @@ def plot_neutralization_vs_z(
     ax1.set_title(title or f"Axial Neutralization Profile — {case_name}", fontsize=13)
 
     if "keff_over_k0_local_z" in z_df.columns:
-        ax2.plot(z_u, z_df["keff_over_k0_local_z"],
-                 label=r"$K_\mathrm{eff}/K_0(z)$", color="tab:red", lw=2)
+        ax2.plot(z_u, z_df["keff_over_k0_local_z"], label=r"$K_\mathrm{eff}/K_0(z)$", color="tab:red", lw=2)
 
     ax2.axhline(0.0, color="black", lw=0.8, ls=":", label="Full compensation")
     ax2.axhline(1.0, color="gray", lw=0.8, ls="--", label="No compensation")
@@ -349,7 +310,6 @@ def plot_neutralization_vs_z(
     ax2.legend(fontsize=9, loc="upper right")
     ax2.grid(True, ls="--", alpha=0.5)
 
-    # Shade plasma-column region on both axes
     if z_col_range is not None:
         z_lo, z_hi = z_col_range[0] * z_unit, z_col_range[1] * z_unit
         for ax in (ax1, ax2):
@@ -357,82 +317,6 @@ def plot_neutralization_vs_z(
 
     fig.tight_layout()
     out_basename = Path(output_dir) / f"{case_name}_neutralization_vs_z"
-    return save_figure(fig, out_basename)
-
-
-def plot_phase_space(
-    x: np.ndarray,
-    px: np.ndarray,
-    output_dir: str | Path,
-    case_name: str = "simulation_case",
-    x_label: str = r"$x$ [mm]",
-    px_label: str = r"$p_x / p_0$ [mrad]",
-    species_label: str = "beam protons",
-    title: Optional[str] = None,
-    max_points: int = 20_000,
-    alpha: float = 0.25,
-    color: str = "tab:blue",
-    rms_ellipse: bool = True,
-    output_name: Optional[str] = None,
-) -> tuple[Path, Path]:
-    """
-    Plot a transverse phase-space scatter (x, px) with optional RMS ellipse overlay.
-
-    Parameters
-    ----------
-    x  : array-like, positions [already in display units, e.g. mm]
-    px : array-like, momenta / divergence [already in display units, e.g. mrad]
-    max_points : int
-        Maximum number of points to scatter (randomly sub-sampled if larger).
-    rms_ellipse : bool
-        If True, overlay 1-sigma RMS ellipse computed from the data.
-    """
-    fig, ax = plt.subplots(figsize=(7, 6))
-
-    x  = np.asarray(x, dtype=float)
-    px = np.asarray(px, dtype=float)
-
-    # Sub-sample to keep the plot responsive
-    n = len(x)
-    if n > max_points:
-        idx = np.random.default_rng(42).choice(n, max_points, replace=False)
-        x_plot, px_plot = x[idx], px[idx]
-    else:
-        x_plot, px_plot = x, px
-
-    ax.scatter(x_plot, px_plot, s=1.5, alpha=alpha, color=color, rasterized=True,
-               label=f"{species_label} (N={n:,})")
-
-    # 1-σ RMS ellipse
-    if rms_ellipse and len(x) > 3:
-        from matplotlib.patches import Ellipse
-        cov = np.cov(x, px)
-        sigma_x  = np.sqrt(cov[0, 0])
-        sigma_px = np.sqrt(cov[1, 1])
-        rho      = cov[0, 1] / (sigma_x * sigma_px + 1e-30)
-        angle_rad = 0.5 * np.arctan2(2 * rho * sigma_x * sigma_px,
-                                      sigma_x**2 - sigma_px**2)
-        ell = Ellipse(
-            xy=(np.mean(x), np.mean(px)),
-            width=2 * sigma_x,
-            height=2 * sigma_px,
-            angle=np.degrees(angle_rad),
-            edgecolor="black", facecolor="none", lw=1.5, ls="--", label=r"1-$\sigma$ RMS ellipse",
-        )
-        ax.add_patch(ell)
-        emittance = np.sqrt(max(np.linalg.det(cov), 0.0))
-        ax.text(0.02, 0.97,
-                rf"$\varepsilon_\mathrm{{rms}} = {emittance:.3g}$ mm·mrad",
-                transform=ax.transAxes, va="top", ha="left", fontsize=9, color="black")
-
-    ax.set_xlabel(x_label, fontsize=12)
-    ax.set_ylabel(px_label, fontsize=12)
-    ax.set_title(title or f"Transverse Phase Space — {case_name}", fontsize=13)
-    ax.legend(fontsize=9, loc="lower right", markerscale=4)
-    ax.grid(True, ls="--", alpha=0.4)
-
-    stem = output_name or f"{case_name}_phase_space"
-    out_basename = Path(output_dir) / stem
     return save_figure(fig, out_basename)
 
 
@@ -445,17 +329,7 @@ def plot_keff_pressure_scan(
     gas_col: Optional[str] = "gas",
     title: str = r"Effective Perveance vs Gas Pressure",
 ) -> tuple[Path, Path]:
-    """
-    Plot K_eff/K0 versus gas pressure from a parameter-scan summary DataFrame.
-
-    Supports grouping by gas species (H2, Kr) with distinct markers/colors.
-
-    Parameters
-    ----------
-    scan_df : pd.DataFrame
-        Must contain at minimum `pressure_col` and `keff_col`.
-        Optional `gas_col` groups curves by species.
-    """
+    """Plot K_eff/K0 versus gas pressure from scan summary DataFrame."""
     fig, ax = plt.subplots(figsize=(8, 5))
 
     GAS_STYLE: dict[str, dict] = {
@@ -500,36 +374,18 @@ def plot_bunched_beam_keff(
     bunching_factors: Sequence[float] = (1.0, 2.0, 3.0, 5.0),
     title: Optional[str] = None,
 ) -> tuple[Path, Path]:
-    """
-    Plot effective perveance K_eff/K0 for peak-bunch case versus time,
-    given average neutralization eta_avg(t) and several bunching factors B_f.
-
-    Physics:
-        K_eff,peak / K0,peak ≈ 1 − eta_avg / B_f
-
-    This illustrates the fundamental limitation: a plasma that reaches
-    average neutralization η̄ only reduces the peak-bunch perveance by η̄/B_f.
-
-    Parameters
-    ----------
-    eta_avg : np.ndarray
-        Average neutralization fraction over the RF period (from global ParticleNumber).
-    bunching_factors : Sequence[float]
-        List of B_f values to overlay.
-    """
+    """Plot effective perveance K_eff/K0 for peak-bunch case vs time."""
     fig, ax = plt.subplots(figsize=(9, 5))
-
     _COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
 
     for i, Bf in enumerate(bunching_factors):
         keff_peak = 1.0 - eta_avg / Bf
-        keff_peak = np.clip(keff_peak, 0.0, None)   # physical floor
+        keff_peak = np.clip(keff_peak, 0.0, None)
         label = rf"$B_f = {Bf:.1f}$  →  $K_{{\rm eff,peak}}/K_0$"
         ax.plot(time_ns, keff_peak, label=label,
                 color=_COLORS[i % len(_COLORS)], lw=1.8,
                 ls="-" if i % 2 == 0 else "--")
 
-    # Reference: uncompensated DC beam
     ax.plot(time_ns, np.ones_like(time_ns), color="black", lw=1, ls=":",
             label=r"$K_{\rm eff}/K_0 = 1$ (no compensation)")
 
@@ -556,14 +412,7 @@ def plot_neutralization_panel(
     time_column: str = "time",
     title: Optional[str] = None,
 ) -> tuple[Path, Path]:
-    """
-    3-panel summary figure per case:
-      (a) Species counts  N_p, N_e, N_i
-      (b) Neutralization  η_e, η_net
-      (c) K_eff/K0 ratio
-
-    Useful for a quick one-shot overview of a single simulation run.
-    """
+    """3-panel summary figure per case."""
     fig, axes = plt.subplots(3, 1, figsize=(9, 10), sharex=True)
 
     t_ns = df[time_column].values * 1.0e9 if time_column in df.columns else np.arange(len(df))
@@ -617,10 +466,6 @@ def plot_neutralization_panel(
     return save_figure(fig, out_basename)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Parameter-scan analysis plots
-# ══════════════════════════════════════════════════════════════════════════════
-
 def plot_scan_eta_vs_pressure(
     scan_df: pd.DataFrame,
     output_dir: str | Path,
@@ -629,14 +474,7 @@ def plot_scan_eta_vs_pressure(
     title: str = r"Final Neutralisation $\eta$ vs Gas Pressure",
     output_name: str = "scan_eta_vs_pressure",
 ) -> tuple[Path, Path]:
-    """
-    Semi-log plot of final neutralisation η vs gas pressure, grouped by gas and method.
-
-    Expected columns in scan_df:
-        gas, method (or method_category), pressure_torr, <eta_col>
-
-    Each (gas, method) combination is a separate line with markers.
-    """
+    """Semi-log plot of final neutralisation η vs gas pressure."""
     fig, ax = plt.subplots(figsize=(9, 5))
 
     group_col = "method" if "method" in scan_df.columns else "method_category"
@@ -680,12 +518,7 @@ def plot_scan_keff_vs_pressure(
     title: str = r"$K_{\rm eff}/K_0$ vs Gas Pressure — Method Comparison",
     output_name: str = "scan_keff_vs_pressure",
 ) -> tuple[Path, Path]:
-    """
-    Semi-log plot of final K_eff/K0 vs pressure for each (gas, method) group.
-
-    Draws horizontal reference lines at K_eff = 1 (no compensation) and
-    K_eff = 0 (full compensation).
-    """
+    """Semi-log plot of final K_eff/K0 vs pressure for each (gas, method) group."""
     fig, ax = plt.subplots(figsize=(9, 5))
 
     group_col = "method" if "method" in scan_df.columns else "method_category"
@@ -731,12 +564,7 @@ def plot_scan_method_comparison_bar(
     output_name: str = "scan_method_comparison_bar",
     reference_line: Optional[float] = 1.0,
 ) -> tuple[Path, Path]:
-    """
-    Grouped bar chart comparing a scalar metric across methods and gases at fixed pressure(s).
-
-    Useful for slide-ready side-by-side comparison of vacuum / seeded / callback results.
-    Groups bars by case_name; colours by gas.
-    """
+    """Grouped bar chart comparing a scalar metric across methods and gases."""
     fig, ax = plt.subplots(figsize=(max(8, len(scan_df) * 0.9), 5))
 
     gas_palette = {"H2": "tab:blue", "Kr": "tab:orange", "none": "tab:gray"}
@@ -746,7 +574,6 @@ def plot_scan_method_comparison_bar(
     bars = ax.bar(x_pos, scan_df[metric_col].fillna(0), color=colors,
                   edgecolor="black", linewidth=0.7, width=0.65)
 
-    # Value annotations on top of each bar
     for bar, val in zip(bars, scan_df[metric_col].fillna(float("nan"))):
         if np.isfinite(val):
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
@@ -762,7 +589,6 @@ def plot_scan_method_comparison_bar(
     ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(title, fontsize=13)
 
-    # Gas legend patches
     import matplotlib.patches as mpatches
     legend_patches = [mpatches.Patch(color=c, label=g)
                       for g, c in gas_palette.items() if g in scan_df.get("gas", pd.Series()).values]
@@ -791,16 +617,7 @@ def plot_scan_heatmap(
     cmap: str = "RdYlGn_r",
     fmt: str = ".3f",
 ) -> tuple[Path, Path]:
-    """
-    Heatmap (pivot table) of a scan metric.
-
-    Rows = row_col (e.g. gas), Columns = col_col (e.g. pressure_torr or method),
-    Cell values = value_col.  Annotates each cell with the formatted value.
-
-    Useful for quickly spotting the best operating condition in a 2-D scan.
-    """
-    import warnings
-
+    """Heatmap (pivot table) of a scan metric."""
     pivot = scan_df.pivot_table(
         index=row_col, columns=col_col, values=value_col, aggfunc="mean"
     )
@@ -842,13 +659,7 @@ def plot_scan_neutralization_timeseries_grid(
     output_name: str = "scan_timeseries_grid",
     title: str = "Neutralisation History — Scan Overview",
 ) -> tuple[Path, Path]:
-    """
-    Small-multiple grid of η(t) curves, one panel per scan case.
-
-    Args:
-        cases: list of (label, df) where df has 'time' [s] and eta_col columns.
-        ncols:  number of columns in the grid.
-    """
+    """Small-multiple grid of η(t) curves, one panel per scan case."""
     n     = len(cases)
     ncols = min(ncols, n)
     nrows = int(np.ceil(n / ncols))
@@ -875,7 +686,6 @@ def plot_scan_neutralization_timeseries_grid(
         ax.tick_params(labelsize=7)
         ax.grid(True, ls="--", alpha=0.4)
 
-    # Hide empty subplots
     for idx in range(n, nrows * ncols):
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
@@ -894,11 +704,7 @@ def plot_scan_final_eta_bar_by_gas(
     title: str = "Final Neutralisation by Method and Gas",
     output_name: str = "scan_final_eta_bar",
 ) -> tuple[Path, Path]:
-    """
-    Grouped bar chart: one cluster per method, bars coloured by gas (H2 blue, Kr orange).
-
-    Shows final η_net for each (method, gas) combination at a glance.
-    """
+    """Grouped bar chart: one cluster per method, bars coloured by gas."""
     if group_col not in scan_df.columns:
         group_col = "method_category" if "method_category" in scan_df.columns else "case_name"
 
@@ -942,18 +748,3 @@ def plot_scan_final_eta_bar_by_gas(
 
     out = Path(output_dir) / output_name
     return save_figure(fig, out)
-
-
-def write_plot_manifest(manifest_entries: list[dict[str, str]], output_file: str | Path) -> Path:
-    """Writes manifest.csv recording generated figures, titles, and descriptions."""
-    path = Path(output_file)
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    fieldnames = ["filename_png", "filename_pdf", "figure_title", "description"]
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for entry in manifest_entries:
-            writer.writerow(entry)
-
-    return path
