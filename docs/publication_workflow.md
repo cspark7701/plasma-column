@@ -88,11 +88,11 @@ python scripts/analyze_mcc_verification.py
 
 ## 4. Step 3 — Postprocessing Diagnostics and Beam-Core Metrics
 
-Every completed simulation case directory (`runs/<case_name>/`) is postprocessed to extract global and local core space-charge compensation indicators.
+Every completed simulation case directory (`results/<case_name>/`) is postprocessed to extract global and local core space-charge compensation indicators.
 
 ```bash
-python scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline
-python scripts/postprocess_case.py --case-dir runs/seeded_Kr_baseline
+python scripts/postprocess_case.py --case-dir results/seeded_H2_baseline
+python scripts/postprocess_case.py --case-dir results/seeded_Kr_baseline
 ```
 
 ### Standardized Case Output Files Generated:

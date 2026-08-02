@@ -21,15 +21,15 @@ To model plasma-assisted space-charge neutralization for high-current cyclotron 
 
 | Case Name | Gas | Pressure [Torr] | Method Category | Output Directory |
 | :--- | :--- | :--- | :--- | :--- |
-| `vacuum_reference` | None | $0.0$ | Baseline Reference | `runs/vacuum_reference/` |
-| `seeded_H2_1e-6Torr` | $\text{H}_2$ | $1.0 \times 10^{-6}$ | Static Analytical Seeded | `runs/seeded_H2_1e-6Torr/` |
-| `seeded_H2_1e-5Torr` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `runs/seeded_H2_1e-5Torr/` |
-| `seeded_Kr_1e-6Torr` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Static Analytical Seeded | `runs/seeded_Kr_1e-6Torr/` |
-| `seeded_Kr_1e-5Torr` | $\text{Kr}$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `runs/seeded_Kr_1e-5Torr/` |
-| `callback_H2_dynamic` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Dynamic Source Approximation | `runs/callback_H2_dynamic/` |
-| `callback_Kr_dynamic` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Dynamic Source Approximation | `runs/callback_Kr_dynamic/` |
-| `cxx_H2_mcc_or_custom` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Full Self-Consistent C++ MCC | `runs/cxx_H2_mcc_or_custom/` |
-| `cxx_Kr_mcc_or_custom` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Full Self-Consistent C++ MCC | `runs/cxx_Kr_mcc_or_custom/` |
+| `vacuum_reference` | None | $0.0$ | Baseline Reference | `results/vacuum_reference/` |
+| `seeded_H2_1e-6Torr` | $\text{H}_2$ | $1.0 \times 10^{-6}$ | Static Analytical Seeded | `results/seeded_H2_1e-6Torr/` |
+| `seeded_H2_1e-5Torr` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `results/seeded_H2_1e-5Torr/` |
+| `seeded_Kr_1e-6Torr` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Static Analytical Seeded | `results/seeded_Kr_1e-6Torr/` |
+| `seeded_Kr_1e-5Torr` | $\text{Kr}$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `results/seeded_Kr_1e-5Torr/` |
+| `callback_H2_dynamic` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Dynamic Source Approximation | `results/callback_H2_dynamic/` |
+| `callback_Kr_dynamic` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Dynamic Source Approximation | `results/callback_Kr_dynamic/` |
+| `cxx_H2_mcc_or_custom` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Full Self-Consistent C++ MCC | `results/cxx_H2_mcc_or_custom/` |
+| `cxx_Kr_mcc_or_custom` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Full Self-Consistent C++ MCC | `results/cxx_Kr_mcc_or_custom/` |
 
 ---
 

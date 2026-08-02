@@ -103,7 +103,7 @@ def main() -> None:
             sys.exit(1)
 
         # Output directory
-        output_dir = Path("runs") / case_name
+        output_dir = Path("results") / case_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate metadata

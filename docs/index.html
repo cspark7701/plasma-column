@@ -185,18 +185,18 @@
             <td><strong>2. Scan Setup</strong></td>
             <td>Matrix scan setup & parameter validation across 9 cases (vacuum, static seeded, callback, C++ MCC)</td>
             <td><code>python3 scripts/run_scan.py --matrix cases/method_comparison.yaml</code></td>
-            <td><code>logs/step_2_8.log</code>, <code>runs/*/config.yaml</code></td>
+            <td><code>logs/step_2_8.log</code>, <code>results/*/config.yaml</code></td>
           </tr>
           <tr>
             <td><strong>3. Baseline Run</strong></td>
             <td>Baseline PIC simulation case verification & execution for H₂ / Kr neutralizer cells</td>
             <td><code>python3 scripts/run_case.py --case cases/baseline_h2.yaml</code></td>
-            <td><code>logs/step_3_8.log</code>, <code>runs/*/metadata.json</code></td>
+            <td><code>logs/step_3_8.log</code>, <code>results/*/metadata.json</code></td>
           </tr>
           <tr>
             <td><strong>4. Post-Process</strong></td>
             <td>Extract particle count metrics \(N_p, N_e, N_i\), global \(\eta\), local core density, and \(K_{\text{eff}}/K_0\)</td>
-            <td><code>python3 scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline</code></td>
+            <td><code>python3 scripts/postprocess_case.py --case-dir results/seeded_H2_baseline</code></td>
             <td><code>logs/step_4_8.log</code>, <code>local_neutralization.csv</code></td>
           </tr>
           <tr>

@@ -51,8 +51,8 @@ For detailed instructions on running simulations for publication-quality figures
 ### Quick Summary:
 1. **Environment Check**: `python scripts/print_environment.py`
 2. **Run Standard Cases**: `python scripts/run_case.py --case cases/baseline_h2.yaml`
-3. **Run C++ MCC PICMI**: `python plasma_column_mcc_picmi_v7.py --output_dir runs/cxx_H2_mcc --gas H2 --pressure_torr 1e-5 --run`
-4. **Postprocess Case Diagnostics**: `python scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline`
+3. **Run C++ MCC PICMI**: `python plasma_column_mcc_picmi_v7.py --output_dir results/cxx_H2_mcc --gas H2 --pressure_torr 1e-5 --run`
+4. **Postprocess Case Diagnostics**: `python scripts/postprocess_case.py --case-dir results/seeded_H2_baseline`
 5. **Notebook Analysis**: Open [`run_plasma_column_method_comparison.ipynb`](file:///home/cspark/Work/projects/plasma_column/run_plasma_column_method_comparison.ipynb) and [`plasma_column_analysis_plots_v2.ipynb`](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots_v2.ipynb)
 6. **Generate Figures & Manifest**: `python scripts/make_plots.py`
 
@@ -95,7 +95,7 @@ plasma_column/
     slides/
     warpx_patches/
   plots/                 # Generated PNG & PDF figures + manifest.csv
-  runs/                  # Isolated simulation run outputs (ignored by git)
+  results/               # Isolated simulation run outputs & results (ignored by git)
   scripts/               # CLI wrappers and utilities
     print_environment.py
     run_case.py

@@ -86,7 +86,7 @@ This prevents long terminal outputs from consuming context tokens during AI pair
 | **1. Audit** | `python scripts/print_environment.py` | Section 1: Environment & Repository Audit |
 | **2. Scan Setup** | `python scripts/run_scan.py --matrix cases/method_comparison.yaml` | Section 2: Matrix Case Configuration |
 | **3. Baseline Run** | `python scripts/run_case.py --case cases/baseline_h2.yaml` | Section 3: Baseline Case Execution |
-| **4. Post-Process**| `python scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline` | Section 4: Diagnostics & Core Neutralization |
+| **4. Post-Process**| `python scripts/postprocess_case.py --case-dir results/seeded_H2_baseline` | Section 4: Diagnostics & Core Neutralization |
 | **5. Figures** | `python scripts/make_plots.py` & `make_paper_figures.py` | Section 5: Publication Figure Generation |
 | **6. Tables** | `python scripts/make_paper_tables.py` & `freeze_publication_dataset.py` | Section 6: Paper Summary Tables |
 | **7. Transport** | `python scripts/analyze_bunched_beam_neutralization.py` & `transport_to_inflector.py` | Section 7: Bunched Beam & Transport Optics |

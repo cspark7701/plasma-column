@@ -124,7 +124,7 @@ def main() -> None:
         config.validate()
 
     case_name = config.case_name
-    output_dir = args.output_dir if args.output_dir else Path("runs") / case_name
+    output_dir = args.output_dir if args.output_dir else Path("results") / case_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate metadata

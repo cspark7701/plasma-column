@@ -80,9 +80,9 @@ python scripts/run_case.py --case cases/baseline_kr.yaml --dry_run
 ```
 
 ### Execution Output Directory Structure
-Each simulation run writes to a case output directory (`runs/<case_name>/`) containing:
+Each simulation run writes to a case output directory (`results/<case_name>/`) containing:
 ```text
-runs/<case_name>/
+results/<case_name>/
 ├── config.yaml
 ├── metadata.json
 ├── run.log

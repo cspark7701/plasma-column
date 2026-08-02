@@ -66,7 +66,7 @@ class ScanMatrix:
     gases:      list[str]           = field(default_factory=lambda: ["H2", "Kr"])
     methods:    list[str]           = field(default_factory=lambda: ["seeded"])
     dry_run:    bool                = True
-    runs_root:  Path                = Path("runs")
+    runs_root:  Path                = Path("results")
 
 
 # ── Matrix builder ─────────────────────────────────────────────────────────────
