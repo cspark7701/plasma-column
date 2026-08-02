@@ -17,86 +17,20 @@ ROOT        = Path(__file__).resolve().parent.parent
 NB_RUNS     = ROOT / "notebooks" / "runs"
 NB_ANALYSIS = ROOT / "notebooks" / "analysis"
 NB_RUNS.mkdir(parents=True, exist_ok=True)
-NB_ANALYSIS.mkdir(parents=True, exist_ok=True)
+# Ensure src/ is in sys.path
+import sys
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
 
-# ── cell factories ─────────────────────────────────────────────────────────────
-def code(src):
-    return {"cell_type": "code", "execution_count": None,
-            "metadata": {}, "outputs": [], "source": src}
+from plasma_column.notebook_utils import (
+    make_code_cell as code,
+    make_markdown_cell as md,
+    create_notebook as notebook,
+    write_notebook_file,
+    COMMON_IMPORTS,
+    PLOT_IMPORTS,
+)
 
-def md(src):
-    return {"cell_type": "markdown", "metadata": {}, "source": src}
-
-def notebook(cells):
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {
-                "display_name": "Python 3 (warpx-dev)",
-                "language": "python",
-                "name": "python3",
-            },
-            "language_info": {"name": "python", "version": "3.13.0"},
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
-
-COMMON_IMPORTS = [
-    "from pathlib import Path\n",
-    "import os, sys, subprocess, time\n",
-    "import numpy as np\n",
-    "import pandas as pd\n",
-    "import matplotlib.pyplot as plt\n",
-    "\n",
-    "# Locate project root\n",
-    "_ROOT = Path.cwd()\n",
-    "while _ROOT.name != 'plasma_column' and _ROOT.parent != _ROOT:\n",
-    "    _ROOT = _ROOT.parent\n",
-    "if str(_ROOT / 'src') not in sys.path:\n",
-    "    sys.path.insert(0, str(_ROOT / 'src'))\n",
-    "\n",
-    "WORK           = Path.home() / 'Work' / 'simulation_codes-working'\n",
-    "WARPX_DATA_DIR = WORK / 'warpx-data'\n",
-    "RUNS_DIR       = _ROOT / 'runs'\n",
-    "PLOTS_DIR      = _ROOT / 'plots'\n",
-    "RUNS_DIR.mkdir(exist_ok=True)\n",
-    "PLOTS_DIR.mkdir(exist_ok=True)\n",
-    "\n",
-    "os.environ['WARPX_DATA_DIR']  = str(WARPX_DATA_DIR)\n",
-    "os.environ['LD_LIBRARY_PATH'] = (\n",
-    "    str(WORK / 'warpx' / 'install' / 'lib') + ':'\n",
-    "    + os.environ.get('LD_LIBRARY_PATH', '')\n",
-    ")\n",
-    "print('Python :', sys.executable)\n",
-    "print('ROOT   :', _ROOT)\n",
-    "print('WarpX data:', WARPX_DATA_DIR)\n",
-]
-
-PLOT_IMPORTS = [
-    "from plasma_column.plotting import (\n",
-    "    setup_publication_style,\n",
-    "    plot_multi_case_neutralization,\n",
-    "    plot_neutralization_evolution,\n",
-    "    plot_particle_counts,\n",
-    "    plot_keff_over_k0,\n",
-    "    plot_species_growth_rates,\n",
-    "    plot_neutralization_panel,\n",
-    "    plot_bunched_beam_keff,\n",
-    "    plot_keff_pressure_scan,\n",
-    "    plot_radial_density_profile,\n",
-    "    plot_neutralization_vs_z,\n",
-    "    plot_phase_space,\n",
-    "    save_figure,\n",
-    ")\n",
-    "from plasma_column.diagnostics import (\n",
-    "    load_particle_number_diagnostic,\n",
-    "    compute_particle_number_metrics,\n",
-    ")\n",
-    "import warnings\n",
-    "setup_publication_style()\n",
-    "print('Plotting helpers loaded.')\n",
-]
 
 PHYS_CHECKS = [
     "## Physics checks (AGENTS.md)\n",

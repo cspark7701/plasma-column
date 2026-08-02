@@ -1,38 +1,17 @@
 """
 src/plasma_column/notebook_utils.py
 
-Utility helpers for Jupyter notebooks in the plasma-column project.
-
+Utility helpers and cell template generators for Jupyter notebooks in the plasma-column project.
 Provides:
-- print_simulation_config(): prints a formatted table of simulation
-  configuration parameters, clearly showing which values are defaults
-  and which have been explicitly reconfigured by the user.
-
-Usage (in notebooks, after importing modules and setting parameters):
-
-    from plasma_column.notebook_utils import print_simulation_config
-
-    print_simulation_config(
-        notebook_title="Python Callback Source Diagnostics",
-        defaults={
-            "pressure_torr":       1e-5,
-            "max_steps":           2000,
-            "diag_period":         500,
-            "reduced_diag_period": 10,
-            "nx / ny / nz":        "24 / 24 / 128",
-            "source_every_n_steps":10,
-            "gas":                 "H2",
-        },
-        overrides={
-            "max_steps":           20000,   # reconfigured for production
-            "diag_period":         5000,    # reconfigured for production
-        },
-    )
+- print_simulation_config(): Formatted table display of simulation configuration parameters.
+- make_code_cell(), make_markdown_cell(), create_notebook(), write_notebook_file(): Factory functions for generating Jupyter notebooks programmatically.
+- COMMON_IMPORTS, PLOT_IMPORTS: Canonical import cell snippets for project notebooks.
 """
 
 from __future__ import annotations
 
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -40,7 +19,128 @@ from pathlib import Path
 from typing import Any
 
 
-# ── ANSI colour codes (suppressed when stdout is not a TTY) ──────────────────
+# ── Notebook Factory Helpers ──────────────────────────────────────────────────
+
+def make_code_cell(source: str | list[str]) -> dict[str, Any]:
+    """Factory function creating a standard v4 Jupyter notebook code cell dict."""
+    if isinstance(source, str):
+        lines = [line + "\n" for line in source.splitlines()]
+    else:
+        lines = [line + "\n" if not line.endswith("\n") else line for line in source]
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": lines,
+    }
+
+
+def make_markdown_cell(source: str | list[str]) -> dict[str, Any]:
+    """Factory function creating a standard v4 Jupyter notebook markdown cell dict."""
+    if isinstance(source, str):
+        lines = [line + "\n" for line in source.splitlines()]
+    else:
+        lines = [line + "\n" if not line.endswith("\n") else line for line in source]
+    return {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": lines,
+    }
+
+
+def create_notebook(
+    cells: list[dict[str, Any]],
+    display_name: str = "Python 3 (warpx-dev)",
+    kernel_name: str = "python3",
+) -> dict[str, Any]:
+    """Factory creating a full v4 Jupyter notebook JSON dictionary structure."""
+    return {
+        "cells": cells,
+        "metadata": {
+            "kernelspec": {
+                "display_name": display_name,
+                "language": "python",
+                "name": kernel_name,
+            },
+            "language_info": {"name": "python", "version": "3.10.0"},
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+def write_notebook_file(nb_dict: dict[str, Any], output_path: str | Path) -> Path:
+    """Writes Jupyter notebook dictionary to JSON file on disk."""
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(nb_dict, f, indent=1)
+    return path
+
+
+# ── Reusable Imports Snippets ─────────────────────────────────────────────────
+
+COMMON_IMPORTS = [
+    "from pathlib import Path\n",
+    "import os, sys, subprocess, time\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "\n",
+    "# Locate project root\n",
+    "_ROOT = Path.cwd()\n",
+    "while _ROOT.name != 'plasma_column' and _ROOT.parent != _ROOT:\n",
+    "    _ROOT = _ROOT.parent\n",
+    "if str(_ROOT / 'src') not in sys.path:\n",
+    "    sys.path.insert(0, str(_ROOT / 'src'))\n",
+    "\n",
+    "WORK           = Path.home() / 'Work' / 'simulation_codes-working'\n",
+    "WARPX_DATA_DIR = WORK / 'warpx-data'\n",
+    "RUNS_DIR       = _ROOT / 'runs'\n",
+    "PLOTS_DIR      = _ROOT / 'plots'\n",
+    "RUNS_DIR.mkdir(exist_ok=True)\n",
+    "PLOTS_DIR.mkdir(exist_ok=True)\n",
+    "\n",
+    "os.environ['WARPX_DATA_DIR']  = str(WARPX_DATA_DIR)\n",
+    "os.environ['LD_LIBRARY_PATH'] = (\n",
+    "    str(WORK / 'warpx' / 'install' / 'lib') + ':'\n",
+    "    + os.environ.get('LD_LIBRARY_PATH', '')\n",
+    ")\n",
+    "print('Python :', sys.executable)\n",
+    "print('ROOT   :', _ROOT)\n",
+    "print('WarpX data:', WARPX_DATA_DIR)\n",
+]
+
+PLOT_IMPORTS = [
+    "from plasma_column.plotting import (\n",
+    "    setup_publication_style,\n",
+    "    plot_multi_case_neutralization,\n",
+    "    plot_neutralization_evolution,\n",
+    "    plot_particle_counts,\n",
+    "    plot_keff_over_k0,\n",
+    "    plot_species_growth_rates,\n",
+    "    plot_neutralization_panel,\n",
+    "    plot_bunched_beam_keff,\n",
+    "    plot_keff_pressure_scan,\n",
+    "    plot_radial_density_profile,\n",
+    "    plot_neutralization_vs_z,\n",
+    "    plot_phase_space,\n",
+    "    save_figure,\n",
+    ")\n",
+    "from plasma_column.diagnostics import (\n",
+    "    load_particle_number_diagnostic,\n",
+    "    compute_particle_number_metrics,\n",
+    "    DataLoader,\n",
+    ")\n",
+    "import warnings\n",
+    "setup_publication_style()\n",
+    "print('Plotting helpers loaded.')\n",
+]
+
+
+# ── ANSI Colour Helpers ───────────────────────────────────────────────────────
+
 def _colour(code: str, text: str) -> str:
     if sys.stdout.isatty():
         return f"\033[{code}m{text}\033[0m"
@@ -84,79 +184,43 @@ def print_simulation_config(
 ) -> None:
     """
     Print a clear, table-formatted simulation configuration summary.
-
-    Parameters
-    ----------
-    notebook_title : str
-        Short descriptive title for this notebook / run session.
-    defaults : dict
-        All configuration parameters with their DEFAULT values.
-        Keys are human-readable parameter names.
-    overrides : dict, optional
-        Parameters that have been RECONFIGURED from their defaults.
-        Only keys present here are marked as "CHANGED" in the table.
-    extra_info : dict, optional
-        Additional free-form key-value info shown at the bottom
-        (e.g. output directory, case names, …).
-    repo_root : Path, optional
-        Repository root for git commit lookup.  Defaults to CWD.
     """
     overrides = overrides or {}
     extra_info = extra_info or {}
-    repo_root  = repo_root or Path.cwd()
 
-    now   = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    repo_commit   = _git_commit(repo_root)
-    warpx_loc     = _warpx_location()
-    python_exec   = sys.executable
-    conda_env     = os.environ.get("CONDA_DEFAULT_ENV", "unknown")
+    git_hash  = _git_commit(repo_root)
+    warpx_loc = _warpx_location()
+    now_str   = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # ── Header ──────────────────────────────────────────────────────────────
-    sep  = "═" * 76
-    sep2 = "─" * 76
-    print()
-    print(_BOLD(_CYAN(sep)))
-    print(_BOLD(_CYAN(f"  SIMULATION CONFIGURATION  ─  {notebook_title}")))
-    print(_BOLD(_CYAN(sep)))
-    print(f"  {'Timestamp':<28} {now}")
-    print(f"  {'Python':<28} {python_exec}")
-    print(f"  {'Conda environment':<28} {conda_env}")
-    print(f"  {'Repo git commit':<28} {repo_commit}")
-    print(f"  {'pywarpx location':<28} {warpx_loc}")
-    print(_CYAN(sep2))
+    print("\n" + "=" * 70)
+    print(_BOLD(f"  {notebook_title}"))
+    print("=" * 70)
+    print(f"  Timestamp   : {now_str}")
+    print(f"  Git Commit  : {_CYAN(git_hash)}")
+    print(f"  PyWarpX Loc : {warpx_loc}")
 
-    # ── Parameter table ─────────────────────────────────────────────────────
-    # Column widths
-    W_PARAM  = 32
-    W_VAL    = 20
-    W_STATUS = 10
-
-    header = (
-        f"  {'Parameter':<{W_PARAM}}  {'Value':<{W_VAL}}  {'Status':<{W_STATUS}}  Note"
-    )
-    print(_BOLD(header))
-    print("  " + "-" * (W_PARAM + W_VAL + W_STATUS + 20))
-
-    for param, default_val in defaults.items():
-        if param in overrides:
-            new_val = overrides[param]
-            status  = _YELLOW("CHANGED")
-            note    = _DIM(f"← was: {default_val}")
-            val_str = str(new_val)
-        else:
-            status  = _GREEN("default")
-            note    = ""
-            val_str = str(default_val)
-
-        print(f"  {param:<{W_PARAM}}  {val_str:<{W_VAL}}  {status:<{W_STATUS}}  {note}")
-
-    # ── Extra info ──────────────────────────────────────────────────────────
     if extra_info:
-        print(_CYAN(sep2))
-        print(_BOLD("  Additional context"))
-        print("  " + "-" * (W_PARAM + W_VAL + W_STATUS + 20))
         for k, v in extra_info.items():
-            print(f"  {k:<{W_PARAM}}  {str(v)}")
+            print(f"  {k:<12}: {v}")
 
-    print(_BOLD(_CYAN(sep)))
-    print()
+    print("-" * 70)
+    print(f"  {'Parameter':<24} {'Configured Value':<24} {'Status':<16}")
+    print("-" * 70)
+
+    all_keys = list(defaults.keys())
+    for k in overrides:
+        if k not in all_keys:
+            all_keys.append(k)
+
+    for key in all_keys:
+        default_val = defaults.get(key, "(none)")
+        if key in overrides:
+            val_str = str(overrides[key])
+            status  = _YELLOW("★ CHANGED")
+        else:
+            val_str = str(default_val)
+            status  = _DIM("default")
+
+        print(f"  {key:<24} {val_str:<24} {status:<16}")
+
+    print("=" * 70 + "\n")
