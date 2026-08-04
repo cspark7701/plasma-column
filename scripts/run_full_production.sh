@@ -119,9 +119,31 @@ run_step() {
   echo "    [RUNNING] Executing step $step_num: $title..."
 
   if [ "$VERBOSE" = true ]; then
-    "$@" 2>&1 | tee "$log_file"
+    if ! "$@" 2>&1 | tee "$log_file"; then
+      echo ""
+      echo "======================================================================"
+      echo " ERROR DETECTED IN STEP $step_num: $title"
+      echo "======================================================================"
+      echo " Command: $*"
+      echo " Detailed Log File: $log_file"
+      echo "======================================================================"
+      exit 1
+    fi
   else
-    "$@" > "$log_file" 2>&1
+    if ! "$@" > "$log_file" 2>&1; then
+      echo ""
+      echo "======================================================================"
+      echo " ERROR DETECTED IN STEP $step_num: $title"
+      echo "======================================================================"
+      echo " Command: $*"
+      echo " Log File: $log_file"
+      echo "----------------------------------------------------------------------"
+      echo " Error Traceback Output (Tail of $log_file):"
+      echo "----------------------------------------------------------------------"
+      tail -n 40 "$log_file"
+      echo "======================================================================"
+      exit 1
+    fi
   fi
   echo "    [SUCCESS] Finished step $step_num (Log: logs/step_${clean_step}.log)"
 }

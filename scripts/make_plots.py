@@ -155,8 +155,12 @@ def run_layout_diagram(output_dir: Path) -> tuple[Path, Path]:
 def run_cross_section_plots(output_dir: Path) -> list[tuple[Path, Path]]:
     """Generates proton-impact ionization cross-section comparison figures."""
     db = CrossSectionDatabase()
-    h2_df = db.h2_table
-    kr_df = db.kr_table
+    h2_file = db.base_dir / "H2" / "proton_impact_ionization.dat"
+    kr_file = db.base_dir / "Kr" / "proton_impact_ionization.dat"
+    e_h2, sig_h2, _ = load_cross_section_table(h2_file)
+    e_kr, sig_kr, _ = load_cross_section_table(kr_file)
+    h2_df = pd.DataFrame({"energy_cm_ev": e_h2, "sigma_m2": sig_h2})
+    kr_df = pd.DataFrame({"energy_cm_ev": e_kr, "sigma_m2": sig_kr})
     out = plot_cross_section_comparison(h2_df, kr_df, output_dir, operating_energy_kev=30.0)
     return [out]
 
