@@ -116,11 +116,43 @@ def main() -> None:
         with open(output_dir / "metadata.json", "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
+        if not args.dry_run:
+            print(f"  --> Launching PIC simulation for {case_name} (gas={gas}, p={pressure:.1e} Torr)...", flush=True)
+            script_path = Path(__file__).resolve().parent.parent / "plasma_column_mcc_picmi_v7.py"
+            cmd = [
+                sys.executable,
+                str(script_path),
+                "--output_dir", str(output_dir),
+                "--gas", gas if gas != "none" else "H2",
+                "--pressure_torr", str(pressure),
+                "--max_steps", str(config.numerics.max_steps),
+                "--beam_energy_kev", str(config.beam.energy_keV),
+                "--beam_current_ma", str(config.beam.current_mA),
+                "--run",
+            ]
+            method = case_item.get("method", "seeded_compensation")
+            if method == "seeded_compensation":
+                cmd += ["--neutralization", "-1"]
+            elif method == "cxx_mcc_custom":
+                cmd += ["--mcc", "electron_impact"]
+            elif method == "vacuum":
+                cmd += ["--neutralization", "0.0"]
+
+            res = subprocess.run(cmd)
+            if res.returncode != 0:
+                print(f"Error: Simulation failed for {case_name} (exit code {res.returncode})", file=sys.stderr)
+                sys.exit(res.returncode)
+
+            # Postprocess case
+            postproc_script = Path(__file__).resolve().parent / "postprocess_case.py"
+            if postproc_script.exists():
+                subprocess.run([sys.executable, str(postproc_script), "--case-dir", str(output_dir)])
+
     print("-" * 85)
     if args.dry_run:
-        print(f"[DRY RUN SUCCESS] All {len(cases)} cases validated and metadata generated under runs/", flush=True)
+        print(f"[DRY RUN SUCCESS] All {len(cases)} cases validated and metadata generated under results/", flush=True)
     else:
-        print(f"[RUN COMPLETE] Matrix execution finished for {len(cases)} cases.", flush=True)
+        print(f"[RUN COMPLETE] Full PIC matrix production execution finished for {len(cases)} cases.", flush=True)
 
 
 if __name__ == "__main__":

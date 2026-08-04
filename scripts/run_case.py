@@ -158,7 +158,41 @@ def main() -> None:
         print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
         return
 
-    print(f"\n[RUNNING] Executing simulation steps for {case_name} (max_steps={steps})...", flush=True)
+    print(f"\n[RUNNING] Executing production simulation steps for {case_name} (max_steps={steps})...", flush=True)
+
+    script_path = Path(__file__).resolve().parent.parent / "plasma_column_mcc_picmi_v7.py"
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--output_dir", str(output_dir),
+        "--gas", gas if gas != "none" else "H2",
+        "--pressure_torr", str(p_torr),
+        "--max_steps", str(steps),
+        "--beam_energy_kev", str(e_kev),
+        "--beam_current_ma", str(i_ma),
+        "--run",
+    ]
+
+    # Map physics method category to PIC flags
+    method = config.method
+    if method == "seeded_compensation":
+        cmd += ["--neutralization", "-1"]
+    elif method == "cxx_mcc_custom":
+        cmd += ["--mcc", "electron_impact"]
+    elif method == "vacuum":
+        cmd += ["--neutralization", "0.0"]
+
+    res = subprocess.run(cmd)
+    if res.returncode != 0:
+        print(f"Error: Simulation execution failed for {case_name} (exit code {res.returncode})", file=sys.stderr)
+        sys.exit(res.returncode)
+
+    print(f"\n[POSTPROCESSING] Parsing particle diagnostics for {case_name}...", flush=True)
+    postproc_script = Path(__file__).resolve().parent / "postprocess_case.py"
+    if postproc_script.exists():
+        subprocess.run([sys.executable, str(postproc_script), "--case-dir", str(output_dir)])
+
+    print(f"[RUN COMPLETE] Finished production simulation and postprocessing for {case_name}.", flush=True)
 
 
 if __name__ == "__main__":
