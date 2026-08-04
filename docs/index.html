@@ -4,10 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="author" content="Chong Shik Park - Department of Accelerator Science and Center for Accelerator Research, Korea University, Sejong, 30019 Republic of Korea" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Plasma Column Neutralizer Simulation Documentation</title>
   <link rel="stylesheet" href="style.css" />
   <!-- MathJax for LaTeX Rendering -->
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
@@ -51,6 +53,7 @@
       <li><a class="toc-nav-item" href="#literature" data-target="section-literature">Literature Review</a></li>
       <li><a class="toc-nav-item" href="#methods" data-target="section-methods">Code Architecture & Repo</a></li>
       <li><a class="toc-nav-item" href="#results" data-target="section-results">Simulation Benchmark Matrix</a></li>
+      <li><a class="toc-nav-item" href="#robustness" data-target="section-robustness">Robust Score Analysis</a></li>
     </ul>
   </nav>
 
@@ -414,6 +417,20 @@
           </tr>
         </tbody>
       </table>
+    <!-- SECTION 9: ROBUST SCORE ANALYSIS -->
+    <div class="section-panel" id="section-robustness">
+      <h1 id="robustness">Engineering Tolerance &amp; Robust Score Analysis</h1>
+      <p>To quantify beam stability against hardware jitter (magnetic field ripple, gas pressure fluctuations, beam current variations), we introduce the normalized <strong>Robust Score (\(S_{\text{robust}}\))</strong>.</p>
+      
+      <div class="math-block" style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 8px; margin: 1.5rem 0; text-align: center; border-left: 4px solid var(--rtd-accent, #2980b9);">
+        \[ S_{\text{robust}} = \frac{P_{\text{feas}}}{\max\left(1.0, \frac{\langle \varepsilon_{n,x} \rangle}{\varepsilon_{n,x}^{\text{nominal}}}\right)} \]
+      </div>
+
+      <h3>Operating Point Classification Guidelines</h3>
+      <ul style="line-height: 1.8;">
+        <li><strong style="color: #2ecc71;">\(S_{\text{robust}} \ge 0.80\) (Robust Operating Point)</strong>: High feasibility (\(P_{\text{feas}} \ge 80\%\)) with minimal emittance degradation under machine jitter.</li>
+        <li><strong style="color: #e74c3c;">\(S_{\text{robust}} &lt; 0.80\) (Fragile Operating Point)</strong>: Candidate operates too close to constraint boundaries and is prone to beam loss under machine jitter.</li>
+      </ul>
     </div>
 
   </main>
