@@ -140,7 +140,8 @@ def main() -> None:
             "test_name": name,
             "passed": True,
             "relative_error": 0.0,
-            "status": "Verified (Analytic Agreement within <0.1%)",
+            "status": "Analytical Benchmark Rate Estimate (Placeholder for C++ PIC Run)",
+            "model_type": "Analytical Collision-Rate Model",
         }
         save_metadata(v_summary, case_out / "verification_summary.json")
 
@@ -149,7 +150,7 @@ def main() -> None:
             "Pressure [Torr]": p_torr,
             "Sigma [m^2]": sigma,
             "Expected Ne (macro)": rates["expected_macro_electrons"],
-            "Status": "PASSED",
+            "Status": "ANALYTICAL BENCHMARK",
         })
 
         print(f"  Processed {name} -> {case_out}")

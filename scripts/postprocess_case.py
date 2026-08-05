@@ -165,11 +165,22 @@ def main() -> None:
     local_z_csv = case_dir / "local_neutralization_vs_z.csv"
     charge_csv = case_dir / "beam_core_charge_density.csv"
     radial_csv = case_dir / "radial_density_profiles.csv"
+    envelope_csv = case_dir / "beam_envelope.csv"
 
     local_t_df.to_csv(local_t_csv, index=False)
     local_z_df.to_csv(local_z_csv, index=False)
     radial_df.to_csv(radial_csv, index=False)
     pd.DataFrame([charge_density]).to_csv(charge_csv, index=False)
+
+    # Compute and save beam envelope trajectories R(z)
+    from plasma_column.beam import ProtonBeam
+    from plasma_column.injection_line import InjectionLine, compute_beam_envelope
+    beam_obj = ProtonBeam()
+    line_obj = InjectionLine()
+    eta_val = core_info.get("eta_net_local", 0.90)
+    z_env, Rx_env, Ry_env = compute_beam_envelope(beam_obj, line_obj, eta_net=eta_val)
+    df_env = pd.DataFrame({"z_m": z_env, "Rx_mm": Rx_env * 1000.0, "Ry_mm": Ry_env * 1000.0})
+    df_env.to_csv(envelope_csv, index=False)
 
     summary = {
         "case_name": case_dir.name,
