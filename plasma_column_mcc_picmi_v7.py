@@ -653,7 +653,7 @@ def build_sim(cfg: PlasmaColumnConfig):
         m_t = gas_mass(cfg)
         e_cm_for_sigma = cfg.beam_energy_keV * 1.0e3 * m_t / (MP + m_t)
         sigma = interp_sigma(xsec_file, e_cm_for_sigma) if xsec_file.exists() else float("nan")
-        tau = 1.0 / (ng * sigma * v_beam) if sigma == sigma and sigma > 0 else float("nan")
+        tau = 1.0 / (ng * sigma * v_beam) if (ng > 0 and sigma == sigma and sigma > 0) else float("nan")
         f_neut = max(0.0, min(cfg.neutralization, 0.999))
 
     ne0 = f_neut * nb
