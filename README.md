@@ -60,10 +60,20 @@ For detailed instructions on running simulations for publication-quality figures
 
 ## 5. Primary Notebooks
 
-1. [`run_plasma_column_method_comparison.ipynb`](file:///home/cspark/Work/projects/plasma_column/run_plasma_column_method_comparison.ipynb): Method comparison across Vacuum, Seeded, Callback, and C++ MCC runs.
-2. [`plasma_column_analysis_plots_v2.ipynb`](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots_v2.ipynb): Main front-end analysis and figure generation notebook.
-3. [`run_python_callback_source_diagnostics_v2.ipynb`](file:///home/cspark/Work/projects/plasma_column/run_python_callback_source_diagnostics_v2.ipynb): Diagnostics notebook for Python callback dynamic pair creation.
-4. [`run_seeded_full_transport_diagnostics.ipynb`](file:///home/cspark/Work/projects/plasma_column/run_seeded_full_transport_diagnostics.ipynb): Detailed beam envelope and RMS emittance transport diagnostics.
+*(Note: All notebooks use the `warpx-dev` Jupyter kernel.)*
+
+1. [`notebooks/runs/nb_vacuum_reference.ipynb`]: Vacuum reference run — establishes K_eff/K0 ≈ 1 baseline.
+2. [`notebooks/runs/nb_seeded_h2.ipynb`]: Seeded H2 neutralizer full transport run.
+3. [`notebooks/runs/nb_seeded_kr.ipynb`]: Seeded Kr neutralizer full transport run.
+4. [`notebooks/runs/nb_callback_h2.ipynb`]: Python callback ionization source — H2.
+5. [`notebooks/runs/nb_callback_kr.ipynb`]: Python callback ionization source — Kr.
+6. [`notebooks/analysis/nb_analysis_plots.ipynb`]: Auto-discovers all completed runs and generates the full publication figure set.
+7. [`notebooks/analysis/nb_bunched_beam_perveance.ipynb`]: RF-bunched beam K_eff,peak analysis, perveance landscape, and RF sensitivity plots.
+8. [`notebooks/analysis/nb_cross_section_comparison.ipynb`]: H2 vs Kr cross-section comparison, τ vs pressure, neutralization build-up family curves, and 2-D pressure×length map.
+9. [`notebooks/analysis/nb_local_neutralization_profiles.ipynb`]: Local radial/axial density profiles, transverse density slice, η(z) H₂ vs Kr, and phase-space portraits.
+10. [`notebooks/analysis/nb_parameter_scan_analysis.ipynb`]: Full parameter scan heatmaps, comparison bar charts, and small-multiple η(t) grid.
+11. [`notebooks/analysis/nb_extended_visualizations.ipynb`]: Extended physics visualization suite — perveance landscape, K_eff/K₀ vs η, ionization τ, η(t) family, 2-D maps, RF sensitivity, phase-space portraits, and summary table.
+12. [`notebooks/nb_full_production_pipeline.ipynb`]: Consolidated pipeline notebook mirroring `run_full_production.sh` step-by-step.
 
 ---
 
@@ -94,6 +104,21 @@ plasma_column/
     proceedings/
     slides/
     warpx_patches/
+  notebooks/             # Jupyter notebooks for runs and analysis
+    nb_full_production_pipeline.ipynb
+    analysis/
+      nb_analysis_plots.ipynb
+      nb_bunched_beam_perveance.ipynb
+      nb_cross_section_comparison.ipynb
+      nb_extended_visualizations.ipynb
+      nb_local_neutralization_profiles.ipynb
+      nb_parameter_scan_analysis.ipynb
+    runs/
+      nb_callback_h2.ipynb
+      nb_callback_kr.ipynb
+      nb_seeded_h2.ipynb
+      nb_seeded_kr.ipynb
+      nb_vacuum_reference.ipynb
   plots/                 # Generated PNG & PDF figures + manifest.csv
   results/               # Isolated simulation run outputs & results (ignored by git)
   scripts/               # CLI wrappers and utilities

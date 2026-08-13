@@ -30,8 +30,8 @@ bash scripts/run_full_production.sh --dry_run
 # Verbose mode (prints all execution logs directly to screen)
 bash scripts/run_full_production.sh --verbose
 
-# Custom CPU core percentage allocation (e.g. 75%)
-bash scripts/run_full_production.sh --cpu-pct 75
+# Custom explicit worker core allocation (e.g. 8 cores)
+bash scripts/run_full_production.sh -w 8
 ```
 
 Alternatively, use the root executable wrapper:
@@ -47,8 +47,15 @@ The script computes target OpenMP and numerical worker threads based on detected
 
 ```bash
 TOTAL_CORES=$(nproc)
-TARGET_CORES=$(( TOTAL_CORES * 90 / 100 ))
+WORKERS=0  # 0 = auto: 90% of nproc
+if [ "$WORKERS" -gt 0 ]; then
+  TARGET_CORES=$WORKERS
+else
+  TARGET_CORES=$(( TOTAL_CORES * 90 / 100 ))
+fi
 ```
+
+The script allows setting an explicit core count via `-w W` (`--workers`). If omitted, it defaults to 90% auto-detection.
 
 Environment variables set automatically:
 - `OMP_NUM_THREADS=$TARGET_CORES`

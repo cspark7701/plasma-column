@@ -240,16 +240,16 @@
 # Verbose mode (prints full execution logs directly to terminal screen):
 ./run_full_production.sh --verbose
 
-# Custom parallel CPU core allocation (e.g. 80%):
-./run_full_production.sh --cpu-pct 80</code></pre>
+# Explicit CPU worker count (e.g. 8 cores):
+./run_full_production.sh -w 8</code></pre>
 
-      <h2>Parallel Hardware Scaling (~90% CPU Allocation)</h2>
-      <p>The script automatically detects system hardware cores and configures target multi-threading OpenMP environment variables:</p>
-      <p>\[ \text{Target Cores} = \left\lfloor \text{nproc} \times \frac{\text{CPU\_PCT}}{100} \right\rfloor \]</p>
+      <h2>Parallel Hardware Scaling (Auto or Explicit Worker Count)</h2>
+      <p>The script automatically detects system hardware cores and configures target multi-threading OpenMP environment variables. Specify an explicit worker count with <code>-w W</code>, or omit it to auto-detect 90% of available cores:</p>
+      <p>\[ \text{Target Cores} = \begin{cases} W & \text{if } -w\,W \text{ specified} \\ \lfloor \text{nproc} \times 0.9 \rfloor & \text{otherwise (default)} \end{cases} \]</p>
       <p>Automatically exports: <code>OMP_NUM_THREADS</code>, <code>OPENMP_NUM_THREADS</code>, <code>MKL_NUM_THREADS</code>, and <code>NUMEXPR_NUM_THREADS</code>.</p>
 
       <h2>1-to-1 Consolidated Jupyter Notebook Mirror</h2>
-      <p>The pipeline is mirrored 1-to-1 inside the consolidated Jupyter notebook <code>notebooks/runs/nb_full_production_pipeline.ipynb</code>, containing 17 structured cells across the 8 production sections for interactive execution and visualization.</p>
+      <p>The pipeline is mirrored 1-to-1 inside the consolidated Jupyter notebook <code>notebooks/nb_full_production_pipeline.ipynb</code>, containing 17 structured cells across the 8 production sections for interactive execution and visualization.</p>
     </div>
 
     <!-- SECTION 5: INTERACTIVE SIMULATOR -->

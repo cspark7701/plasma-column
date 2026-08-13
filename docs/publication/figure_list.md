@@ -12,3 +12,14 @@ All figures are generated in both `.png` (300 DPI) and `.pdf` formats under `pap
 8. **`fig08_inflector_acceptance_transmission`**: Transverse phase space $(x, x')$ at inflector entrance and transmission efficiency comparison.
 9. **`fig09_parameter_scan_summary`**: Summary bar chart of parameter scan across method matrix and pressure settings.
 10. **`fig10_numerical_validation`**: Verification comparison of custom ion-impact MCC ionization rate against analytical $dN_e/dt$.
+
+## Extended Analysis Figures (notebooks/analysis/nb_extended_visualizations.ipynb)
+- `keff_vs_eta_parametric.{png,pdf}`: K_eff,peak/K₀,peak vs average neutralization η for bunching factors B_f = 1–10.
+- `K0_vs_current_energy_family.{png,pdf}`: Generalized perveance K₀ vs beam current (1–50 mA) for beam energies 15, 20, 30, 50 keV.
+- `rf_bunch_sensitivity.{png,pdf}`: Two-panel RF bunch sensitivity — bunch length vs RF frequency and required η_avg vs bunching factor.
+- `tau_vs_pressure.{png,pdf}`: Ionization time constant τ vs gas pressure for H₂ and Kr (log-log).
+- `eta_buildup_h2_pressures.{png,pdf}`: Neutralization build-up η(t) for H₂ at five pressures with colormap.
+- `neutralization_2d_pressure_length.{png,pdf}`: 2-D heatmap of η vs gas pressure × plasma column length.
+- `transverse_density_slice.{png,pdf}`: Transverse (x–y) density slices of n_e, n_p, and local η at beam midplane.
+- `eta_z_h2_kr_comparison.{png,pdf}`: Axial neutralization profile η(z) along column for H₂ vs Kr.
+- `phase_space_before_after.{png,pdf}`: Transverse phase-space portrait before (η=0) and after (η=0.7) space-charge compensation.
