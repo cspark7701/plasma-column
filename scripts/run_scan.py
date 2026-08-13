@@ -127,8 +127,8 @@ def main() -> None:
                 "--gas", gas if gas != "none" else "H2",
                 "--pressure_torr", str(pressure),
                 "--max_steps", str(config.numerics.max_steps),
-                "--beam_energy_kev", str(config.beam.energy_keV),
-                "--beam_current_ma", str(config.beam.current_mA),
+                "--beam_energy_keV", str(config.beam.energy_keV),
+                "--beam_current_mA", str(config.beam.current_mA),
                 "--run",
             ]
             method = case_item.get("method", "seeded_compensation")
