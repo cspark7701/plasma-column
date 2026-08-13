@@ -20,7 +20,7 @@
 # Options:
 #   --dry_run         Validate case matrices & metadata without running heavy PIC steps.
 #   --verbose, -v     Print detailed execution logs directly to screen (default: quiet mode).
-#   --cpu-pct PCT     Percentage of available CPU cores to utilize (default: 90).
+#   -w, --workers W   Number of parallel CPU worker cores (default: 90% of available cores).
 #   --matrix FILE     Path to matrix YAML configuration (default: cases/method_comparison.yaml).
 #   --help, -h        Show this help message.
 # ==============================================================================
@@ -34,7 +34,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Default settings
 DRY_RUN=false
 VERBOSE=false
-CPU_PCT=90
+WORKERS=0  # 0 means "auto" (90% of available cores)
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
 LOG_DIR="$PROJECT_ROOT/logs"
 
@@ -49,8 +49,8 @@ while [[ $# -gt 0 ]]; do
       VERBOSE=true
       shift
       ;;
-    --cpu-pct)
-      CPU_PCT="$2"
+    -w|--workers)
+      WORKERS="$2"
       shift 2
       ;;
     --matrix)
@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --dry_run        Validate matrix & metadata without running heavy PIC steps."
       echo "  --verbose, -v    Print full execution logs to screen (default: quiet mode)."
-      echo "  --cpu-pct PCT    Percentage of CPU cores to utilize for parallel runs (default: 90)."
+      echo "  -w, --workers W  Number of parallel CPU worker cores (default: 90% of available cores)."
       echo "  --matrix FILE    Matrix configuration file (default: cases/method_comparison.yaml)."
       echo "  --help, -h       Display this help message."
       exit 0
@@ -80,10 +80,14 @@ cd "$PROJECT_ROOT"
 mkdir -p "$LOG_DIR"
 
 # ------------------------------------------------------------------------------
-# Parallel Core Calculation (~90% of available CPU cores)
+# Parallel Core Calculation
 # ------------------------------------------------------------------------------
 TOTAL_CORES=$(nproc 2>/dev/null || python3 -c "import os; print(os.cpu_count() or 1)")
-TARGET_CORES=$(( TOTAL_CORES * CPU_PCT / 100 ))
+if [ "$WORKERS" -gt 0 ] 2>/dev/null; then
+  TARGET_CORES=$WORKERS
+else
+  TARGET_CORES=$(( TOTAL_CORES * 90 / 100 ))
+fi
 if [ "$TARGET_CORES" -lt 1 ]; then
   TARGET_CORES=1
 fi
@@ -100,7 +104,7 @@ echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
-echo "  CPU Cores Used: $TARGET_CORES / $TOTAL_CORES ($CPU_PCT% of available cores)"
+echo "  CPU Cores Used: $TARGET_CORES / $TOTAL_CORES"
 echo "  Log File Path : $LOG_DIR/full_production.log"
 echo "======================================================================"
 
