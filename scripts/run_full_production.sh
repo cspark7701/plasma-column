@@ -20,7 +20,7 @@
 # Options:
 #   --dry_run         Validate case matrices & metadata without running heavy PIC steps.
 #   --verbose, -v     Print detailed execution logs directly to screen (default: quiet mode).
-#   -w, --workers W   Number of parallel CPU worker cores (default: 90% of available cores).
+#   --workers, -w     Number of parallel CPU worker cores (default: 90% of available cores).
 #   --matrix FILE     Path to matrix YAML configuration (default: cases/method_comparison.yaml).
 #   --help, -h        Show this help message.
 # ==============================================================================
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
       VERBOSE=true
       shift
       ;;
-    -w|--workers)
+    --workers|-w)
       WORKERS="$2"
       shift 2
       ;;
@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --dry_run        Validate matrix & metadata without running heavy PIC steps."
       echo "  --verbose, -v    Print full execution logs to screen (default: quiet mode)."
-      echo "  -w, --workers W  Number of parallel CPU worker cores (default: 90% of available cores)."
+      echo "  --workers, -w    Number of parallel CPU worker cores (default: 90% of available cores)."
       echo "  --matrix FILE    Matrix configuration file (default: cases/method_comparison.yaml)."
       echo "  --help, -h       Display this help message."
       exit 0
