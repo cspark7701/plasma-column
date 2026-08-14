@@ -368,6 +368,28 @@ def estimate_neutralization_from_proton_impact(cfg: PlasmaColumnConfig, v_beam: 
     f = max(0.0, min(f, 0.999))
     return f, tau, ng, sigma, xsec_file, e_cm_eV
 
+def get_electron_impact_dir(cfg: PlasmaColumnConfig) -> Path:
+    """
+    Returns the directory containing electron_impact_ionization.dat for the configured gas.
+
+    For H2: warpx-data stores the electron-impact cross section under MCC_cross_sections/H/
+            (atomic hydrogen approximation), not MCC_cross_sections/H2/.
+            Fall back to H/ automatically if H2/electron_impact_ionization.dat is absent.
+    For Kr: no electron-impact ionization data is available in warpx-data.
+    """
+    base = Path(cfg.warpx_data_dir).expanduser() / "MCC_cross_sections"
+    # Primary: gas-specific directory
+    primary = base / cfg.gas
+    if (primary / "electron_impact_ionization.dat").exists():
+        return primary
+    # Fallback for H2: the file is under H/ (atomic hydrogen approximation)
+    if cfg.gas == "H2":
+        fallback = base / "H"
+        if (fallback / "electron_impact_ionization.dat").exists():
+            return fallback
+    return primary  # will raise FileNotFoundError downstream if still missing
+
+
 def validate_cross_section_files(cfg: PlasmaColumnConfig):
     xsec_dir = get_cross_section_dir(cfg)
 
@@ -377,8 +399,9 @@ def validate_cross_section_files(cfg: PlasmaColumnConfig):
     }
 
     # Optional files are only needed when the corresponding MCC mode is requested.
-    if cfg.gas == "H2" and cfg.mcc in ("electron_impact", "both"):
-        status["electron_impact_ionization.dat"] = (xsec_dir / "electron_impact_ionization.dat").exists()
+    if cfg.mcc in ("electron_impact", "both"):
+        eion_dir = get_electron_impact_dir(cfg)
+        status["electron_impact_ionization.dat"] = (eion_dir / "electron_impact_ionization.dat").exists()
 
     if cfg.gas == "H2" and cfg.mcc in ("charge_exchange", "both"):
         status["Hion_on_H2_charge_exchange.dat"] = (xsec_dir / "Hion_on_H2_charge_exchange.dat").exists()
@@ -784,30 +807,45 @@ def build_sim(cfg: PlasmaColumnConfig):
     neutral_expr = make_background_density_expression(cfg, ng)
 
     if cfg.mcc in ("electron_impact", "both"):
-        eion_file = xsec_dir / "electron_impact_ionization.dat"
-        if not eion_file.exists():
-            raise FileNotFoundError(f"electron-impact ionization file not found: {eion_file}")
-
-        electron_scattering_processes = {
-            "ionization": {
-                "cross_section": str(eion_file),
-                "energy": gas_ionization_energy_eV(),
-                "species": gas_ions,
-            }
-        }
-
-        collisions.append(
-            picmi.MCCCollisions(
-                name="coll_electron_H2_ionization",
-                species=plasma_electrons,
-                background_density=neutral_expr,
-                max_background_density=ng,
-                background_temperature=cfg.gas_temperature_K,
-                background_mass=gas_mass(cfg),
-                ndt_supercycle=cfg.mcc_ndt,
-                scattering_processes=electron_scattering_processes,
+        if cfg.gas == "Kr":
+            # No electron-impact ionization data available for Kr in warpx-data.
+            # Skipping electron_impact MCC for Kr; only proton-impact seeded model applies.
+            print(
+                "  [WARNING] MCC electron_impact requested for Kr but no cross-section data exists."
+                " Skipping electron-impact collision registration for Kr.",
+                flush=True,
             )
-        )
+        else:
+            eion_dir = get_electron_impact_dir(cfg)
+            eion_file = eion_dir / "electron_impact_ionization.dat"
+            if not eion_file.exists():
+                raise FileNotFoundError(f"electron-impact ionization file not found: {eion_file}")
+            if eion_dir != xsec_dir:
+                print(
+                    f"  [INFO] electron_impact: using H/ cross-section data as H2 fallback: {eion_file}",
+                    flush=True,
+                )
+
+            electron_scattering_processes = {
+                "ionization": {
+                    "cross_section": str(eion_file),
+                    "energy": gas_ionization_energy_eV(),
+                    "species": gas_ions,
+                }
+            }
+
+            collisions.append(
+                picmi.MCCCollisions(
+                    name="coll_electron_H2_ionization",
+                    species=plasma_electrons,
+                    background_density=neutral_expr,
+                    max_background_density=ng,
+                    background_temperature=cfg.gas_temperature_K,
+                    background_mass=gas_mass(cfg),
+                    ndt_supercycle=cfg.mcc_ndt,
+                    scattering_processes=electron_scattering_processes,
+                )
+            )
 
     if cfg.mcc in ("charge_exchange", "both"):
         if cfg.gas != "H2":
