@@ -22,13 +22,12 @@ from typing import Any
 
 import yaml
 
-# Ensure project root and src/ are in sys.path
+# Ensure src/ is in sys.path for package imports
 project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from scripts.run_case import collect_metadata
-from plasma_column.schema import SimulationCaseConfig
+from plasma_column.schema import SimulationCaseConfig, build_warpx_cmd_flags
+from plasma_column.warpx_io import collect_metadata
 
 
 def parse_args() -> argparse.Namespace:
@@ -131,13 +130,8 @@ def main() -> None:
                 "--beam_current_mA", str(config.beam.current_mA),
                 "--run",
             ]
-            method = case_item.get("method", "seeded_compensation")
-            if method == "seeded_compensation":
-                cmd += ["--neutralization", "-1"]
-            elif method == "cxx_mcc_custom":
-                cmd += ["--mcc", "electron_impact"]
-            elif method == "vacuum":
-                cmd += ["--neutralization", "0.0"]
+            # Map physics method to WarpX CLI flags via the single canonical helper (RT-02)
+            cmd += build_warpx_cmd_flags(config.method)
 
             res = subprocess.run(cmd)
             if res.returncode != 0:

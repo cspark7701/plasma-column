@@ -15,9 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
-import os
 import sys
 import subprocess
 from pathlib import Path
@@ -30,49 +28,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from plasma_column.schema import SimulationCaseConfig, build_warpx_cmd_flags
-
-
-def get_git_info(path: Path) -> dict[str, str]:
-    if not path.is_dir():
-        return {"error": f"Path {path} does not exist"}
-
-    try:
-        commit = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=path, text=True
-        ).strip()
-        branch = subprocess.check_output(
-            ["git", "branch", "--show-current"], cwd=path, text=True
-        ).strip()
-        status_short = subprocess.check_output(
-            ["git", "status", "--short"], cwd=path, text=True
-        ).strip()
-        return {
-            "commit": commit,
-            "branch": branch,
-            "dirty": bool(status_short),
-            "status": status_short if status_short else "Clean",
-        }
-    except Exception as exc:
-        return {"error": str(exc)}
-
-
-def collect_metadata(case_config: SimulationCaseConfig, case_path: Path) -> dict[str, Any]:
-    warpx_dir = Path("/home/cspark/Work/simulation_codes-working/warpx")
-
-    metadata = {
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "command_line": " ".join(sys.argv),
-        "case_file": str(case_path.resolve()),
-        "conda_env": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
-        "python_executable": sys.executable,
-        "plasma_column_repo": get_git_info(PROJECT_ROOT),
-        "warpx_source": {
-            "path": str(warpx_dir),
-            "git": get_git_info(warpx_dir),
-        },
-        "case_config": case_config.to_dict(),
-    }
-    return metadata
+from plasma_column.warpx_io import get_git_info, collect_metadata
 
 
 def parse_args() -> argparse.Namespace:
