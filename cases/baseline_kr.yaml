@@ -1,6 +1,7 @@
 # Baseline Kr Plasma Neutralizer Case Configuration
 case_name: seeded_Kr_baseline
 description: 30 keV 10 mA proton beam passing through a 20 cm Kr plasma column cell at 1e-6 Torr.
+method: seeded_compensation
 
 # Beam parameters
 beam:

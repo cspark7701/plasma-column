@@ -1,6 +1,7 @@
 # Baseline H2 Plasma Neutralizer Case Configuration
 case_name: seeded_H2_baseline
 description: 30 keV 10 mA proton beam passing through a 20 cm H2 plasma column cell at 1e-5 Torr.
+method: seeded_compensation
 
 # Beam parameters
 beam:

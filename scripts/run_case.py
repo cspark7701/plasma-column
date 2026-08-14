@@ -29,7 +29,7 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from plasma_column.schema import SimulationCaseConfig
+from plasma_column.schema import SimulationCaseConfig, build_warpx_cmd_flags
 
 
 def get_git_info(path: Path) -> dict[str, str]:
@@ -173,14 +173,8 @@ def main() -> None:
         "--run",
     ]
 
-    # Map physics method category to PIC flags
-    method = config.method
-    if method == "seeded_compensation":
-        cmd += ["--neutralization", "-1"]
-    elif method == "cxx_mcc_custom":
-        cmd += ["--mcc", "electron_impact"]
-    elif method == "vacuum":
-        cmd += ["--neutralization", "0.0"]
+    # Map physics method to WarpX CLI flags via the single canonical helper (see RT-02)
+    cmd += build_warpx_cmd_flags(config.method)
 
     res = subprocess.run(cmd)
     if res.returncode != 0:

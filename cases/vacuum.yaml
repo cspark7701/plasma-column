@@ -1,6 +1,7 @@
 # Vacuum Reference Case Configuration
 case_name: vacuum_reference
 description: Baseline 30 keV proton beam propagation in vacuum without plasma cell or neutralizer gas.
+method: vacuum
 
 # Beam parameters
 beam:

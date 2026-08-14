@@ -7,11 +7,78 @@ Guarantees physical bound checks and schema consistency across YAML files and me
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Optional
 import yaml
 
+
+# ── Canonical simulation-method registry ───────────────────────────────────────
+
+ALLOWED_METHODS: frozenset[str] = frozenset({
+    "vacuum",
+    "seeded_compensation",
+    "python_callback",
+    "cxx_mcc_custom",
+})
+
+# Short-form aliases found in some case YAML files -> canonical name
+METHOD_ALIASES: dict[str, str] = {
+    "seeded":   "seeded_compensation",
+    "callback": "python_callback",
+}
+
+
+def _normalise_method(raw: str) -> str:
+    """Resolve alias and validate the simulation method string.
+
+    Args:
+        raw: Method string as read from a YAML file or user input.
+
+    Returns:
+        Canonical method string (one of ALLOWED_METHODS).
+
+    Raises:
+        ValueError: If the string is not recognised after alias resolution.
+    """
+    normalised = METHOD_ALIASES.get(raw, raw)
+    if normalised not in ALLOWED_METHODS:
+        raise ValueError(
+            f"Unknown simulation method '{raw}'. "
+            f"Allowed values: {sorted(ALLOWED_METHODS)}. "
+            f"Recognised aliases: {METHOD_ALIASES}."
+        )
+    return normalised
+
+
+def build_warpx_cmd_flags(method: str) -> list[str]:
+    """Return the WarpX PICMI script CLI flags for the given simulation method.
+
+    This is the single canonical source of truth for the method -> flag
+    mapping.  Both scripts/run_case.py and scripts/run_scan.py must call this
+    helper instead of duplicating the if/elif chain (see RT-02).
+
+    Args:
+        method: Canonical or alias method string.
+
+    Returns:
+        List of additional CLI argument strings ready for subprocess.run(),
+        e.g. ["--neutralization", "-1"].  Empty list if no extra flags needed.
+    """
+    method = _normalise_method(method)
+    if method == "seeded_compensation":
+        return ["--neutralization", "-1"]
+    elif method == "python_callback":
+        return ["--neutralization", "-1", "--callback_source"]
+    elif method == "cxx_mcc_custom":
+        return ["--mcc", "electron_impact"]
+    elif method == "vacuum":
+        return ["--neutralization", "0.0"]
+    return []  # pragma: no cover
+
+
+# ── Sub-config dataclasses ─────────────────────────────────────────────────────
 
 @dataclass
 class BeamConfig:
@@ -56,17 +123,20 @@ class NumericsConfig:
     mcc: str = "electron_impact"
 
 
+# ── Top-level case configuration ───────────────────────────────────────────────
+
 @dataclass
 class SimulationCaseConfig:
     case_name: str
     description: str = ""
+    method: str = "vacuum"
     beam: BeamConfig = field(default_factory=BeamConfig)
     plasma: PlasmaConfig = field(default_factory=PlasmaConfig)
     solenoid: SolenoidConfig = field(default_factory=SolenoidConfig)
     numerics: NumericsConfig = field(default_factory=NumericsConfig)
 
     def validate(self) -> None:
-        """Validates all physical bounds and grid dimensions."""
+        """Validates physical bounds, grid dimensions, and method consistency."""
         if not self.case_name:
             raise ValueError("case_name cannot be empty")
         if self.beam.energy_keV <= 0:
@@ -78,15 +148,47 @@ class SimulationCaseConfig:
         if self.plasma.gas not in ("H2", "Kr", "none", "None", "", None):
             raise ValueError(f"Gas must be H2, Kr, or none, got '{self.plasma.gas}'")
         if self.numerics.nx <= 0 or self.numerics.ny <= 0 or self.numerics.nz <= 0:
-            raise ValueError(f"Grid dimensions must be positive integers, got ({self.numerics.nx}, {self.numerics.ny}, {self.numerics.nz})")
+            raise ValueError(
+                f"Grid dimensions must be positive integers, "
+                f"got ({self.numerics.nx}, {self.numerics.ny}, {self.numerics.nz})"
+            )
         if self.numerics.zmax_m <= self.numerics.zmin_m:
-            raise ValueError(f"zmax_m ({self.numerics.zmax_m}) must be strictly greater than zmin_m ({self.numerics.zmin_m})")
+            raise ValueError(
+                f"zmax_m ({self.numerics.zmax_m}) must be strictly greater "
+                f"than zmin_m ({self.numerics.zmin_m})"
+            )
+
+        # method must already be canonical at this point (from_dict resolves aliases)
+        if self.method not in ALLOWED_METHODS:
+            raise ValueError(
+                f"method '{self.method}' is not in ALLOWED_METHODS "
+                f"{sorted(ALLOWED_METHODS)}. "
+                "Use SimulationCaseConfig.from_dict() to auto-resolve aliases."
+            )
+
+        # Cross-field consistency: vacuum method should not activate MCC
+        if self.method == "vacuum" and self.numerics.mcc not in ("none", "None", "", None):
+            warnings.warn(
+                f"method='vacuum' but numerics.mcc='{self.numerics.mcc}'. "
+                "MCC collisions have no effect in vacuum runs.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SimulationCaseConfig:
-        """Parses dict into SimulationCaseConfig with dataclass nested models."""
+        """Parses dict into SimulationCaseConfig with nested dataclass models.
+
+        Alias normalisation for the top-level 'method' field is applied here
+        so that short-form YAML strings ('seeded', 'callback') are
+        transparently converted to canonical equivalents before validation.
+        """
         case_name = data.get("case_name", "unnamed_case")
         description = data.get("description", "")
+
+        # Resolve method alias; default to "vacuum" when omitted
+        raw_method = data.get("method", "vacuum")
+        method = _normalise_method(raw_method)
 
         beam_data = data.get("beam", {})
         beam = BeamConfig(
@@ -134,6 +236,7 @@ class SimulationCaseConfig:
         config = cls(
             case_name=case_name,
             description=description,
+            method=method,
             beam=beam,
             plasma=plasma,
             solenoid=solenoid,
