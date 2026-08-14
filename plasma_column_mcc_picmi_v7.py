@@ -829,7 +829,7 @@ def build_sim(cfg: PlasmaColumnConfig):
             electron_scattering_processes = {
                 "ionization": {
                     "cross_section": str(eion_file),
-                    "energy": gas_ionization_energy_eV(),
+                    "energy": gas_ionization_energy_eV(cfg),
                     "species": gas_ions,
                 }
             }
