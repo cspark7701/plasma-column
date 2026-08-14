@@ -901,7 +901,8 @@ def build_sim(cfg: PlasmaColumnConfig):
     )
     if collisions:
         sim_kwargs["warpx_collisions"] = collisions
-        sim_kwargs["warpx_collisions_split_position_push"] = 0
+        sim_kwargs["warpx_collisions_split_momentum_push"] = 0  # split_position_push renamed in picmistandard>=0.34
+
 
     sim = picmi.Simulation(**sim_kwargs)
 
