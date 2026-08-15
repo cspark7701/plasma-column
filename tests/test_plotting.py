@@ -60,5 +60,15 @@ def test_plot_manifest_writer():
         assert df.loc[0, "figure_title"] == "Test Title"
 
 
+def test_notebook_utils_common_imports():
+    """Verify COMMON_IMPORTS in notebook_utils defines distinct RESULTS_DIR and RUNS_DIR."""
+    from plasma_column.notebook_utils import COMMON_IMPORTS
+
+    joined = "".join(COMMON_IMPORTS)
+    assert "RESULTS_DIR    = _ROOT / 'results'" in joined
+    assert "RUNS_DIR       = _ROOT / 'runs'" in joined
+    assert "PLOTS_DIR      = _ROOT / 'plots'" in joined
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
