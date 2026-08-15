@@ -1,6 +1,7 @@
 # RF-Bunched Beam Kr Plasma Neutralizer Case Configuration
 case_name: bunched_Kr_baseline
 description: 30 keV RF-bunched 10 mA average proton beam (B_f=5) in 1e-6 Torr Kr plasma column.
+method: seeded_compensation
 
 # Beam parameters
 beam:

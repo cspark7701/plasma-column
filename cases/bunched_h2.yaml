@@ -1,6 +1,7 @@
 # RF-Bunched Beam H2 Plasma Neutralizer Case Configuration
 case_name: bunched_H2_baseline
 description: 30 keV RF-bunched 10 mA average proton beam (B_f=5) in 1e-5 Torr H2 plasma column.
+method: seeded_compensation
 
 # Beam parameters
 beam:

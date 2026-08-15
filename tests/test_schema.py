@@ -85,10 +85,13 @@ def test_to_dict_roundtrip():
 
 
 def test_all_yaml_cases_roundtrip():
-    """Verify all YAML case files parse, validate, and round-trip losslessly."""
+    """Verify all single-case YAML files parse, validate, and round-trip losslessly."""
+    import yaml
     cases_dir = Path(__file__).resolve().parent.parent / "cases"
-    for yaml_file in cases_dir.glob("*.yaml"):
-        if yaml_file.name == "method_comparison.yaml":
+    for yaml_file in sorted(cases_dir.glob("*.yaml")):
+        with open(yaml_file, "r", encoding="utf-8") as f:
+            content = yaml.safe_load(f) or {}
+        if "matrix_name" in content:
             continue  # matrix scan configuration, not a single case
         config = SimulationCaseConfig.from_yaml(yaml_file)
         assert config.case_name
