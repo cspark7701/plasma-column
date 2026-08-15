@@ -88,8 +88,8 @@ def _normalise_method(raw: str) -> str:
 def get_runner_script(method: str, root_dir: Path | None = None) -> Path:
     """Return the absolute path to the appropriate runner script for a method.
 
-    - 'python_callback' -> plasma_column_callback_source_picmi_v3.py
-    - 'seeded_compensation', 'cxx_mcc_custom', 'vacuum' -> plasma_column_mcc_picmi_v7.py
+    - 'python_callback' -> scripts/plasma_column_callback_source_picmi_v3.py
+    - 'seeded_compensation', 'cxx_mcc_custom', 'vacuum' -> scripts/plasma_column_mcc_picmi_v7.py
 
     Args:
         method: Canonical or alias method string.
@@ -102,9 +102,9 @@ def get_runner_script(method: str, root_dir: Path | None = None) -> Path:
         root_dir = Path(__file__).resolve().parent.parent.parent
     method = _normalise_method(method)
     if method == "python_callback":
-        return root_dir / "plasma_column_callback_source_picmi_v3.py"
+        return root_dir / "scripts" / "plasma_column_callback_source_picmi_v3.py"
     else:
-        return root_dir / "plasma_column_mcc_picmi_v7.py"
+        return root_dir / "scripts" / "plasma_column_mcc_picmi_v7.py"
 
 
 def build_warpx_cmd_flags(method: str) -> list[str]:

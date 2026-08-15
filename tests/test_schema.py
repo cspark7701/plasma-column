@@ -190,13 +190,13 @@ def test_build_flags_unknown_raises():
 def test_get_runner_script():
     """Verify correct runner script is selected for each method."""
     root = Path(__file__).resolve().parent.parent
-    assert get_runner_script("vacuum", root) == root / "plasma_column_mcc_picmi_v7.py"
-    assert get_runner_script("seeded_compensation", root) == root / "plasma_column_mcc_picmi_v7.py"
-    assert get_runner_script("cxx_mcc_custom", root) == root / "plasma_column_mcc_picmi_v7.py"
-    assert get_runner_script("python_callback", root) == root / "plasma_column_callback_source_picmi_v3.py"
+    assert get_runner_script("vacuum", root) == root / "scripts" / "plasma_column_mcc_picmi_v7.py"
+    assert get_runner_script("seeded_compensation", root) == root / "scripts" / "plasma_column_mcc_picmi_v7.py"
+    assert get_runner_script("cxx_mcc_custom", root) == root / "scripts" / "plasma_column_mcc_picmi_v7.py"
+    assert get_runner_script("python_callback", root) == root / "scripts" / "plasma_column_callback_source_picmi_v3.py"
     # Aliases
-    assert get_runner_script("seeded", root) == root / "plasma_column_mcc_picmi_v7.py"
-    assert get_runner_script("callback", root) == root / "plasma_column_callback_source_picmi_v3.py"
+    assert get_runner_script("seeded", root) == root / "scripts" / "plasma_column_mcc_picmi_v7.py"
+    assert get_runner_script("callback", root) == root / "scripts" / "plasma_column_callback_source_picmi_v3.py"
 
 
 # ── RT-06: cross-field consistency warning ─────────────────────────────────────

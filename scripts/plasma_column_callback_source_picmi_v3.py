@@ -52,6 +52,11 @@ from pathlib import Path
 
 import numpy as np
 
+try:
+    import _path_setup  # noqa: F401
+except ImportError:
+    from scripts import _path_setup  # noqa: F401
+
 from pywarpx import picmi
 
 try:

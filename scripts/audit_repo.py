@@ -69,19 +69,13 @@ def main() -> None:
         print(f"  {doc:<48} : {'OK' if exists else 'MISSING'}")
 
     # 3. Legacy Files in Root Check
-    legacy_files = [
-        "particle_number_diagnostics.py",
-        "particle_number_diagnostics_v2.py",
-        "particle_number_diagnostics_compare.py",
-        "plasma_column_analysis_plots_v2.py",
-        "plasma_column_analysis_plots_v2--1.ipynb",
-    ]
-    print("\n[3. Legacy Root Files Check]")
-    unarchived = [f for f in legacy_files if (root / f).exists()]
-    if unarchived:
-        print(f"  Found unarchived legacy files: {unarchived} (move to archives/)")
+    root_py_ipynb = list(root.glob("*.py")) + list(root.glob("*.ipynb"))
+    print("\n[3. Root Directory Cleanliness Check]")
+    if root_py_ipynb:
+        names = [f.name for f in root_py_ipynb]
+        print(f"  Found unexpected files in root: {names} (move to scripts/ or archives/)")
     else:
-        print("  Root legacy scripts cleanly archived : OK")
+        print("  Root directory is clean of .py and .ipynb files : OK")
 
     # 4. Python Syntax Compilation Check
     print("\n[4. Python Compilation Check]")
