@@ -7,11 +7,44 @@ Guarantees physical bound checks and schema consistency across YAML files and me
 
 from __future__ import annotations
 
-import warnings
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields as dataclass_fields, is_dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, get_type_hints
+import warnings
 import yaml
+
+
+def _dataclass_from_dict(cls: type, data: dict[str, Any] | None) -> Any:
+    """Populate a dataclass from a dict, casting to each field's type."""
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        return data
+
+    type_hints = get_type_hints(cls)
+    kwargs = {}
+
+    for f in dataclass_fields(cls):
+        if f.name not in data:
+            continue
+        val = data[f.name]
+        ftype = type_hints.get(f.name, f.type)
+
+        if is_dataclass(ftype) and isinstance(ftype, type):
+            kwargs[f.name] = _dataclass_from_dict(ftype, val)
+        elif val is not None:
+            if ftype is int:
+                kwargs[f.name] = int(val)
+            elif ftype is float:
+                kwargs[f.name] = float(val)
+            elif ftype is str:
+                kwargs[f.name] = str(val)
+            else:
+                kwargs[f.name] = val
+        else:
+            kwargs[f.name] = None
+
+    return cls(**kwargs)
 
 
 # ── Canonical simulation-method registry ───────────────────────────────────────
@@ -205,65 +238,12 @@ class SimulationCaseConfig:
         so that short-form YAML strings ('seeded', 'callback') are
         transparently converted to canonical equivalents before validation.
         """
-        case_name = data.get("case_name", "unnamed_case")
-        description = data.get("description", "")
+        d = dict(data or {})
+        if "case_name" not in d:
+            d["case_name"] = "unnamed_case"
+        d["method"] = _normalise_method(d.get("method", "vacuum"))
 
-        # Resolve method alias; default to "vacuum" when omitted
-        raw_method = data.get("method", "vacuum")
-        method = _normalise_method(raw_method)
-
-        beam_data = data.get("beam", {})
-        beam = BeamConfig(
-            species=beam_data.get("species", "proton"),
-            energy_keV=float(beam_data.get("energy_keV", 30.0)),
-            current_mA=float(beam_data.get("current_mA", 10.0)),
-            radius_m=float(beam_data.get("radius_m", 0.002)),
-            rms_divergence=float(beam_data.get("rms_divergence", 0.0)),
-        )
-
-        plasma_data = data.get("plasma", {})
-        plasma = PlasmaConfig(
-            gas=plasma_data.get("gas", "H2"),
-            pressure_torr=float(plasma_data.get("pressure_torr", 1.0e-5)),
-            column_zmin_m=float(plasma_data.get("column_zmin_m", 0.0)),
-            column_length_m=float(plasma_data.get("column_length_m", 0.20)),
-            plasma_radius_m=float(plasma_data.get("plasma_radius_m", 0.003)),
-            neutralization=float(plasma_data.get("neutralization", -1.0)),
-            steady_state_neutralization=float(plasma_data.get("steady_state_neutralization", 0.90)),
-            plasma_age_s=float(plasma_data.get("plasma_age_s", 2.0e-4)),
-            electron_temperature_eV=float(plasma_data.get("electron_temperature_eV", 1.0)),
-        )
-
-        solenoid_data = data.get("solenoid", {})
-        solenoid = SolenoidConfig(
-            Bz_T=float(solenoid_data.get("Bz_T", 0.15)),
-        )
-
-        numerics_data = data.get("numerics", {})
-        numerics = NumericsConfig(
-            nx=int(numerics_data.get("nx", 32)),
-            ny=int(numerics_data.get("ny", 32)),
-            nz=int(numerics_data.get("nz", 256)),
-            xmax_m=float(numerics_data.get("xmax_m", 0.01)),
-            ymax_m=float(numerics_data.get("ymax_m", 0.01)),
-            zmin_m=float(numerics_data.get("zmin_m", -0.02)),
-            zmax_m=float(numerics_data.get("zmax_m", 0.24)),
-            max_steps=int(numerics_data.get("max_steps", 2000)),
-            cfl=float(numerics_data.get("cfl", 0.7)),
-            nppc_beam=int(numerics_data.get("nppc_beam", 4)),
-            nppc_plasma=int(numerics_data.get("nppc_plasma", 4)),
-            mcc=numerics_data.get("mcc", "electron_impact"),
-        )
-
-        config = cls(
-            case_name=case_name,
-            description=description,
-            method=method,
-            beam=beam,
-            plasma=plasma,
-            solenoid=solenoid,
-            numerics=numerics,
-        )
+        config = _dataclass_from_dict(cls, d)
         config.validate()
         return config
 

@@ -75,15 +75,26 @@ def test_validation_errors():
 
 
 def test_to_dict_roundtrip():
-    config = SimulationCaseConfig(case_name="roundtrip_test")
+    config = SimulationCaseConfig(case_name="roundtrip_test", method="seeded_compensation")
     d = config.to_dict()
     assert d["case_name"] == "roundtrip_test"
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        reconstructed = SimulationCaseConfig.from_dict(d)
+    reconstructed = SimulationCaseConfig.from_dict(d)
     assert reconstructed.case_name == config.case_name
     assert reconstructed.beam.energy_keV == config.beam.energy_keV
+    assert reconstructed.to_dict() == config.to_dict()
+
+
+def test_all_yaml_cases_roundtrip():
+    """Verify all YAML case files parse, validate, and round-trip losslessly."""
+    cases_dir = Path(__file__).resolve().parent.parent / "cases"
+    for yaml_file in cases_dir.glob("*.yaml"):
+        if yaml_file.name == "method_comparison.yaml":
+            continue  # matrix scan configuration, not a single case
+        config = SimulationCaseConfig.from_yaml(yaml_file)
+        assert config.case_name
+        d = config.to_dict()
+        reconstructed = SimulationCaseConfig.from_dict(d)
+        assert reconstructed.to_dict() == d
 
 
 # ── RT-06: method field tests ──────────────────────────────────────────────────
