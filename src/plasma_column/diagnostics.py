@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Optional
 import numpy as np
 import pandas as pd
+from scipy.stats import binned_statistic
 
 from plasma_column.constants import ELEMENTARY_CHARGE
 from plasma_column.neutralization import compute_neutralization_ratios
@@ -296,16 +297,13 @@ def compute_radial_density_profiles(
     bin_edges = np.linspace(0, r_max, n_bins + 1)
     r_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
-    np_profile = np.zeros(n_bins)
-    ne_profile = np.zeros(n_bins)
-    ni_profile = np.zeros(n_bins)
+    np_stat, _, _ = binned_statistic(r_vals, np_vals, statistic="mean", bins=bin_edges)
+    ne_stat, _, _ = binned_statistic(r_vals, ne_vals, statistic="mean", bins=bin_edges)
+    ni_stat, _, _ = binned_statistic(r_vals, ni_vals, statistic="mean", bins=bin_edges)
 
-    for i in range(n_bins):
-        b_mask = (r_vals >= bin_edges[i]) & (r_vals < bin_edges[i + 1])
-        if np.any(b_mask):
-            np_profile[i] = np.mean(np_vals[b_mask])
-            ne_profile[i] = np.mean(ne_vals[b_mask])
-            ni_profile[i] = np.mean(ni_vals[b_mask])
+    np_profile = np.nan_to_num(np_stat, nan=0.0)
+    ne_profile = np.nan_to_num(ne_stat, nan=0.0)
+    ni_profile = np.nan_to_num(ni_stat, nan=0.0)
 
     rho_net = ELEMENTARY_CHARGE * (np_profile - ne_profile + ni_profile)
 

@@ -91,3 +91,15 @@ def test_z_resolved_and_radial_profiles():
     assert "rho_p" in charge_density
     assert "rho_e" in charge_density
     assert "rho_net" in charge_density
+
+
+def test_radial_density_profile_vectorization():
+    """Verify vectorized binned_statistic preserves peak on-axis density and monotonic decay."""
+    ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid(
+        n_proton_peak=1.0e15, eta_target=0.8, displaced_x=0.0
+    )
+    df_r = compute_radial_density_profiles(ne_3d, ni_3d, np_3d, x, y, z, n_bins=30)
+    assert len(df_r) == 30
+    assert df_r["np_r"].iloc[0] > df_r["np_r"].iloc[-1]
+    assert df_r["ne_r"].iloc[0] > df_r["ne_r"].iloc[-1]
+    assert not df_r.isna().any().any()
