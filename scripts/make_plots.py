@@ -60,11 +60,11 @@ from plasma_column.plotting import (
 from plasma_column.beam import ProtonBeam, RFFocusedBeam
 from plasma_column.gas import CrossSectionDatabase, load_cross_section_table
 from plasma_column.diagnostics import (
-    generate_synthetic_3d_grid,
     compute_radial_density_profiles,
     compute_local_neutralization_vs_z,
     compute_particle_number_metrics,
 )
+from plasma_column._testing import generate_synthetic_3d_grid
 
 
 def parse_args() -> argparse.Namespace:

@@ -66,12 +66,43 @@ def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
 
     try:
         import yt  # type: ignore
+        import numpy as np  # type: ignore
+        from plasma_column.constants import ELEMENTARY_CHARGE
+
         ds = yt.load(str(p))
-        return {
+        nx, ny, nz = ds.domain_dimensions
+        x = np.linspace(float(ds.domain_left_edge[0]), float(ds.domain_right_edge[0]), nx)
+        y = np.linspace(float(ds.domain_left_edge[1]), float(ds.domain_right_edge[1]), ny)
+        z = np.linspace(float(ds.domain_left_edge[2]), float(ds.domain_right_edge[2]), nz)
+
+        result: dict[str, Any] = {
             "plotfile": str(p),
             "time": float(ds.current_time),
             "yt_ds": ds,
+            "x": x,
+            "y": y,
+            "z": z,
+            "ne_3d": np.zeros((nx, ny, nz)),
+            "ni_3d": np.zeros((nx, ny, nz)),
+            "np_3d": np.zeros((nx, ny, nz)),
         }
+
+        try:
+            cg = ds.covering_grid(level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions)
+            field_list = [f[1] for f in ds.field_list] if hasattr(ds, "field_list") else []
+
+            for f in field_list:
+                f_lower = f.lower()
+                if "electron" in f_lower or "rho_plasma_electrons" in f:
+                    result["ne_3d"] = np.abs(np.array(cg[("boxlib", f)])) / ELEMENTARY_CHARGE
+                elif "proton" in f_lower or "beam" in f_lower or "rho_beam_protons" in f:
+                    result["np_3d"] = np.abs(np.array(cg[("boxlib", f)])) / ELEMENTARY_CHARGE
+                elif "ion" in f_lower or "rho_gas_ions" in f:
+                    result["ni_3d"] = np.abs(np.array(cg[("boxlib", f)])) / ELEMENTARY_CHARGE
+        except Exception:
+            pass
+
+        return result
     except Exception:
         return None
 

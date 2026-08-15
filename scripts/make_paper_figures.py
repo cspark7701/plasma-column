@@ -36,7 +36,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from plasma_column.beam import ProtonBeam, RFFocusedBeam
 from plasma_column.neutralization import gas_density_m3
 from plasma_column.gas import get_h2_cross_section, get_kr_cross_section
-from plasma_column.diagnostics import generate_synthetic_3d_grid, compute_radial_density_profiles
+from plasma_column.diagnostics import compute_radial_density_profiles
+from plasma_column._testing import generate_synthetic_3d_grid
 from plasma_column.injection_line import InjectionLine, compute_beam_envelope
 from plasma_column.acceptance import InflectorAcceptance, compute_inflector_transmission, generate_phase_space_particles
 from plasma_column.plotting import save_figure, setup_publication_style

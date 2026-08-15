@@ -91,85 +91,88 @@ def main() -> None:
     local_t_csv = case_dir / "local_neutralization_vs_t.csv"
     if local_t_csv.exists():
         df_lt = pd.read_csv(local_t_csv)
-        t_ns = df_lt["time"].values * 1.0e9 if "time" in df_lt.columns else np.arange(len(df_lt))
+        if not df_lt.empty:
+            t_ns = df_lt["time"].values * 1.0e9 if "time" in df_lt.columns else np.arange(len(df_lt))
 
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        if "eta_electron_only_local" in df_lt.columns:
-            ax.plot(t_ns, df_lt["eta_electron_only_local"], label=r"$\eta_{\text{electron\_only,local}} = \langle n_e \rangle / \langle n_p \rangle$", color="tab:green", lw=2)
-        if "eta_net_local" in df_lt.columns:
-            ax.plot(t_ns, df_lt["eta_net_local"], label=r"$\eta_{\text{net,local}} = (\langle n_e \rangle - \langle n_i \rangle) / \langle n_p \rangle$", color="tab:purple", lw=2, ls="--")
+            fig, ax = plt.subplots(figsize=(7, 4.5))
+            if "eta_electron_only_local" in df_lt.columns:
+                ax.plot(t_ns, df_lt["eta_electron_only_local"], label=r"$\eta_{\text{electron\_only,local}} = \langle n_e \rangle / \langle n_p \rangle$", color="tab:green", lw=2)
+            if "eta_net_local" in df_lt.columns:
+                ax.plot(t_ns, df_lt["eta_net_local"], label=r"$\eta_{\text{net,local}} = (\langle n_e \rangle - \langle n_i \rangle) / \langle n_p \rangle$", color="tab:purple", lw=2, ls="--")
 
-        ax.set_xlabel("Time [ns]")
-        ax.set_ylabel("Local Neutralization Fraction")
-        ax.set_ylim(-0.05, 1.1)
-        ax.set_title(f"Beam-Core Local Neutralization vs Time — {case_name}")
-        ax.legend()
-        out_path = plots_dir / "local_eta_vs_time"
-        save_figure(fig, out_path)
-        plt.close(fig)
-        print(f"  Saved: {out_path}.png / .pdf")
+            ax.set_xlabel("Time [ns]")
+            ax.set_ylabel("Local Neutralization Fraction")
+            ax.set_ylim(-0.05, 1.1)
+            ax.set_title(f"Beam-Core Local Neutralization vs Time — {case_name}")
+            ax.legend()
+            out_path = plots_dir / "local_eta_vs_time"
+            save_figure(fig, out_path)
+            plt.close(fig)
+            print(f"  Saved: {out_path}.png / .pdf")
 
-        # 3. Local Keff/K0 vs time
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        if "keff_over_k0_electron_only_local" in df_lt.columns:
-            ax.plot(t_ns, df_lt["keff_over_k0_electron_only_local"], label=r"$K_{\text{eff,electron\_only}}/K_0$", color="tab:green", lw=2)
-        if "keff_over_k0_local" in df_lt.columns:
-            ax.plot(t_ns, df_lt["keff_over_k0_local"], label=r"$K_{\text{eff,net}}/K_0 = 1 - \eta_{\text{net,local}}$", color="tab:red", lw=2, ls="--")
+            # 3. Local Keff/K0 vs time
+            fig, ax = plt.subplots(figsize=(7, 4.5))
+            if "keff_over_k0_electron_only_local" in df_lt.columns:
+                ax.plot(t_ns, df_lt["keff_over_k0_electron_only_local"], label=r"$K_{\text{eff,electron\_only}}/K_0$", color="tab:green", lw=2)
+            if "keff_over_k0_local" in df_lt.columns:
+                ax.plot(t_ns, df_lt["keff_over_k0_local"], label=r"$K_{\text{eff,net}}/K_0 = 1 - \eta_{\text{net,local}}$", color="tab:red", lw=2, ls="--")
 
-        ax.axhline(0.0, color="gray", lw=1, ls=":")
-        ax.set_xlabel("Time [ns]")
-        ax.set_ylabel(r"Effective Perveance Ratio $K_{\text{eff,local}}/K_0$")
-        ax.set_title(f"Beam-Core $K_{{eff,local}}/K_0$ vs Time — {case_name}")
-        ax.legend()
-        out_path = plots_dir / "local_Keff_over_K0_vs_time"
-        save_figure(fig, out_path)
-        plt.close(fig)
-        print(f"  Saved: {out_path}.png / .pdf")
+            ax.axhline(0.0, color="gray", lw=1, ls=":")
+            ax.set_xlabel("Time [ns]")
+            ax.set_ylabel(r"Effective Perveance Ratio $K_{\text{eff,local}}/K_0$")
+            ax.set_title(f"Beam-Core $K_{{eff,local}}/K_0$ vs Time — {case_name}")
+            ax.legend()
+            out_path = plots_dir / "local_Keff_over_K0_vs_time"
+            save_figure(fig, out_path)
+            plt.close(fig)
+            print(f"  Saved: {out_path}.png / .pdf")
 
     # 4. z-resolved Neutralization Profile
     local_z_csv = case_dir / "local_neutralization_vs_z.csv"
     if local_z_csv.exists():
         df_lz = pd.read_csv(local_z_csv)
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        z_cm = df_lz["z"].values * 100.0 if "z" in df_lz.columns else np.arange(len(df_lz))
+        if not df_lz.empty:
+            fig, ax = plt.subplots(figsize=(7, 4.5))
+            z_cm = df_lz["z"].values * 100.0 if "z" in df_lz.columns else np.arange(len(df_lz))
 
-        if "eta_net_local_z" in df_lz.columns:
-            ax.plot(z_cm, df_lz["eta_net_local_z"], label=r"$\eta_{\text{net,local}}(z)$", color="tab:purple", lw=2)
-        if "eta_electron_only_local_z" in df_lz.columns:
-            ax.plot(z_cm, df_lz["eta_electron_only_local_z"], label=r"$\eta_{\text{electron\_only,local}}(z)$", color="tab:green", lw=2, ls="--")
+            if "eta_net_local_z" in df_lz.columns:
+                ax.plot(z_cm, df_lz["eta_net_local_z"], label=r"$\eta_{\text{net,local}}(z)$", color="tab:purple", lw=2)
+            if "eta_electron_only_local_z" in df_lz.columns:
+                ax.plot(z_cm, df_lz["eta_electron_only_local_z"], label=r"$\eta_{\text{electron\_only,local}}(z)$", color="tab:green", lw=2, ls="--")
 
-        ax.axvspan(0.0, 20.0, color="gray", alpha=0.15, label="Plasma Cell Bounds")
-        ax.set_xlabel("Longitudinal Position $z$ [cm]")
-        ax.set_ylabel("Local Neutralization Fraction")
-        ax.set_title(f"$z$-Resolved Beam-Core Neutralization — {case_name}")
-        ax.legend()
-        out_path = plots_dir / "z_resolved_neutralization"
-        save_figure(fig, out_path)
-        plt.close(fig)
-        print(f"  Saved: {out_path}.png / .pdf")
+            ax.axvspan(0.0, 20.0, color="gray", alpha=0.15, label="Plasma Cell Bounds")
+            ax.set_xlabel("Longitudinal Position $z$ [cm]")
+            ax.set_ylabel("Local Neutralization Fraction")
+            ax.set_title(f"$z$-Resolved Beam-Core Neutralization — {case_name}")
+            ax.legend()
+            out_path = plots_dir / "z_resolved_neutralization"
+            save_figure(fig, out_path)
+            plt.close(fig)
+            print(f"  Saved: {out_path}.png / .pdf")
 
     # 5. Radial Density Profiles
     radial_csv = case_dir / "radial_density_profiles.csv"
     if radial_csv.exists():
         df_r = pd.read_csv(radial_csv)
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        r_mm = df_r["r"].values * 1000.0 if "r" in df_r.columns else np.arange(len(df_r))
+        if not df_r.empty:
+            fig, ax = plt.subplots(figsize=(7, 4.5))
+            r_mm = df_r["r"].values * 1000.0 if "r" in df_r.columns else np.arange(len(df_r))
 
-        if "np_r" in df_r.columns:
-            ax.plot(r_mm, df_r["np_r"], label=r"Protons $n_p(r)$", color="tab:blue", lw=2)
-        if "ne_r" in df_r.columns:
-            ax.plot(r_mm, df_r["ne_r"], label=r"Electrons $n_e(r)$", color="tab:green", lw=2)
-        if "ni_r" in df_r.columns:
-            ax.plot(r_mm, df_r["ni_r"], label=r"Ions $n_i(r)$", color="tab:red", lw=2)
+            if "np_r" in df_r.columns:
+                ax.plot(r_mm, df_r["np_r"], label=r"Protons $n_p(r)$", color="tab:blue", lw=2)
+            if "ne_r" in df_r.columns:
+                ax.plot(r_mm, df_r["ne_r"], label=r"Electrons $n_e(r)$", color="tab:green", lw=2)
+            if "ni_r" in df_r.columns:
+                ax.plot(r_mm, df_r["ni_r"], label=r"Ions $n_i(r)$", color="tab:red", lw=2)
 
-        ax.set_xlabel("Radial Distance $r$ [mm]")
-        ax.set_ylabel(r"Number Density [$\mathrm{m}^{-3}$]")
-        ax.set_title(f"Radial Species Density Profiles — {case_name}")
-        ax.legend()
-        out_path = plots_dir / "radial_density_profiles"
-        save_figure(fig, out_path)
-        plt.close(fig)
-        print(f"  Saved: {out_path}.png / .pdf")
+            ax.set_xlabel("Radial Distance $r$ [mm]")
+            ax.set_ylabel(r"Number Density [$\mathrm{m}^{-3}$]")
+            ax.set_title(f"Radial Species Density Profiles — {case_name}")
+            ax.legend()
+            out_path = plots_dir / "radial_density_profiles"
+            save_figure(fig, out_path)
+            plt.close(fig)
+            print(f"  Saved: {out_path}.png / .pdf")
 
     print(f"Plots successfully updated in {plots_dir}.")
 

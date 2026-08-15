@@ -18,10 +18,10 @@ from plasma_column.diagnostics import (
     compute_local_neutralization_vs_z,
     compute_radial_density_profiles,
     compute_beam_core_charge_density,
-    generate_synthetic_3d_grid,
     warn_global_count_limitation,
     GLOBAL_WARNING_MSG,
 )
+from plasma_column._testing import generate_synthetic_3d_grid
 
 
 def test_uniform_density_neutralization():

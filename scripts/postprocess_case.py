@@ -40,11 +40,10 @@ from plasma_column.diagnostics import (
     compute_local_neutralization_vs_z,
     compute_radial_density_profiles,
     compute_beam_core_charge_density,
-    generate_synthetic_3d_grid,
     warn_global_count_limitation,
     GLOBAL_WARNING_MSG,
 )
-from plasma_column.warpx_io import find_plotfiles, save_metadata
+from plasma_column.warpx_io import find_plotfiles, load_plotfile_densities, save_metadata
 
 
 def parse_args() -> argparse.Namespace:
@@ -119,24 +118,48 @@ def main() -> None:
         metrics_df.to_csv(neut_csv, index=False)
         print(f"  Wrote global particle counts to: {global_csv}")
 
-    # Check for local 3D data or generate synthetic local estimate if local data absent
+    # Check for local 3D data from plotfiles
+    core_info: dict[str, Any] = {}
+    local_z_df = pd.DataFrame()
+    radial_df = pd.DataFrame()
+    charge_density: dict[str, float] = {}
+
+    if has_local_data:
+        latest_plt = plotfiles[-1]
+        plot_data = load_plotfile_densities(latest_plt)
+        if plot_data is not None and "ne_3d" in plot_data and np.any(plot_data["np_3d"]):
+            ne_3d, ni_3d, np_3d = plot_data["ne_3d"], plot_data["ni_3d"], plot_data["np_3d"]
+            x, y, z = plot_data["x"], plot_data["y"], plot_data["z"]
+            core_info = compute_local_core_neutralization(ne_3d, ni_3d, np_3d, x, y, z)
+            local_z_df = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z)
+            radial_df = compute_radial_density_profiles(ne_3d, ni_3d, np_3d, x, y, z)
+            charge_density = compute_beam_core_charge_density(ne_3d, ni_3d, np_3d, x, y, z)
+        else:
+            print(f"Warning: Could not extract 3D density grid arrays from {latest_plt}.", file=sys.stderr)
+            has_local_data = False
+
     if not has_local_data:
-        # Issue explicit required warning
         warn_global_count_limitation()
+        eta_e_final = float(metrics_df["eta_electron_only"].iloc[-1]) if not metrics_df.empty and "eta_electron_only" in metrics_df.columns else 0.0
+        eta_net_final = float(metrics_df["eta_net"].iloc[-1]) if not metrics_df.empty and "eta_net" in metrics_df.columns else 0.0
+        keff_e_final = float(metrics_df["keff_over_k0_electron_only"].iloc[-1]) if not metrics_df.empty and "keff_over_k0_electron_only" in metrics_df.columns else 1.0
+        keff_net_final = float(metrics_df["keff_over_k0"].iloc[-1]) if not metrics_df.empty and "keff_over_k0" in metrics_df.columns else 1.0
 
-        # Build estimated 3D spatial distribution matching global counts for downstream files
-        ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid(
-            nx=21, ny=21, nz=30, x_max=0.015, y_max=0.015, z_min=0.0, z_max=0.30
-        )
-    else:
-        # If plotfiles are available, we can compute 3D grid data directly
-        ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid()
-
-    # Calculate local metrics
-    core_info = compute_local_core_neutralization(ne_3d, ni_3d, np_3d, x, y, z)
-    local_z_df = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z)
-    radial_df = compute_radial_density_profiles(ne_3d, ni_3d, np_3d, x, y, z)
-    charge_density = compute_beam_core_charge_density(ne_3d, ni_3d, np_3d, x, y, z)
+        core_info = {
+            "eta_electron_only_core": eta_e_final,
+            "eta_net_core": eta_net_final,
+            "eta_electron_only_local": eta_e_final,
+            "eta_net_local": eta_net_final,
+            "keff_over_k0_electron_only_local": keff_e_final,
+            "keff_over_k0_local": keff_net_final,
+            "np_core_avg": 0.0,
+            "ne_core_avg": 0.0,
+            "ni_core_avg": 0.0,
+            "overcompensated": False,
+        }
+        local_z_df = pd.DataFrame(columns=["z", "eta_electron_only_local_z", "eta_net_local_z", "keff_over_k0_local_z"])
+        radial_df = pd.DataFrame(columns=["r", "np_r", "ne_r", "ni_r"])
+        charge_density = {"rho_p": 0.0, "rho_e": 0.0, "rho_i": 0.0, "rho_net": 0.0}
 
     # Build local neutralization vs time DataFrame
     if not metrics_df.empty:
