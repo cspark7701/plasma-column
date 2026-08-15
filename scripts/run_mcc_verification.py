@@ -27,7 +27,8 @@ try:
 except ImportError:
     from scripts._path_setup import PROJECT_ROOT
 
-from plasma_column.neutralization import gas_density_m3, proton_beta_gamma_speed
+from plasma_column.beam import ProtonBeam
+from plasma_column.gas import gas_density_m3
 from plasma_column.warpx_io import save_metadata
 
 
@@ -44,7 +45,8 @@ def compute_analytic_mcc_rates(
     """
     Computes analytical ion-impact ionization rate, collision probability, and expected particle counts.
     """
-    _, _, speed = proton_beta_gamma_speed(energy_keV)
+    beam = ProtonBeam(energy_keV=energy_keV)
+    speed = beam.velocity
     n_gas = gas_density_m3(pressure_torr, temp_k) if pressure_torr > 0 else 0.0
 
     # Rate per proton [s^-1]

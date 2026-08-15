@@ -44,6 +44,27 @@ class NeutralGas:
             raise ValueError(f"Unknown gas species: {self.species}")
 
 
+def gas_density_m3(pressure_torr: float, temperature_K: float = 300.0) -> float:
+    """
+    Computes ideal gas number density n_gas [m^-3] from pressure in Torr and temperature in K.
+    Formula: n_gas = p_pa / (k_B * T)
+    """
+    if pressure_torr <= 0:
+        return 0.0
+    pressure_pa = pressure_torr * TORR_TO_PA
+    return pressure_pa / (KB * temperature_K)
+
+
+def ionization_tau_s(n_gas_m3: float, sigma_m2: float, beam_speed_m_s: float) -> float:
+    """
+    Computes characteristic ionization buildup time tau [s]:
+    Formula: tau = 1 / (n_gas * sigma * v_beam)
+    """
+    if n_gas_m3 <= 0 or sigma_m2 <= 0 or beam_speed_m_s <= 0:
+        return float("inf")
+    return 1.0 / (n_gas_m3 * sigma_m2 * beam_speed_m_s)
+
+
 def lab_to_cm_energy(e_lab_eV: float, m_projectile: float = MP, m_target: float = MH2) -> float:
     """Converts laboratory kinetic energy [eV] to center-of-mass energy [eV]."""
     return e_lab_eV * (m_target / (m_projectile + m_target))

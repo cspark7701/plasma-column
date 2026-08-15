@@ -26,26 +26,28 @@ from plasma_column.neutralization import (
 )
 
 
-def test_gas_density():
-    # 1e-5 Torr at 300 K
-    n_gas = gas_density_m3(1.0e-5, 300.0)
+def test_gas_density_deprecation():
+    with pytest.warns(DeprecationWarning, match="gas_density_m3 has moved to plasma_column.gas"):
+        n_gas = gas_density_m3(1.0e-5, 300.0)
     assert n_gas > 3.0e17 and n_gas < 3.5e17
-    # Zero pressure case
-    assert gas_density_m3(0.0) == 0.0
+    with pytest.warns(DeprecationWarning):
+        assert gas_density_m3(0.0) == 0.0
 
 
-def test_proton_kinematics():
-    beta, gamma, speed = proton_beta_gamma_speed(30.0)
+def test_proton_kinematics_deprecation():
+    with pytest.warns(DeprecationWarning, match="proton_beta_gamma_speed is deprecated"):
+        beta, gamma, speed = proton_beta_gamma_speed(30.0)
     assert gamma > 1.0 and gamma < 1.001
     assert beta > 0.0075 and beta < 0.0085
     assert speed > 2.3e6 and speed < 2.5e6
 
 
-def test_ionization_tau():
-    n_gas = gas_density_m3(1.0e-5, 300.0)
-    beta, gamma, speed = proton_beta_gamma_speed(30.0)
-    sigma = 1.0e-20  # 1 A^2 cross section
-    tau = ionization_tau_s(n_gas, sigma, speed)
+def test_ionization_tau_deprecation():
+    with pytest.warns(DeprecationWarning):
+        n_gas = gas_density_m3(1.0e-5, 300.0)
+        beta, gamma, speed = proton_beta_gamma_speed(30.0)
+        sigma = 1.0e-20  # 1 A^2 cross section
+        tau = ionization_tau_s(n_gas, sigma, speed)
     assert tau > 0 and not math.isinf(tau)
 
 
@@ -66,14 +68,16 @@ def test_keff_over_k0():
     assert math.isclose(keff_over_k0_from_eta(0.9), 0.1, rel_tol=1e-5)
 
 
-def test_bunch_length():
+def test_bunch_length_deprecation():
     f_rf = 50.0e6  # 50 MHz
     phi = 36.0     # 36 degrees
-    dt = bunch_length_s(f_rf, phi)
+    with pytest.warns(DeprecationWarning, match="bunch_length_s is deprecated"):
+        dt = bunch_length_s(f_rf, phi)
     assert math.isclose(dt, 2.0e-9, rel_tol=1e-5)  # 2 ns
 
-    _, _, speed = proton_beta_gamma_speed(30.0)
-    dz = bunch_length_m(speed, f_rf, phi)
+    with pytest.warns(DeprecationWarning):
+        _, _, speed = proton_beta_gamma_speed(30.0)
+        dz = bunch_length_m(speed, f_rf, phi)
     assert dz > 0.004 and dz < 0.006
 
 

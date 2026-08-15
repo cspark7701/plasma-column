@@ -12,10 +12,12 @@ Core neutralization physics module providing analytical calculations for:
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Union
 import numpy as np
 
 from plasma_column.constants import C, QE, MP, KB, TORR_TO_PA
+import plasma_column.gas as _gas
 
 ArrayOrFloat = Union[float, np.ndarray]
 
@@ -23,35 +25,49 @@ ArrayOrFloat = Union[float, np.ndarray]
 def gas_density_m3(pressure_torr: float, temperature_K: float = 300.0) -> float:
     """
     Computes ideal gas number density n_gas [m^-3] from pressure in Torr and temperature in K.
-    Formula: n_gas = p_pa / (k_B * T)
+
+    .. deprecated:: 0.2.0
+       Use :func:`plasma_column.gas.gas_density_m3` or :attr:`plasma_column.gas.NeutralGas.number_density`.
     """
-    if pressure_torr <= 0:
-        return 0.0
-    pressure_pa = pressure_torr * TORR_TO_PA
-    return pressure_pa / (KB * temperature_K)
+    warnings.warn(
+        "gas_density_m3 has moved to plasma_column.gas (or use NeutralGas.number_density).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return _gas.gas_density_m3(pressure_torr, temperature_K)
 
 
 def proton_beta_gamma_speed(kinetic_energy_keV: float = 30.0) -> tuple[float, float, float]:
     """
     Computes relativistic beta, gamma, and beam speed [m/s] for a proton of given kinetic energy in keV.
-    Returns (beta, gamma, v_beam_m_s).
+
+    .. deprecated:: 0.2.0
+       Use :class:`plasma_column.beam.ProtonBeam` properties (beta, gamma, velocity).
     """
-    e_joules = kinetic_energy_keV * 1000.0 * QE
-    m_p_c2 = MP * C**2
-    gamma = 1.0 + (e_joules / m_p_c2)
-    beta = math.sqrt(1.0 - 1.0 / (gamma**2))
-    speed_m_s = beta * C
-    return beta, gamma, speed_m_s
+    warnings.warn(
+        "proton_beta_gamma_speed is deprecated; use ProtonBeam properties in plasma_column.beam.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from plasma_column.beam import ProtonBeam
+    b = ProtonBeam(energy_keV=kinetic_energy_keV)
+    return b.beta, b.gamma, b.velocity
 
 
 def ionization_tau_s(n_gas_m3: float, sigma_m2: float, beam_speed_m_s: float) -> float:
     """
     Computes characteristic ionization buildup time tau [s]:
     Formula: tau = 1 / (n_gas * sigma * v_beam)
+
+    .. deprecated:: 0.2.0
+       Use :func:`plasma_column.gas.ionization_tau_s`.
     """
-    if n_gas_m3 <= 0 or sigma_m2 <= 0 or beam_speed_m_s <= 0:
-        return float("inf")
-    return 1.0 / (n_gas_m3 * sigma_m2 * beam_speed_m_s)
+    warnings.warn(
+        "ionization_tau_s has moved to plasma_column.gas.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return _gas.ionization_tau_s(n_gas_m3, sigma_m2, beam_speed_m_s)
 
 
 def neutralization_fraction(
@@ -81,11 +97,18 @@ def keff_over_k0_from_eta(eta: ArrayOrFloat) -> ArrayOrFloat:
 def bunch_length_s(rf_frequency_hz: float, phase_width_deg: float) -> float:
     """
     Computes RF bunch temporal width Delta_t_b [s] from RF frequency in Hz and phase width in degrees.
-    Formula: Delta_t_b = phase_width_deg / (360.0 * f_RF)
+
+    .. deprecated:: 0.2.0
+       Use :attr:`plasma_column.beam.RFFocusedBeam.bunch_duration_s`.
     """
-    if rf_frequency_hz <= 0:
-        raise ValueError("rf_frequency_hz must be positive")
-    return (phase_width_deg / 360.0) / rf_frequency_hz
+    warnings.warn(
+        "bunch_length_s is deprecated; use RFFocusedBeam.bunch_duration_s in plasma_column.beam.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from plasma_column.beam import RFFocusedBeam
+    rf = RFFocusedBeam(rf_frequency_hz=rf_frequency_hz, bunch_phase_width_deg=phase_width_deg)
+    return rf.bunch_duration_s
 
 
 def bunch_length_m(
@@ -93,10 +116,18 @@ def bunch_length_m(
 ) -> float:
     """
     Computes RF bunch spatial width Delta_z_b [m] from beam speed, RF frequency, and phase width in degrees.
-    Formula: Delta_z_b = v_beam * Delta_t_b
+
+    .. deprecated:: 0.2.0
+       Use :attr:`plasma_column.beam.RFFocusedBeam.bunch_length_m`.
     """
-    dt_b = bunch_length_s(rf_frequency_hz, phase_width_deg)
-    return beam_speed_m_s * dt_b
+    warnings.warn(
+        "bunch_length_m is deprecated; use RFFocusedBeam.bunch_length_m in plasma_column.beam.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from plasma_column.beam import RFFocusedBeam
+    rf = RFFocusedBeam(rf_frequency_hz=rf_frequency_hz, bunch_phase_width_deg=phase_width_deg)
+    return beam_speed_m_s * rf.bunch_duration_s
 
 
 def peak_keff_over_k0_from_average_eta(

@@ -11,22 +11,18 @@ Lightweight unit tests for core plasma_column physics utilities:
 
 import math
 import pytest
-from plasma_column.neutralization import (
-    gas_density_m3,
-    proton_beta_gamma_speed,
-    bunch_length_s,
-    bunch_length_m,
-    keff_over_k0_from_eta,
-)
+from plasma_column.beam import ProtonBeam, RFFocusedBeam
+from plasma_column.gas import gas_density_m3, NeutralGas
+from plasma_column.neutralization import keff_over_k0_from_eta
 from plasma_column.plotting import setup_publication_style
 
 
 def test_proton_velocity_30keV():
     """Verify 30 keV proton relativistic beta and velocity (~2.4e6 m/s)."""
-    beta, gamma, speed = proton_beta_gamma_speed(30.0)
-    assert 1.0 < gamma < 1.001
-    assert 0.0075 < beta < 0.0085
-    assert 2.39e6 < speed < 2.41e6
+    beam = ProtonBeam(energy_keV=30.0)
+    assert 1.0 < beam.gamma < 1.001
+    assert 0.0075 < beam.beta < 0.0085
+    assert 2.39e6 < beam.velocity < 2.41e6
 
 
 def test_ideal_gas_density_conversion():
@@ -36,18 +32,19 @@ def test_ideal_gas_density_conversion():
     assert 3.1e17 < n_gas < 3.3e17
     # Zero pressure gives 0
     assert gas_density_m3(0.0) == 0.0
+    gas_obj = NeutralGas(pressure_torr=1.0e-5, temperature_K=300.0)
+    assert math.isclose(gas_obj.number_density, n_gas)
 
 
 def test_bunch_duration_and_length():
     """Verify bunch phase duration and length calculations."""
-    f_rf = 50.0e6  # 50 MHz
-    phi_deg = 36.0  # 36 deg RF phase width
-    dt = bunch_length_s(f_rf, phi_deg)
-    assert math.isclose(dt, 2.0e-9, rel_tol=1e-5)
-
-    _, _, speed = proton_beta_gamma_speed(30.0)
-    dz = bunch_length_m(speed, f_rf, phi_deg)
-    assert 0.0047 < dz < 0.0049
+    rf_beam = RFFocusedBeam(
+        energy_keV=30.0,
+        rf_frequency_hz=50.0e6,
+        bunch_phase_width_deg=36.0,
+    )
+    assert math.isclose(rf_beam.bunch_duration_s, 2.0e-9, rel_tol=1e-5)
+    assert 0.0047 < rf_beam.bunch_length_m < 0.0049
 
 
 def test_effective_perveance_relation():

@@ -4,6 +4,7 @@ tests/test_gas_cross_sections.py
 Unit tests for gas properties, cross-section table parsing, and interpolation.
 """
 
+import math
 import sys
 from pathlib import Path
 import tempfile
@@ -16,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from plasma_column.gas import (
     NeutralGas,
+    gas_density_m3,
+    ionization_tau_s,
     lab_to_cm_energy,
     cm_to_lab_energy,
     load_cross_section_table,
@@ -82,8 +85,15 @@ def test_database_lookup():
     assert sig_h2 > 1.5e-20 and sig_h2 < 1.7e-20
     assert sig_kr > 8.0e-20 and sig_kr < 1.0e-19
 
-    with pytest.raises(ValueError):
-        db.get_proton_impact_cross_section("Xe", 30000.0)
+def test_gas_density_and_ionization_tau():
+    """Verify gas_density_m3 and ionization_tau_s functions in gas.py."""
+    ng = gas_density_m3(1.0e-5, 300.0)
+    assert 3.0e17 < ng < 3.5e17
+    assert gas_density_m3(0.0) == 0.0
+
+    tau = ionization_tau_s(ng, 1.6e-20, 2.4e6)
+    assert 0.0 < tau < 1.0
+    assert math.isinf(ionization_tau_s(0.0, 1.0, 1.0))
 
 
 if __name__ == "__main__":

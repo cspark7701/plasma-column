@@ -31,8 +31,8 @@ try:
 except ImportError:
     from scripts._path_setup import PROJECT_ROOT
 
-from plasma_column.gas import get_h2_cross_section, get_kr_cross_section
-from plasma_column.neutralization import gas_density_m3, proton_beta_gamma_speed
+from plasma_column.beam import ProtonBeam
+from plasma_column.gas import gas_density_m3, get_h2_cross_section, get_kr_cross_section
 from plasma_column.plotting import save_figure, setup_publication_style
 
 
@@ -47,7 +47,8 @@ def main() -> None:
     sig_h2_nom = get_h2_cross_section(30.0)
     sig_kr_nom = get_kr_cross_section(30.0)
 
-    _, _, speed = proton_beta_gamma_speed(30.0)
+    beam = ProtonBeam(energy_keV=30.0)
+    speed = beam.velocity
 
     scale_factors = [0.5, 1.0, 2.0]
     gases = [
