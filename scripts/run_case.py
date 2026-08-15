@@ -23,9 +23,10 @@ from typing import Any
 
 import yaml
 
-# Ensure src/ is in sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+try:
+    import _path_setup  # noqa: F401
+except ImportError:
+    from scripts import _path_setup  # noqa: F401
 
 from plasma_column.schema import (
     SimulationCaseConfig,

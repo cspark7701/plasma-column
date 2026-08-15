@@ -18,8 +18,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Ensure src/ is in sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+try:
+    import _path_setup  # noqa: F401
+except ImportError:
+    from scripts import _path_setup  # noqa: F401
 
 from plasma_column.gas import (
     CrossSectionDatabase,

@@ -22,9 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# Ensure src/ is in sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from _path_setup import PROJECT_ROOT
 
 from plasma_column.plotting import save_figure, setup_publication_style
 

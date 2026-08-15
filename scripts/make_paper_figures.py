@@ -30,8 +30,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+try:
+    from _path_setup import PROJECT_ROOT
+except ImportError:
+    from scripts._path_setup import PROJECT_ROOT
 
 from plasma_column.beam import ProtonBeam, RFFocusedBeam
 from plasma_column.neutralization import gas_density_m3

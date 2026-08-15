@@ -13,14 +13,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT        = Path(__file__).resolve().parent.parent
+try:
+    from _path_setup import PROJECT_ROOT as ROOT
+except ImportError:
+    from scripts._path_setup import PROJECT_ROOT as ROOT
 NB_RUNS     = ROOT / "notebooks" / "runs"
 NB_ANALYSIS = ROOT / "notebooks" / "analysis"
 NB_RUNS.mkdir(parents=True, exist_ok=True)
-# Ensure src/ is in sys.path
-import sys
-if str(ROOT / "src") not in sys.path:
-    sys.path.insert(0, str(ROOT / "src"))
 
 from plasma_column.notebook_utils import (
     make_code_cell as code,

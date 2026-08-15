@@ -19,8 +19,10 @@ import sys
 from pathlib import Path
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+try:
+    from _path_setup import PROJECT_ROOT
+except ImportError:
+    from scripts._path_setup import PROJECT_ROOT
 
 
 def main() -> None:
