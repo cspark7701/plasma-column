@@ -146,8 +146,6 @@ def main() -> None:
         keff_net_final = float(metrics_df["keff_over_k0"].iloc[-1]) if not metrics_df.empty and "keff_over_k0" in metrics_df.columns else 1.0
 
         core_info = {
-            "eta_electron_only_core": eta_e_final,
-            "eta_net_core": eta_net_final,
             "eta_electron_only_local": eta_e_final,
             "eta_net_local": eta_net_final,
             "keff_over_k0_electron_only_local": keff_e_final,

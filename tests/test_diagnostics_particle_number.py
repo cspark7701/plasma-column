@@ -20,7 +20,28 @@ from plasma_column.diagnostics import (
     compute_particle_number_metrics,
     compute_local_core_neutralization,
     warn_global_count_limitation,
+    safe_eta,
 )
+
+
+def test_safe_eta_scalar_and_vector():
+    """Verify safe_eta handles scalars and NumPy arrays with zero-division guard."""
+    # Scalar normal
+    eta_e, eta_net = safe_eta(100.0, 20.0, 100.0)
+    assert eta_e == pytest.approx(1.0)
+    assert eta_net == pytest.approx(0.8)
+
+    # Scalar zero proton (guard prevents division by zero)
+    eta_e_0, eta_net_0 = safe_eta(10.0, 0.0, 0.0)
+    assert eta_e_0 > 0.0
+
+    # Vector
+    ne = np.array([0.0, 50.0, 90.0])
+    ni = np.array([0.0, 10.0, 20.0])
+    np_arr = np.array([100.0, 100.0, 100.0])
+    eta_e_vec, eta_net_vec = safe_eta(ne, ni, np_arr)
+    np.testing.assert_allclose(eta_e_vec, [0.0, 0.5, 0.9])
+    np.testing.assert_allclose(eta_net_vec, [0.0, 0.4, 0.7])
 
 
 def test_particle_number_parsing():

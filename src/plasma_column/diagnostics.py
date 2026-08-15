@@ -171,6 +171,29 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
     return df
 
 
+def safe_eta(
+    ne: float | np.ndarray,
+    ni: float | np.ndarray,
+    np_val: float | np.ndarray,
+    eps: float = 1.0e-30,
+) -> tuple[Any, Any]:
+    """Calculates (eta_electron_only, eta_net) with guarded division.
+
+    Args:
+        ne: Electron count or density (scalar or array).
+        ni: Ion count or density (scalar or array).
+        np_val: Proton/beam count or density (scalar or array).
+        eps: Epsilon denominator guard against division by zero.
+
+    Returns:
+        Tuple of (eta_electron_only, eta_net).
+    """
+    denom = np_val + eps
+    eta_e = ne / denom
+    eta_net = (ne - ni) / denom
+    return eta_e, eta_net
+
+
 def compute_particle_number_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates neutralization fractions and effective perveance ratios from particle counts.
@@ -186,8 +209,7 @@ def compute_particle_number_metrics(df: pd.DataFrame) -> pd.DataFrame:
     Ne = out["Ne"].values.astype(float)
     Ni = out["Ni"].values.astype(float) if "Ni" in out.columns else np.zeros_like(Np)
 
-    eta_e = np.where(Np > 0, Ne / Np, 0.0)
-    eta_net = np.where(Np > 0, (Ne - Ni) / Np, 0.0)
+    eta_e, eta_net = safe_eta(Ne, Ni, Np)
 
     out["eta_electron_only"] = eta_e
     out["eta_net"] = eta_net
@@ -220,11 +242,9 @@ def compute_local_core_neutralization(
             "np_core_avg": 0.0,
             "ne_core_avg": 0.0,
             "ni_core_avg": 0.0,
-            "eta_electron_only_core": 0.0,
-            "eta_net_core": 0.0,
-            "keff_over_k0_core": 1.0,
             "eta_electron_only_local": 0.0,
             "eta_net_local": 0.0,
+            "keff_over_k0_electron_only_local": 1.0,
             "keff_over_k0_local": 1.0,
             "overcompensated": False,
         }
@@ -233,20 +253,17 @@ def compute_local_core_neutralization(
     ne_avg = float(np.mean(ne_3d[mask]))
     ni_avg = float(np.mean(ni_3d[mask]))
 
-    eta_e = ne_avg / (np_avg + 1.0e-30)
-    eta_net = (ne_avg - ni_avg) / (np_avg + 1.0e-30)
-    keff = 1.0 - eta_net
+    eta_e, eta_net = safe_eta(ne_avg, ni_avg, np_avg)
+    keff = 1.0 - float(eta_net)
     overcomp = float(eta_net) > 1.0
 
     return {
         "np_core_avg": np_avg,
         "ne_core_avg": ne_avg,
         "ni_core_avg": ni_avg,
-        "eta_electron_only_core": float(eta_e),
-        "eta_net_core": float(eta_net),
-        "keff_over_k0_core": float(max(0.0, keff)),
         "eta_electron_only_local": float(eta_e),
         "eta_net_local": float(eta_net),
+        "keff_over_k0_electron_only_local": float(1.0 - float(eta_e)),
         "keff_over_k0_local": float(keff),
         "overcompensated": overcomp,
     }
@@ -332,12 +349,11 @@ def compute_local_neutralization_vs_z(
             ne_avg = float(np.mean(ne_slice))
             ni_avg = float(np.mean(ni_slice))
 
-            eta_e = ne_avg / (np_avg + 1.0e-30)
-            eta_net = (ne_avg - ni_avg) / (np_avg + 1.0e-30)
+            eta_e, eta_net = safe_eta(ne_avg, ni_avg, np_avg)
 
             eta_e_z[iz] = float(eta_e)
             eta_net_z[iz] = float(eta_net)
-            keff_z[iz] = float(max(0.0, 1.0 - eta_net))
+            keff_z[iz] = float(1.0 - float(eta_net))
 
     return pd.DataFrame({
         "z": z_coords,
