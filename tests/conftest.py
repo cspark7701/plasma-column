@@ -8,6 +8,15 @@ from __future__ import annotations
 
 import pytest
 from plasma_column._testing import generate_synthetic_3d_grid
+from plasma_column.diagnostics import DataLoader
+
+
+@pytest.fixture(autouse=True)
+def clear_dataloader_cache():
+    """Ensures DataLoader cache is clean before and after each test."""
+    DataLoader.clear_cache()
+    yield
+    DataLoader.clear_cache()
 
 
 @pytest.fixture

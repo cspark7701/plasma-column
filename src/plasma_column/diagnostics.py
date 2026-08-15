@@ -9,6 +9,7 @@ radial charge-density diagnostics, and in-memory data caching via DataLoader.
 from __future__ import annotations
 
 import json
+import threading
 import warnings
 from pathlib import Path
 from typing import Any, Optional
@@ -44,20 +45,23 @@ class DataLoader:
     and timestamp (st_mtime) invalidation to accelerate analysis workflows.
     """
     _cache: dict[tuple[Path, float], Any] = {}
+    _lock: threading.Lock = threading.Lock()
 
     @classmethod
     def clear_cache(cls) -> None:
-        """Clears all cached DataFrames and metadata dictionaries."""
-        cls._cache.clear()
+        """Clears all cached DataFrames and metadata dictionaries in a thread-safe manner."""
+        with cls._lock:
+            cls._cache.clear()
 
     @classmethod
     def cache_info(cls) -> dict[str, int]:
-        """Returns statistics on currently cached files."""
-        return {"cached_entries": len(cls._cache)}
+        """Returns statistics on currently cached files in a thread-safe manner."""
+        with cls._lock:
+            return {"cached_entries": len(cls._cache)}
 
     @classmethod
     def load_particle_number(cls, filepath: str | Path, use_cache: bool = True) -> pd.DataFrame:
-        """Loads and parses ParticleNumber diagnostic file with mtime caching."""
+        """Loads and parses ParticleNumber diagnostic file with thread-safe mtime caching."""
         path = Path(filepath).resolve()
         if not path.exists():
             raise FileNotFoundError(f"Particle number diagnostic file not found: {path}")
@@ -65,17 +69,20 @@ class DataLoader:
         mtime = path.stat().st_mtime
         key = (path, mtime)
 
-        if use_cache and key in cls._cache:
-            return cls._cache[key].copy()
-
-        df = load_particle_number_diagnostic(path)
         if use_cache:
-            cls._cache[key] = df.copy()
+            with cls._lock:
+                if key in cls._cache:
+                    return cls._cache[key].copy()
+
+        df = load_particle_number_diagnostic(path, use_cache=False)
+        if use_cache:
+            with cls._lock:
+                cls._cache[key] = df.copy()
         return df
 
     @classmethod
     def load_local_neutralization(cls, filepath: str | Path, use_cache: bool = True) -> pd.DataFrame:
-        """Loads local_neutralization.csv DataFrame with mtime caching."""
+        """Loads local_neutralization.csv DataFrame with thread-safe mtime caching."""
         path = Path(filepath).resolve()
         if not path.exists():
             raise FileNotFoundError(f"Local neutralization file not found: {path}")
@@ -83,17 +90,20 @@ class DataLoader:
         mtime = path.stat().st_mtime
         key = (path, mtime)
 
-        if use_cache and key in cls._cache:
-            return cls._cache[key].copy()
+        if use_cache:
+            with cls._lock:
+                if key in cls._cache:
+                    return cls._cache[key].copy()
 
         df = pd.read_csv(path)
         if use_cache:
-            cls._cache[key] = df.copy()
+            with cls._lock:
+                cls._cache[key] = df.copy()
         return df
 
     @classmethod
     def load_case_metadata(cls, filepath: str | Path, use_cache: bool = True) -> dict[str, Any]:
-        """Loads metadata.json dictionary with mtime caching."""
+        """Loads metadata.json dictionary with thread-safe mtime caching."""
         path = Path(filepath).resolve()
         if not path.exists():
             raise FileNotFoundError(f"Metadata file not found: {path}")
@@ -101,13 +111,16 @@ class DataLoader:
         mtime = path.stat().st_mtime
         key = (path, mtime)
 
-        if use_cache and key in cls._cache:
-            return dict(cls._cache[key])
+        if use_cache:
+            with cls._lock:
+                if key in cls._cache:
+                    return dict(cls._cache[key])
 
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         if use_cache:
-            cls._cache[key] = dict(data)
+            with cls._lock:
+                cls._cache[key] = dict(data)
         return data
 
 
