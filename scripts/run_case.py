@@ -27,7 +27,11 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from plasma_column.schema import SimulationCaseConfig, build_warpx_cmd_flags
+from plasma_column.schema import (
+    SimulationCaseConfig,
+    build_warpx_cmd_flags,
+    get_runner_script,
+)
 from plasma_column.warpx_io import get_git_info, collect_metadata
 
 
@@ -116,7 +120,7 @@ def main() -> None:
 
     print(f"\n[RUNNING] Executing production simulation steps for {case_name} (max_steps={steps})...", flush=True)
 
-    script_path = Path(__file__).resolve().parent.parent / "plasma_column_mcc_picmi_v7.py"
+    script_path = get_runner_script(config.method)
     cmd = [
         sys.executable,
         str(script_path),
@@ -124,8 +128,8 @@ def main() -> None:
         "--gas", gas if gas != "none" else "H2",
         "--pressure_torr", str(p_torr),
         "--max_steps", str(steps),
-        "--beam_energy_kev", str(e_kev),
-        "--beam_current_ma", str(i_ma),
+        "--beam_energy_keV", str(e_kev),
+        "--beam_current_mA", str(i_ma),
         "--run",
     ]
 

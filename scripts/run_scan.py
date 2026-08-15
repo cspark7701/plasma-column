@@ -26,7 +26,11 @@ import yaml
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from plasma_column.schema import SimulationCaseConfig, build_warpx_cmd_flags
+from plasma_column.schema import (
+    SimulationCaseConfig,
+    build_warpx_cmd_flags,
+    get_runner_script,
+)
 from plasma_column.warpx_io import collect_metadata
 
 
@@ -118,7 +122,7 @@ def main() -> None:
 
         if not args.dry_run:
             print(f"  --> Launching PIC simulation for {case_name} (gas={gas}, p={pressure:.1e} Torr)...", flush=True)
-            script_path = Path(__file__).resolve().parent.parent / "plasma_column_mcc_picmi_v7.py"
+            script_path = get_runner_script(config.method)
             cmd = [
                 sys.executable,
                 str(script_path),

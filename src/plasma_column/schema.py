@@ -52,6 +52,28 @@ def _normalise_method(raw: str) -> str:
     return normalised
 
 
+def get_runner_script(method: str, root_dir: Path | None = None) -> Path:
+    """Return the absolute path to the appropriate runner script for a method.
+
+    - 'python_callback' -> plasma_column_callback_source_picmi_v3.py
+    - 'seeded_compensation', 'cxx_mcc_custom', 'vacuum' -> plasma_column_mcc_picmi_v7.py
+
+    Args:
+        method: Canonical or alias method string.
+        root_dir: Root directory of the repository (defaults to 3 levels up).
+
+    Returns:
+        Path to the target runner script.
+    """
+    if root_dir is None:
+        root_dir = Path(__file__).resolve().parent.parent.parent
+    method = _normalise_method(method)
+    if method == "python_callback":
+        return root_dir / "plasma_column_callback_source_picmi_v3.py"
+    else:
+        return root_dir / "plasma_column_mcc_picmi_v7.py"
+
+
 def build_warpx_cmd_flags(method: str) -> list[str]:
     """Return the WarpX PICMI script CLI flags for the given simulation method.
 
@@ -70,7 +92,7 @@ def build_warpx_cmd_flags(method: str) -> list[str]:
     if method == "seeded_compensation":
         return ["--neutralization", "-1"]
     elif method == "python_callback":
-        return ["--neutralization", "-1", "--callback_source"]
+        return ["--enable_ionization_source", "1"]
     elif method == "cxx_mcc_custom":
         return ["--mcc", "electron_impact"]
     elif method == "vacuum":
