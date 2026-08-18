@@ -45,5 +45,65 @@ def test_rf_focused_beam():
     assert math.isclose(k_peak_ratio, 0.82, rel_tol=1e-5)
 
 
+def test_bunch_charge_and_conservation():
+    """Verify total bunch charge and longitudinal profile integrals."""
+    import numpy as np
+    from scipy.integrate import quad
+
+    beam = RFFocusedBeam(
+        energy_keV=30.0,
+        current_mA=10.0,
+        rf_frequency_hz=50.0e6,
+        bunch_phase_width_deg=36.0,
+    )
+
+    q_expected = 10.0e-3 / 50.0e6  # 2.0e-10 C
+    assert math.isclose(beam.bunch_charge_C, q_expected, rel_tol=1e-6)
+
+    # Parabolic profile integral
+    dz = beam.bunch_length_m
+    zm = dz / 2.0
+    q_para, _ = quad(lambda z: beam.line_charge_density(z, profile="parabolic"), -zm, zm)
+    assert math.isclose(q_para, q_expected, rel_tol=1e-4)
+
+    # Gaussian profile integral
+    q_gauss, _ = quad(lambda z: beam.line_charge_density(z, profile="gaussian"), -5 * dz, 5 * dz)
+    assert math.isclose(q_gauss, q_expected, rel_tol=1e-4)
+
+    # Peak density checks
+    lam_0_p = beam.peak_line_charge_density("parabolic")
+    assert lam_0_p > 0.0
+    assert math.isclose(beam.line_charge_density(0.0, "parabolic"), lam_0_p, rel_tol=1e-5)
+
+
+def test_radial_space_charge_electric_field():
+    """Verify radial space charge field asymptotics at core and exterior."""
+    beam = RFFocusedBeam(
+        energy_keV=30.0,
+        current_mA=10.0,
+        radius_m=0.002,
+        rf_frequency_hz=50.0e6,
+    )
+
+    # At origin r = 0 -> E_r = 0
+    assert beam.radial_electric_field(0.0, z=0.0) == 0.0
+
+    # Inside core (r = 0.5 mm)
+    er_core = beam.radial_electric_field(0.0005, z=0.0)
+    assert er_core > 0.0
+
+    # Far outside core (r = 20 mm)
+    er_far = beam.radial_electric_field(0.020, z=0.0)
+    # Outside beam core, E_r ~ lambda / (2 * pi * eps_0 * r)
+    from plasma_column.constants import EPSILON_0
+    lam_0 = beam.line_charge_density(0.0, "parabolic")
+    er_expected_far = lam_0 / (2.0 * math.pi * EPSILON_0 * 0.020)
+    assert math.isclose(er_far, er_expected_far, rel_tol=1e-3)
+
+    # Error handling
+    with pytest.raises(ValueError):
+        beam.radial_electric_field(-0.001)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
