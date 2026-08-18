@@ -339,32 +339,26 @@ def compute_local_neutralization_vs_z(
     r_core: float = 0.002,
 ) -> pd.DataFrame:
     """
-    Computes axial profile of local neutralization eta(z) and K_eff/K0(z) within beam core.
+    Computes axial profile of local neutralization eta(z) and K_eff/K0(z) within beam core
+    using vectorized NumPy masked array reduction.
     """
     X, Y = np.meshgrid(x_coords, y_coords, indexing="ij")
     R_transverse = np.sqrt(X**2 + Y**2)
     transverse_mask = R_transverse <= r_core
 
     nz = len(z_coords)
-    eta_e_z = np.zeros(nz)
-    eta_net_z = np.zeros(nz)
-    keff_z = np.ones(nz)
 
-    for iz in range(nz):
-        np_slice = np_3d[:, :, iz][transverse_mask]
-        ne_slice = ne_3d[:, :, iz][transverse_mask]
-        ni_slice = ni_3d[:, :, iz][transverse_mask]
+    if np.any(transverse_mask):
+        np_z_avg = np.mean(np_3d[transverse_mask, :], axis=0)
+        ne_z_avg = np.mean(ne_3d[transverse_mask, :], axis=0)
+        ni_z_avg = np.mean(ni_3d[transverse_mask, :], axis=0)
 
-        if np.any(transverse_mask):
-            np_avg = float(np.mean(np_slice))
-            ne_avg = float(np.mean(ne_slice))
-            ni_avg = float(np.mean(ni_slice))
-
-            eta_e, eta_net = safe_eta(ne_avg, ni_avg, np_avg)
-
-            eta_e_z[iz] = float(eta_e)
-            eta_net_z[iz] = float(eta_net)
-            keff_z[iz] = float(1.0 - float(eta_net))
+        eta_e_z, eta_net_z = safe_eta(ne_z_avg, ni_z_avg, np_z_avg)
+        keff_z = 1.0 - eta_net_z
+    else:
+        eta_e_z = np.zeros(nz)
+        eta_net_z = np.zeros(nz)
+        keff_z = np.ones(nz)
 
     return pd.DataFrame({
         "z": z_coords,

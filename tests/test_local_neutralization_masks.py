@@ -103,3 +103,22 @@ def test_radial_density_profile_vectorization():
     assert df_r["np_r"].iloc[0] > df_r["np_r"].iloc[-1]
     assert df_r["ne_r"].iloc[0] > df_r["ne_r"].iloc[-1]
     assert not df_r.isna().any().any()
+
+
+def test_vectorized_neutralization_vs_z_equivalence():
+    """Verify vectorized compute_local_neutralization_vs_z produces valid profiles and handles empty masks."""
+    ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid(
+        nx=24, ny=24, nz=128, n_proton_peak=1.0e15, eta_target=0.85
+    )
+
+    df_z = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z, r_core=0.002)
+    assert len(df_z) == 128
+    assert np.all(df_z["eta_net_local_z"] > 0.5)
+    assert np.all(df_z["keff_over_k0_local_z"] < 0.5)
+    assert not df_z.isna().any().any()
+
+    # Edge case: zero radius core (empty mask)
+    df_empty = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z, r_core=0.0)
+    assert len(df_empty) == 128
+    assert np.all(df_empty["eta_net_local_z"] == 0.0)
+    assert np.all(df_empty["keff_over_k0_local_z"] == 1.0)
