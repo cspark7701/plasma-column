@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import Callable, Optional, Sequence, Union
 import numpy as np
 from scipy.integrate import solve_ivp
 
@@ -117,7 +117,10 @@ class InjectionLine:
 def compute_beam_envelope(
     beam: ProtonBeam,
     injection_line: InjectionLine,
-    eta_net: float = 0.0,
+    eta_net: Optional[float] = None,
+    eta_cell: Optional[float] = None,
+    eta_downstream: float = 0.0,
+    keff_func: Optional[Callable[[float], float]] = None,
     r0_m: float = 0.002,
     rp0_rad: float = 0.0,
     emittance_n_mrad: float = 1.0e-6,
@@ -125,13 +128,35 @@ def compute_beam_envelope(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Integrates 2D beam envelope equations (Rx, Ry) from buncher exit to inflector entrance.
-    Includes effective space-charge perveance K_eff = K0 * (1 - eta_net).
+
+    Supports:
+    1. Region-dependent neutralization:
+       - eta_cell: Neutralization fraction inside the plasma neutralizer cell (0 <= z <= L_cell).
+       - eta_downstream: Neutralization fraction in downstream drift and matching elements (z > L_cell).
+         Defaults to 0.0 (high-vacuum downstream transport).
+    2. Arbitrary z-dependent perveance function keff_func(z) -> K_eff.
+    3. Backwards compatibility: if eta_net is provided and eta_cell is None, eta_cell is set to eta_net.
+
+    Returns:
+        tuple of (z_eval, Rx_arr, Ry_arr) in meters and radians.
     """
     beta = beam.beta
     gamma = beam.gamma
     p_momentum = gamma * MP * beam.velocity
-    K_eff = beam.perveance_K0 * (1.0 - eta_net)
+    K0 = beam.perveance_K0
     emittance_geom = emittance_n_mrad / (beta * gamma)
+
+    # Resolve neutralization parameters
+    if eta_cell is None:
+        if eta_net is not None:
+            eta_c = float(eta_net)
+        else:
+            eta_c = 0.0
+    else:
+        eta_c = float(eta_cell)
+
+    eta_d = float(eta_downstream)
+    L_cell = injection_line.plasma_cell_length
 
     # Solenoid focusing parameter k_sol = e * B / (2 * p)
     k_sol = (QE * injection_line.solenoid_field_T) / (2.0 * p_momentum)
@@ -139,12 +164,21 @@ def compute_beam_envelope(
     # Quadrupole magnetic rigidity focal strength factor: e / p
     quad_factor = QE / p_momentum
 
+    def get_keff(z: float) -> float:
+        if keff_func is not None:
+            return float(keff_func(z))
+        if z <= L_cell:
+            return float(K0 * max(0.0, 1.0 - eta_c))
+        else:
+            return float(K0 * max(0.0, 1.0 - eta_d))
+
     def envelope_ode(z: float, state: np.ndarray) -> list[float]:
         Rx, dRx, Ry, dRy = state
         Rx = max(Rx, 1.0e-6)
         Ry = max(Ry, 1.0e-6)
 
         elem_name, g_x, g_y = injection_line.get_element_at(z)
+        K_eff_local = get_keff(z)
 
         # Focusing terms
         kx2 = 0.0
@@ -158,8 +192,8 @@ def compute_beam_envelope(
             ky2 = g_y * quad_factor
 
         # Envelope ODEs
-        d2Rx = -kx2 * Rx + (2.0 * K_eff) / (Rx + Ry) + (emittance_geom**2) / (Rx**3)
-        d2Ry = -ky2 * Ry + (2.0 * K_eff) / (Rx + Ry) + (emittance_geom**2) / (Ry**3)
+        d2Rx = -kx2 * Rx + (2.0 * K_eff_local) / (Rx + Ry) + (emittance_geom**2) / (Rx**3)
+        d2Ry = -ky2 * Ry + (2.0 * K_eff_local) / (Rx + Ry) + (emittance_geom**2) / (Ry**3)
 
         return [dRx, d2Rx, dRy, d2Ry]
 

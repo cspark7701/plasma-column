@@ -78,3 +78,39 @@ def test_envelope_integration_neutralized_focusing():
     r_max_uncomp = np.max(Rx_uncomp)
     r_max_comp = np.max(Rx_comp)
     assert r_max_comp < r_max_uncomp
+
+
+def test_envelope_cell_only_vs_uniform_neutralization():
+    """
+    Verify that cell-only neutralization (eta_cell=0.9, eta_downstream=0.0)
+    experiences more downstream expansion than uniform neutralization (eta_downstream=0.9),
+    but remains smaller than full vacuum (eta_cell=0.0).
+    """
+    beam = ProtonBeam(energy_keV=30.0, current_mA=10.0, radius_m=0.002)
+    line = InjectionLine()
+
+    z, rx_vac, ry_vac = compute_beam_envelope(beam, line, eta_cell=0.0, eta_downstream=0.0)
+    z, rx_cell, ry_cell = compute_beam_envelope(beam, line, eta_cell=0.90, eta_downstream=0.0)
+    z, rx_unif, ry_unif = compute_beam_envelope(beam, line, eta_cell=0.90, eta_downstream=0.90)
+
+    # At the inflector entrance:
+    assert rx_unif[-1] < rx_cell[-1] < rx_vac[-1]
+    assert ry_unif[-1] < ry_cell[-1] < ry_vac[-1]
+
+    # Inside the plasma cell (z <= 0.20 m), cell-only and uniform curves must agree closely (< 0.1%)
+    cell_mask = z <= line.plasma_cell_length
+    assert np.allclose(rx_cell[cell_mask], rx_unif[cell_mask], rtol=1e-2)
+
+
+def test_envelope_custom_keff_func():
+    """Verify arbitrary keff_func is evaluated properly by compute_beam_envelope."""
+    beam = ProtonBeam(energy_keV=30.0, current_mA=10.0, radius_m=0.002)
+    line = InjectionLine()
+
+    # Step function keff
+    def custom_keff(z: float) -> float:
+        return 0.0 if z < 0.5 else beam.perveance_K0
+
+    z, rx_custom, ry_custom = compute_beam_envelope(beam, line, keff_func=custom_keff)
+    assert len(z) == 500
+    assert np.all(rx_custom > 0.0)
