@@ -133,13 +133,17 @@ plasma_column/
   src/
     plasma_column/       # Core Python package modules
       __init__.py
-      constants.py
-      beam.py
-      gas.py
-      neutralization.py
-      diagnostics.py
-      plotting.py
-      warpx_io.py
+      constants.py       # Physical constants, conversions & radiation lengths
+      beam.py            # ProtonBeam, RFFocusedBeam, slice lambda(z) & radial Er(r,z)
+      gas.py             # NeutralGas density, CrossSectionDatabase, scattering & MFP
+      injection_line.py  # 2D envelope integration with region-dependent K_eff(z)
+      acceptance.py      # Inflector acceptance ellipse & transmission efficiency
+      neutralization.py  # Neutralization kinetics & perveance scaling
+      diagnostics.py     # ParticleNumber & vectorized 2D masked core diagnostics
+      schema.py          # Validated dataclass schemas & YAML case parsing
+      warpx_io.py        # Machine-readable metadata & plotfile loader
+      notebook_utils.py  # Shared notebook styling & path configuration
+      plotting/          # Modular publication figure generator package
   tests/                 # Pytest unit test suite
 ```
 

@@ -41,8 +41,15 @@ Cross-section data files are stored in `warpx_proton_impact_cross_sections_linea
 ## 4. Key Physics Insights
 
 1. **Higher Cross Section for Krypton**: Krypton's proton-impact ionization cross section at $30\text{ keV}$ is **$5.56\times$ larger** than that of $\text{H}_2$.
-2. **Pressure Reduction Capability**: Because $\sigma_{\text{Kr}} \approx 5.56 \sigma_{\text{H2}}$, a Krypton gas cell achieves equivalent ionization density $n_e \approx n_{\text{gas}} \sigma v_{\text{beam}} t$ at a lower neutral pressure ($10^{-6}\text{ Torr}$ $\text{Kr}$ vs $10^{-5}\text{ Torr}$ $\text{H}_2$).
-3. **Scattering & Loss Limits**: Operating at lower gas pressure minimizes beam-gas scattering and emittance growth while maintaining high neutralization levels.
+2. **Pressure Reduction Capability**: Because $\sigma_{\text{Kr}} \approx 5.56 \sigma_{\text{H2}}$, a Krypton gas cell achieves equivalent ionization buildup at a lower neutral pressure ($10^{-6}\text{ Torr}$ $\text{Kr}$ vs $10^{-5}\text{ Torr}$ $\text{H}_2$).
+3. **Collision Mean Free Path & Transmission Loss**:
+   $$\lambda_{\text{mfp}} = \frac{1}{n_{\text{gas}} \sigma_{\text{ion}}}$$
+   $$T = \exp(-n_{\text{gas}} \sigma_{\text{loss}} L)$$
+   For $10^{-5}\text{ Torr } \text{H}_2$ over $L = 0.20\text{ m}$, $\lambda_{\text{mfp}} \approx 194\text{ m}$ and $T > 99.8\%$, showing negligible transmission loss.
+4. **Multiple Coulomb Scattering (MCS)**:
+   Calculated using the Highland / Lynch–Dahl formulation with radiation lengths $X_{0,\text{H2}} = 63.05\text{ g/cm}^2$ and $X_{0,\text{Kr}} = 35.34\text{ g/cm}^2$:
+   $$\theta_0 \approx \frac{13.6\text{ MeV}}{\beta p c} z_p \sqrt{\frac{x}{X_0}} \left[1 + 0.038 \ln\left(\frac{x}{X_0}\right)\right]$$
+   For $30\text{ keV}$ protons in $10^{-5}\text{ Torr } \text{H}_2$, $\theta_0 \approx 0.13\text{ mrad} \ll 1\text{ mrad}$, confirming that gas scattering does not degrade beam emittance.
 
 ---
 
@@ -50,8 +57,8 @@ Cross-section data files are stored in `warpx_proton_impact_cross_sections_linea
 
 To plot the cross-section curves and verify operating points:
 ```bash
-python scripts/plot_cross_sections.py
+python scripts/make_plots.py --cross-sections
 ```
 Outputs:
-- `plots/h2_kr_cross_sections.png`
-- `plots/h2_kr_cross_sections.pdf`
+- `plots/cross_section_comparison.png`
+- `plots/cross_section_comparison.pdf`

@@ -108,14 +108,22 @@
       <p>\[ p^+ + \text{Gas} \longrightarrow p^+ + \text{Gas}^+ + e^- \]</p>
       <p>Secondary electrons are trapped in the beam's space-charge potential well, while ions are repelled radially.</p>
 
-      <h2>Buildup Time Constant</h2>
+      <h2>Buildup Time Constant & Gas Scattering</h2>
       <p>The space-charge neutralization buildup time constant \(\tau\) is defined as:</p>
       <p>\[ \tau = \frac{1}{n_{\text{gas}} \sigma_{\text{ion}} v_{\text{beam}}} \]</p>
       <p>Buildup kinetics follow: \(\eta(t) = \eta_{\text{ss}} (1 - e^{-t/\tau})\)</p>
 
+      <p>Proton-gas collision mean free path \(\lambda_{\text{mfp}}\) and Highland Multiple Coulomb Scattering (MCS) RMS angle \(\theta_0\) confirm negligible beam degradation in the \(20\text{ cm}\) cell (\(T > 99.8\%\), \(\theta_0 \approx 0.13\text{ mrad} \ll 1\text{ mrad}\)):</p>
+      <p>\[ \lambda_{\text{mfp}} = \frac{1}{n_{\text{gas}} \sigma_{\text{ion}}}, \quad \theta_0 \approx \frac{13.6\text{ MeV}}{\beta p c} \sqrt{\frac{x}{X_0}} \left[1 + 0.038 \ln\left(\frac{x}{X_0}\right)\right] \]</p>
+
+      <h2>Region-Dependent Space-Charge Perveance \(K_{\text{eff}}(z)\)</h2>
+      <p>Space-charge perveance is evaluated dynamically along the injection line separating the neutralizer cell from downstream high vacuum:</p>
+      <p>\[ K_{\text{eff}}(z) = \begin{cases} K_0 (1 - \eta_{\text{cell}}), & z \le L_{\text{cell}} \\ K_0 (1 - \eta_{\text{downstream}}), & z > L_{\text{cell}} \end{cases} \]</p>
+
       <div class="source-note" style="border-left-color: #e67e22; background: #fdf6ee;">
         <strong>RF-Bunched Beam Space-Charge Perveance Limit:</strong> When an RF buncher is upstream of the neutralizer, the beam enters the plasma cell already bunched with bunching factor \(B_f = I_{\text{peak}} / I_{\text{avg}}\). While background electrons provide average neutralization \(\eta_{\text{avg}}\), peak-bunch space charge is reduced by:
         <p style="margin-top: 8px; margin-bottom: 0;">\[ \frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{avg}}}{B_f} \]</p>
+        <p style="margin-top: 8px; margin-bottom: 0;">Longitudinal slice charge density \(\lambda(z)\) (parabolic / Gaussian) and radial electric field \(E_r(r,z) = \frac{\lambda(z)}{2\pi\epsilon_0 r}[1 - e^{-r^2/(2\sigma_r^2)}]\) model core-to-tail space-charge gradients.</p>
       </div>
     </div>
 
@@ -341,12 +349,25 @@
 
       <pre><code>plasma_column/
 ├── src/plasma_column/
-│   ├── constants.py       # Physical constants & unit conversions
-│   ├── gas.py             # NeutralGas density & CrossSectionDatabase
-│   ├── beam.py            # ProtonBeam perveance calculator
-│   ├── neutralization.py  # Buildup kinetics & bunched beam model
-│   ├── diagnostics.py     # Global ParticleNumber & local core masks
-│   └── plotting.py        # Scriptable visualization pipeline
+│   ├── constants.py       # Physical constants, conversions & radiation lengths (X0,H2, X0,Kr)
+│   ├── gas.py             # NeutralGas density, CrossSectionDatabase, scattering & MFP
+│   ├── beam.py            # ProtonBeam, RFFocusedBeam, slice lambda(z) & radial Er(r,z)
+│   ├── injection_line.py  # 2D envelope integration with region-dependent K_eff(z)
+│   ├── neutralization.py  # Buildup kinetics, global ratios & perveance scaling
+│   ├── diagnostics.py     # Global ParticleNumber & vectorized 2D masked core reductions
+│   ├── schema.py          # Dataclass validation & case YAML parsing
+│   ├── warpx_io.py        # Machine-readable metadata.json & plotfile loader
+│   └── plotting/          # Modular publication figure generator subpackage
+│       ├── neutralization.py  # Species counts, eta(t), K_eff/K0, profiles
+│       ├── cross_sections.py  # H2 vs Kr cross-section comparisons
+│       ├── transport.py       # Phase space scatter & (Rx, Ry) envelope with layout schematic
+│       ├── paper_figures.py   # Publication vector figures (fig01–fig05)
+│       └── scan.py            # Heatmaps, comparison bars & parameter scans
+├── scripts/
+│   ├── run_case.py        # Single simulation runner (PICMI MCC / Python callback)
+│   ├── run_scan.py        # Parameter scan matrix orchestrator
+│   ├── make_plots.py      # Unified CLI plotting pipeline (--paper-figures, --cross-sections)
+│   └── audit_repo.py      # Automated 5-stage repository health & cleanliness auditor
 └── cases/
     ├── baseline_h2.yaml   # 30 keV 10 mA H2 baseline case
     ├── baseline_kr.yaml   # 30 keV 10 mA Kr baseline case

@@ -30,18 +30,27 @@ The primary goals are:
 
 ---
 
-## 3. Target Package Architecture (`src/plasma_column/`)
+## 3. Modular Package Architecture (`src/plasma_column/`)
 
 ```text
 src/plasma_column/
-├── __init__.py          # Package initialization & version string
-├── constants.py         # Physical constants (C, QE, ME, MP, AMU, KB, EPSILON_0) & unit conversions
-├── beam.py              # Beam kinematics, relativistic beta/gamma, perveance K0, RF bunching
-├── gas.py               # Gas properties (H2, Kr), neutral density n_gas, pressure/temperature formulas
-├── neutralization.py    # Neutralization ratios (eta_electron_only, eta_net, K_eff/K0, peak-bunch perveance)
-├── diagnostics.py       # Reduced diagnostic (ParticleNumber.txt) parsers & local core neutralization
-├── plotting.py          # Deterministic figure generation (PNG + PDF export)
-└── warpx_io.py          # Machine-readable metadata.json & input file reader/writer
+├── __init__.py          # Package initialization & public API re-exports
+├── constants.py         # Physical constants (C, QE, ME, MP, AMU, KB, EPSILON_0) & radiation lengths
+├── beam.py              # Beam kinematics, perveance K0, RF bunching, slice lambda(z) & radial Er(r,z)
+├── gas.py               # NeutralGas density, CrossSectionDatabase, scattering & collision mean free path
+├── injection_line.py    # 2D transverse envelope ODE integration with region-dependent K_eff(z)
+├── acceptance.py        # Spiral inflector geometric acceptance ellipse & transmission model
+├── neutralization.py    # Buildup kinetics, global ratios (eta_e, eta_net, K_eff/K0, peak-bunch perveance)
+├── diagnostics.py       # ParticleNumber parsers, DataLoader thread safety, vectorized 2D masked reductions
+├── schema.py            # Validated dataclass schemas, YAML parsing, and method dispatch
+├── warpx_io.py          # Machine-readable metadata.json & plotfile loader
+├── notebook_utils.py    # Shared notebook styling, paths, and execution context
+└── plotting/            # Modular publication plotting subpackage
+    ├── neutralization.py # Particle populations, eta(t), K_eff/K0, growth rates, profiles
+    ├── cross_sections.py # Proton-impact ionization cross-section comparisons
+    ├── transport.py      # Phase space scatter & 2D (Rx, Ry) envelope with layout schematic
+    ├── paper_figures.py  # Manuscript vector publication figure generators (fig01–fig05)
+    └── scan.py           # Multi-case comparison bars, heatmaps & parameter scans
 ```
 
 ---
@@ -49,33 +58,48 @@ src/plasma_column/
 ## 4. Canonical API Specification
 
 ### `plasma_column.constants`
-- Provides standard physical constants (`C`, `QE`, `ME`, `MP`, `AMU`, `KB`, `EPSILON_0`) and unit conversions (`TORR_TO_PA`, `EV_TO_JOULE`).
+- Provides standard physical constants (`C`, `QE`, `ME`, `MP`, `AMU`, `KB`, `EPSILON_0`), conversions (`TORR_TO_PA`, `EV_TO_JOULE`), and radiation lengths (`RADIATION_LENGTH_H2`, `RADIATION_LENGTH_KR`).
 
 ### `plasma_column.beam`
-- `ProtonBeam`: Dataclass managing $E_{beam}$, $I_{beam}$, $r_{beam}$, $\beta$, $\gamma$, $v_{beam}$, and uncompensated perveance $K_0$.
-- `RFFocusedBeam`: Extension containing RF frequency $f_{RF}$, bunching factor $B_f$, phase width $\Delta \phi$, bunch time width $\Delta t_b$, and spatial length $\Delta z_b$.
+- `ProtonBeam`: Dataclass managing $E_{\text{beam}}$, $I_{\text{beam}}$, $r_{\text{beam}}$, $\beta$, $\gamma$, $v_{\text{beam}}$, and uncompensated perveance $K_0$.
+- `RFFocusedBeam`: Extension containing RF frequency $f_{\text{RF}}$, bunching factor $B_f$, bunch charge $Q_{\text{bunch}}$, slice line charge density $\lambda(z)$ (parabolic, Gaussian, top-hat), and radial space-charge electric field $E_r(r, z)$.
 
 ### `plasma_column.gas`
-- `NeutralGas`: Dataclass calculating neutral number density $n_{gas} = p / (k_B T)$ for $H_2$ and $Kr$.
-- Cross-section data lookup functions for proton-impact and electron-impact ionization.
+- `NeutralGas`: Dataclass calculating neutral number density $n_{\text{gas}} = p / (k_B T)$ for $\text{H}_2$ and $\text{Kr}$.
+- `CrossSectionDatabase`: Lookup and interpolation for proton-impact ionization in laboratory and center-of-mass frames.
+- `mean_free_path_m`, `transmission_fraction`, `multiple_scattering_rms_rad`: Analytical scattering and transmission loss models.
+
+### `plasma_column.injection_line`
+- `InjectionLine`: Optical layout dataclass representing the baseline compact cyclotron injection beamline.
+- `compute_beam_envelope`: 2D coupled envelope ODE solver with region-dependent perveance $K_{\text{eff}}(z)$ separating the neutralizer cell from downstream vacuum drift.
 
 ### `plasma_column.neutralization`
-- `compute_neutralization_ratios(N_p, N_e, N_i)`: Returns $\eta_{electron\_only}$, $\eta_{net}$, $K_{eff,electron\_only}/K_0$, $K_{eff,net}/K_0$.
-- `compute_bunched_beam_peak_perveance(eta_avg, bunching_factor)`: Evaluates peak-bunch space charge factor $K_{eff,peak}/K_{0,peak} = 1 - \eta_{avg}/B_f$.
+- `compute_neutralization_ratios(N_p, N_e, N_i)`: Returns $\eta_{\text{electron\_only}}$, $\eta_{\text{net}}$, $K_{\text{eff,electron\_only}}/K_0$, $K_{\text{eff,net}}/K_0$.
+- `compute_bunched_beam_peak_perveance(eta_avg, bunching_factor)`: Evaluates peak-bunch space charge factor $K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$.
 
 ### `plasma_column.diagnostics`
 - `load_particle_number_diagnostic(path)`: Loads and cleans WarpX `ParticleNumber.txt` data.
-- `compute_local_neutralization(plotfile_path, core_radius, column_z_bounds)`: Computes volume-averaged local electron and ion densities within the beam core in the plasma cell.
+- `compute_local_core_neutralization`, `compute_local_neutralization_vs_z`: Vectorized 2D masked array reductions within the beam core in the neutralizer cell.
+- `DataLoader`: Thread-safe cached reader for high-throughput diagnostic postprocessing.
 
 ### `plasma_column.plotting`
-- `save_figure(fig, filepath)`: Saves figure to both `.png` and `.pdf`.
-- Plotting functions for species populations, neutralization ratio evolution, transverse/longitudinal beam profiles, and summary matrices.
+- Deterministic figure generators with dual `.png` and vector `.pdf` output via `save_figure()`.
+- Modular generators for transport phase space, 2D envelopes with beamline element layout schematics, and vector paper figures (`fig01`–`fig05`).
 
 ---
 
-## 5. Migration Roadmap
+## 5. Migration Roadmap & Execution Status
 
-1. **Phase 1 (Scaffolding)**: Create empty/basic package scaffolding under `src/plasma_column/` (Completed in Task 02).
-2. **Phase 2 (Physics & Diagnostics)**: Populate `constants`, `beam`, `gas`, `neutralization`, and `diagnostics` with validated functions (Tasks 03, 04, 05, 06).
-3. **Phase 3 (Plotting & Analysis)**: Refactor `plasma_column_analysis_plots_v2.py` logic into `src/plasma_column/plotting.py` (Task 09).
-4. **Phase 4 (Notebook Integration)**: Update notebooks to import from `plasma_column` package while retaining existing outputs for reference.
+1. **Phase 1: Architecture & Hardening (Completed: RT-01 to RT-12)**
+   - Extracted git and metadata logic to `warpx_io.py`.
+   - Unified method dispatch in `schema.py`.
+   - Thread-safe `DataLoader` caching and dataclass round-trip validation.
+   - Cleaned root directory of stale scripts and notebooks into `scripts/` and `archives/`.
+
+2. **Phase 2: Physics & Feature Enhancements (Completed: RT-13 to RT-18)**
+   - Region-dependent $K_{\text{eff}}(z)$ in beam envelope integration (`injection_line.py`).
+   - Gas target scattering, mean free path, and transmission loss (`gas.py`).
+   - Vectorized 2D masked array reduction for $z$-resolved diagnostics (`diagnostics.py`).
+   - 2D $(R_x, R_y)$ envelope transport with beamline layout schematic overlay (`transport.py`).
+   - Longitudinal slice charge density $\lambda(z)$ and radial space-charge field $E_r(r, z)$ (`beam.py`).
+   - Dedicated vector publication figure generators (`paper_figures.py`).

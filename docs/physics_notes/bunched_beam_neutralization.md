@@ -39,3 +39,26 @@ $$\frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{av
 - For $B_f = 5$ and $\eta_{\text{avg}} = 0.90$, $\frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{0.90}{5} = 0.82$.
 - Although average space-charge force is reduced by $90\%$, peak-bunch space-charge force is reduced by only $18\%$.
 - Journal papers must clearly distinguish between average and peak-bunch perveance reduction to avoid overstating space-charge compensation for RF-bunched beams.
+
+---
+
+## 4. Longitudinal Slice-Dependent Charge Density $\lambda(z)$ and Radial Electric Field $E_r(r, z)$
+
+For detailed slice space-charge tracking, the total bunch charge is:
+
+$$Q_{\text{bunch}} = \frac{I_{\text{avg}}}{f_{\text{RF}}}$$
+
+### 4.1 Parabolic Longitudinal Profile
+With bunch half-length $z_m = \Delta z_b / 2$:
+
+$$\lambda(z) = \frac{3 Q_{\text{bunch}}}{4 z_m} \left(1 - \frac{z^2}{z_m^2}\right) \quad \text{for } |z| \le z_m$$
+
+### 4.2 Gaussian Longitudinal Profile
+With RMS bunch length $\sigma_z = \Delta z_b / (2\sqrt{2\ln 2})$:
+
+$$\lambda(z) = \frac{Q_{\text{bunch}}}{\sqrt{2\pi}\sigma_z} \exp\left(-\frac{z^2}{2\sigma_z^2}\right)$$
+
+### 4.3 Radial Space-Charge Electric Field
+For a Gaussian transverse beam distribution with core RMS radius $\sigma_r$:
+
+$$E_r(r, z) = \frac{\lambda(z)}{2 \pi \epsilon_0 r} \left[1 - \exp\left(-\frac{r^2}{2 \sigma_r^2}\right)\right]$$
