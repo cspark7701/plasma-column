@@ -22,6 +22,7 @@ from plasma_column.plotting import (
     plot_particle_counts,
     plot_neutralization_evolution,
     plot_keff_over_k0,
+    plot_beam_envelope_transport,
     write_plot_manifest,
 )
 
@@ -68,6 +69,27 @@ def test_notebook_utils_common_imports():
     assert "RESULTS_DIR    = _ROOT / 'results'" in joined
     assert "RUNS_DIR       = _ROOT / 'runs'" in joined
     assert "PLOTS_DIR      = _ROOT / 'plots'" in joined
+
+
+def test_plot_beam_envelope_transport_2d_and_schematic():
+    """Verify plot_beam_envelope_transport handles DataFrame (Rx, Ry) and tuple inputs with schematic overlay."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        z = np.linspace(0.0, 1.12, 100)
+        rx = 0.002 + 0.005 * z**2
+        ry = 0.002 + 0.003 * z**2
+        df = pd.DataFrame({"z": z, "Rx": rx, "Ry": ry})
+
+        # Test with DataFrame and element schematic overlay
+        png1, pdf1 = plot_beam_envelope_transport(df, tmp_dir, case_name="test_2d", show_elements=True)
+        assert png1.exists() and pdf1.exists()
+        assert png1.stat().st_size > 0
+        assert pdf1.stat().st_size > 0
+
+        # Test with tuple (z, rx, ry) without element schematic
+        png2, pdf2 = plot_beam_envelope_transport((z, rx, ry), tmp_dir, case_name="test_tuple", show_elements=False)
+        assert png2.exists() and pdf2.exists()
+        assert png2.stat().st_size > 0
+        assert pdf2.stat().st_size > 0
 
 
 if __name__ == "__main__":

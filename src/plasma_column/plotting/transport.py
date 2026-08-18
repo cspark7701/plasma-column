@@ -8,8 +8,9 @@ and inflector acceptance ellipses.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Union
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
@@ -83,30 +84,97 @@ def plot_phase_space(
 
 
 def plot_beam_envelope_transport(
-    envelope_df: pd.DataFrame,
+    envelope_data: Union[pd.DataFrame, tuple[np.ndarray, np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]],
     output_dir: str | Path,
     case_name: str = "simulation_case",
     aperture_r_mm: float = 5.0,
     output_name: Optional[str] = None,
     title: Optional[str] = None,
+    show_elements: bool = True,
 ) -> tuple[Path, Path]:
     """
-    Plots transverse beam envelope r(z) along injection line through Solenoid, Q1, Q2, and Inflector.
+    Plots transverse beam envelope Rx(z), Ry(z) or r(z) along the injection line
+    through Plasma Neutralizer, Solenoid, Q1, Q2, and Spiral Inflector.
     """
     setup_publication_style()
-    fig, ax = plt.subplots(figsize=(9, 5))
 
-    z_cm = envelope_df["z"].values * 100.0 if "z" in envelope_df.columns else np.arange(len(envelope_df))
-    r_mm = envelope_df["r"].values * 1000.0 if "r" in envelope_df.columns else np.ones_like(z_cm)
+    # Parse input data
+    if isinstance(envelope_data, tuple):
+        if len(envelope_data) == 3:
+            z_raw, rx_raw, ry_raw = envelope_data
+            z_cm = np.asarray(z_raw) * 100.0 if np.max(z_raw) < 10.0 else np.asarray(z_raw)
+            rx_mm = np.asarray(rx_raw) * 1000.0 if np.max(rx_raw) < 0.5 else np.asarray(rx_raw)
+            ry_mm = np.asarray(ry_raw) * 1000.0 if np.max(ry_raw) < 0.5 else np.asarray(ry_raw)
+        else:
+            z_raw, r_raw = envelope_data
+            z_cm = np.asarray(z_raw) * 100.0 if np.max(z_raw) < 10.0 else np.asarray(z_raw)
+            rx_mm = np.asarray(r_raw) * 1000.0 if np.max(r_raw) < 0.5 else np.asarray(r_raw)
+            ry_mm = None
+    elif isinstance(envelope_data, pd.DataFrame):
+        df = envelope_data
+        z_col = "z" if "z" in df.columns else ("z_cm" if "z_cm" in df.columns else df.columns[0])
+        z_vals = df[z_col].values
+        z_cm = z_vals * 100.0 if np.max(z_vals) < 10.0 else z_vals
 
-    ax.plot(z_cm, r_mm, label=r"RMS beam radius $r(z)$", color="tab:blue", lw=2)
-    ax.axhline(aperture_r_mm, color="tab:red", lw=1.2, ls="--", label=f"Inflector Aperture ({aperture_r_mm:.1f} mm)")
+        if "Rx" in df.columns and "Ry" in df.columns:
+            rx_vals = df["Rx"].values
+            ry_vals = df["Ry"].values
+            rx_mm = rx_vals * 1000.0 if np.max(rx_vals) < 0.5 else rx_vals
+            ry_mm = ry_vals * 1000.0 if np.max(ry_vals) < 0.5 else ry_vals
+        elif "r" in df.columns:
+            r_vals = df["r"].values
+            rx_mm = r_vals * 1000.0 if np.max(r_vals) < 0.5 else r_vals
+            ry_mm = None
+        else:
+            rx_mm = df.iloc[:, 1].values * 1000.0 if np.max(df.iloc[:, 1].values) < 0.5 else df.iloc[:, 1].values
+            ry_mm = df.iloc[:, 2].values * 1000.0 if len(df.columns) > 2 and np.max(df.iloc[:, 2].values) < 0.5 else None
+    else:
+        raise ValueError(f"Unsupported envelope_data format: {type(envelope_data)}")
 
-    ax.set_xlabel("Axial Distance $z$ [cm]", fontsize=12)
-    ax.set_ylabel("Beam Envelope Radius $r$ [mm]", fontsize=12)
-    ax.set_title(title or f"Beam Envelope Transport — {case_name}", fontsize=13)
-    ax.grid(True, ls="--", alpha=0.5)
-    ax.legend(fontsize=10)
+    if show_elements:
+        fig, (ax_top, ax) = plt.subplots(
+            2, 1, figsize=(10, 5.5), gridspec_kw={"height_ratios": [1, 4]}, sharex=True
+        )
+
+        # Draw physical beamline elements schematic in top canvas
+        # Cell (0 to 20 cm)
+        ax_top.add_patch(patches.Rectangle((0, -0.6), 20, 1.2, facecolor="#b2dfdb", edgecolor="black", lw=1))
+        ax_top.text(10, 0, "Neutralizer Cell", ha="center", va="center", fontsize=8.5, fontweight="bold")
+        # Solenoid (30 to 55 cm)
+        ax_top.add_patch(patches.Rectangle((30, -0.75), 25, 1.5, facecolor="#d1c4e9", edgecolor="black", lw=1))
+        ax_top.text(42.5, 0, "Solenoid", ha="center", va="center", fontsize=8.5, fontweight="bold")
+        # Q1 (65 to 77 cm)
+        ax_top.add_patch(patches.Rectangle((65, -0.65), 12, 1.3, facecolor="#ffcdd2", edgecolor="black", lw=1))
+        ax_top.text(71, 0, "Q1 (+)", ha="center", va="center", fontsize=8, fontweight="bold")
+        # Q2 (85 to 97 cm)
+        ax_top.add_patch(patches.Rectangle((85, -0.65), 12, 1.3, facecolor="#bbdefb", edgecolor="black", lw=1))
+        ax_top.text(91, 0, "Q2 (-)", ha="center", va="center", fontsize=8, fontweight="bold")
+        # Inflector mark at 112 cm
+        ax_top.axvline(112, color="tab:red", ls=":", lw=1.5)
+        ax_top.text(112, 0.9, "Inflector Entrance", ha="right", va="bottom", fontsize=8, color="tab:red")
+
+        ax_top.set_xlim(-2, max(115.0, np.max(z_cm) + 2))
+        ax_top.set_ylim(-1.2, 1.2)
+        ax_top.axis("off")
+    else:
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+    # Envelope curves
+    if ry_mm is not None:
+        ax.plot(z_cm, rx_mm, label=r"Horizontal $R_x(z)$", color="#1f77b4", lw=2)
+        ax.plot(z_cm, ry_mm, label=r"Vertical $R_y(z)$", color="#ff7f0e", lw=2, ls="--")
+    else:
+        ax.plot(z_cm, rx_mm, label=r"RMS beam radius $r(z)$", color="#1f77b4", lw=2)
+
+    ax.axhline(aperture_r_mm, color="tab:red", lw=1.2, ls=":", label=f"Inflector Aperture ({aperture_r_mm:.1f} mm)")
+
+    ax.set_xlabel("Axial Distance $z$ [cm]", fontsize=11)
+    ax.set_ylabel("Beam Envelope Radius [mm]", fontsize=11)
+    ax.set_title(title or f"Axial Injection Beam Envelope — {case_name}", fontsize=12)
+    ax.grid(True, ls="--", alpha=0.4)
+    ax.legend(fontsize=9, loc="upper left")
+
+    plt.tight_layout()
 
     stem = output_name or f"{case_name}_beam_envelope"
     out_basename = Path(output_dir) / stem
