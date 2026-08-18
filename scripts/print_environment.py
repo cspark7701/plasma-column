@@ -53,7 +53,7 @@ def main() -> None:
 
     # 2. Key Package Dependencies
     print(f"\n[Package Dependencies]")
-    packages = ["numpy", "pandas", "matplotlib", "scipy", "yaml"]
+    packages = ["plasma_column", "numpy", "pandas", "matplotlib", "scipy", "yaml"]
     for pkg in packages:
         try:
             mod = __import__(pkg)
