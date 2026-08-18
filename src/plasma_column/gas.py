@@ -13,7 +13,17 @@ from pathlib import Path
 from typing import Optional, Tuple
 import numpy as np
 
-from plasma_column.constants import KB, TORR_TO_PA, MH2, MKR, MP
+from plasma_column.constants import (
+    KB,
+    TORR_TO_PA,
+    MH2,
+    MKR,
+    MP,
+    C,
+    QE,
+    RADIATION_LENGTH_H2,
+    RADIATION_LENGTH_KR,
+)
 
 
 @dataclass
@@ -63,6 +73,86 @@ def ionization_tau_s(n_gas_m3: float, sigma_m2: float, beam_speed_m_s: float) ->
     if n_gas_m3 <= 0 or sigma_m2 <= 0 or beam_speed_m_s <= 0:
         return float("inf")
     return 1.0 / (n_gas_m3 * sigma_m2 * beam_speed_m_s)
+
+
+def mean_free_path_m(n_gas_m3: float, sigma_m2: float) -> float:
+    """
+    Computes collision mean free path lambda [m]:
+    Formula: lambda = 1 / (n_gas * sigma)
+    """
+    if n_gas_m3 <= 0.0 or sigma_m2 <= 0.0:
+        return float("inf")
+    return 1.0 / (n_gas_m3 * sigma_m2)
+
+
+def transmission_fraction(n_gas_m3: float, sigma_loss_m2: float, length_m: float) -> float:
+    """
+    Computes beam transmission fraction T through a gas column of length L [m]:
+    Formula: T = exp(-n_gas * sigma_loss * L)
+    """
+    if n_gas_m3 <= 0.0 or sigma_loss_m2 <= 0.0 or length_m <= 0.0:
+        return 1.0
+    return float(math.exp(-n_gas_m3 * sigma_loss_m2 * length_m))
+
+
+def multiple_scattering_rms_rad(
+    energy_keV: float,
+    gas_species: str,
+    pressure_torr: float,
+    length_m: float,
+    temperature_K: float = 300.0,
+) -> float:
+    """
+    Calculates Highland Multiple Coulomb Scattering (MCS) RMS projected scattering angle theta_0 [rad]
+    for a proton traversing a neutral gas column:
+    Formula:
+        theta_0 = (13.6 MeV / (beta * p * c)) * z_p * sqrt(x / X0) * [1 + 0.038 * ln(x / X0)]
+    """
+    if pressure_torr <= 0.0 or length_m <= 0.0 or energy_keV <= 0.0:
+        return 0.0
+
+    species_upper = gas_species.upper()
+    if species_upper in ("H2", "HYDROGEN"):
+        m_mol = MH2
+        x0_mass = RADIATION_LENGTH_H2
+    elif species_upper in ("KR", "KRYPTON"):
+        m_mol = MKR
+        x0_mass = RADIATION_LENGTH_KR
+    elif species_upper in ("NONE", ""):
+        return 0.0
+    else:
+        raise ValueError(f"Unknown gas species: {gas_species}")
+
+    n_gas = gas_density_m3(pressure_torr, temperature_K)
+    rho_kg_m3 = n_gas * m_mol
+    thickness_x = rho_kg_m3 * length_m  # [kg/m^2]
+
+    if thickness_x <= 0.0:
+        return 0.0
+
+    x_over_x0 = thickness_x / x0_mass
+
+    # Proton kinematics
+    e_joules = energy_keV * 1000.0 * QE
+    gamma = 1.0 + (e_joules / (MP * C**2))
+    beta = math.sqrt(max(0.0, 1.0 - 1.0 / (gamma**2)))
+    # beta * p * c in MeV
+    beta_p_c_mev = (gamma * MP * (beta * C)**2) / (1.0e6 * QE)
+
+    if beta_p_c_mev <= 0.0:
+        return 0.0
+
+    # Logarithmic thickness correction for Highland / Lynch-Dahl formula
+    if x_over_x0 >= 1.0e-3:
+        log_term = 1.0 + 0.038 * math.log(x_over_x0)
+    else:
+        log_term = 1.0
+
+    if log_term < 0.0:
+        log_term = 0.0
+
+    theta_0 = (13.6 / beta_p_c_mev) * math.sqrt(x_over_x0) * log_term
+    return float(theta_0)
 
 
 def lab_to_cm_energy(e_lab_eV: float, m_projectile: float = MP, m_target: float = MH2) -> float:

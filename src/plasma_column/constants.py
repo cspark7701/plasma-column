@@ -26,3 +26,7 @@ MKR: float = 83.798 * AMU              # Kr atomic mass [kg]
 TORR_TO_PA: float = 133.3223684       # 1 Torr in Pa
 EV_TO_JOULE: float = QE               # 1 eV in Joules
 EV_TO_KELVIN: float = QE / KB         # 1 eV in Kelvin
+
+# Radiation length mass density for neutral gases [kg/m^2] (PDG: 1 g/cm^2 = 10 kg/m^2)
+RADIATION_LENGTH_H2: float = 630.5     # H2 radiation length [kg/m^2] (63.05 g/cm^2)
+RADIATION_LENGTH_KR: float = 353.4     # Kr radiation length [kg/m^2] (35.34 g/cm^2)

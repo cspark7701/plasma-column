@@ -19,6 +19,9 @@ from plasma_column.gas import (
     NeutralGas,
     gas_density_m3,
     ionization_tau_s,
+    mean_free_path_m,
+    transmission_fraction,
+    multiple_scattering_rms_rad,
     lab_to_cm_energy,
     cm_to_lab_energy,
     load_cross_section_table,
@@ -94,6 +97,51 @@ def test_gas_density_and_ionization_tau():
     tau = ionization_tau_s(ng, 1.6e-20, 2.4e6)
     assert 0.0 < tau < 1.0
     assert math.isinf(ionization_tau_s(0.0, 1.0, 1.0))
+
+
+def test_mean_free_path_and_transmission():
+    """Verify mean_free_path_m and transmission_fraction formulas."""
+    ng = gas_density_m3(1.0e-5, 300.0)  # ~3.2e17 m^-3
+    sigma = 1.6e-20                     # m^2
+
+    mfp = mean_free_path_m(ng, sigma)
+    # lambda = 1 / (3.2e17 * 1.6e-20) ~ 194 m
+    assert 150.0 < mfp < 250.0
+    assert math.isinf(mean_free_path_m(0.0, sigma))
+
+    # Transmission over 0.20 m cell
+    t_frac = transmission_fraction(ng, sigma, 0.20)
+    assert 0.998 < t_frac < 1.0
+    assert transmission_fraction(0.0, sigma, 0.20) == 1.0
+
+
+def test_multiple_coulomb_scattering():
+    """Verify multiple_scattering_rms_rad Highland formula for 30 keV protons in H2 and Kr."""
+    # 30 keV protons in 1e-5 Torr H2 over 0.20 m cell
+    theta_h2 = multiple_scattering_rms_rad(
+        energy_keV=30.0,
+        gas_species="H2",
+        pressure_torr=1.0e-5,
+        length_m=0.20,
+    )
+    assert 0.0 < theta_h2 < 0.001  # < 1 mrad (negligible scattering)
+
+    # 30 keV protons in 1e-6 Torr Kr over 0.20 m cell
+    theta_kr = multiple_scattering_rms_rad(
+        energy_keV=30.0,
+        gas_species="Kr",
+        pressure_torr=1.0e-6,
+        length_m=0.20,
+    )
+    assert 0.0 < theta_kr < 0.001
+
+    # Vacuum / zero pressure -> 0.0 scattering angle
+    assert multiple_scattering_rms_rad(30.0, "H2", 0.0, 0.20) == 0.0
+    assert multiple_scattering_rms_rad(30.0, "none", 1.0e-5, 0.20) == 0.0
+
+    # Invalid species raises ValueError
+    with pytest.raises(ValueError, match="Unknown gas species"):
+        multiple_scattering_rms_rad(30.0, "Argon", 1.0e-5, 0.20)
 
 
 if __name__ == "__main__":
