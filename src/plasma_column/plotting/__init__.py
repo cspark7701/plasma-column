@@ -35,6 +35,9 @@ from .transport import plot_phase_space, plot_beam_envelope_transport
 from .paper_figures import (
     generate_fig01_axial_injection_concept,
     generate_fig02_plasma_neutralizer_module,
+    generate_fig03_cross_sections,
+    generate_fig04_neutralization_evolution,
+    generate_fig05_inflector_phase_space,
 )
 
 __all__ = [
@@ -62,4 +65,7 @@ __all__ = [
     "plot_beam_envelope_transport",
     "generate_fig01_axial_injection_concept",
     "generate_fig02_plasma_neutralizer_module",
+    "generate_fig03_cross_sections",
+    "generate_fig04_neutralization_evolution",
+    "generate_fig05_inflector_phase_space",
 ]

@@ -23,6 +23,11 @@ from plasma_column.plotting import (
     plot_neutralization_evolution,
     plot_keff_over_k0,
     plot_beam_envelope_transport,
+    generate_fig01_axial_injection_concept,
+    generate_fig02_plasma_neutralizer_module,
+    generate_fig03_cross_sections,
+    generate_fig04_neutralization_evolution,
+    generate_fig05_inflector_phase_space,
     write_plot_manifest,
 )
 
@@ -90,6 +95,26 @@ def test_plot_beam_envelope_transport_2d_and_schematic():
         assert png2.exists() and pdf2.exists()
         assert png2.stat().st_size > 0
         assert pdf2.stat().st_size > 0
+
+
+def test_paper_figure_generators():
+    """Verify all 5 publication figure generators produce valid non-empty .png and .pdf files."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        generators = [
+            generate_fig01_axial_injection_concept,
+            generate_fig02_plasma_neutralizer_module,
+            generate_fig03_cross_sections,
+            generate_fig04_neutralization_evolution,
+            generate_fig05_inflector_phase_space,
+        ]
+
+        for gen in generators:
+            png_p, pdf_p = gen(tmp_dir)
+            assert png_p.exists()
+            assert pdf_p.exists()
+            assert png_p.stat().st_size > 1000  # Non-trivial image
+            assert pdf_p.stat().st_size > 1000  # Non-trivial vector PDF
+            plt.close("all")
 
 
 if __name__ == "__main__":
