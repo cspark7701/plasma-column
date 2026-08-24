@@ -6,7 +6,7 @@ For detailed installation instructions, see [docs/installation.md](docs/installa
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/cspark7701/plasma_column.git
+git clone https://github.com/cspark7701/plasma-column.git
 cd plasma_column
 
 # 2. Run automated setup script

@@ -7,7 +7,7 @@ Affiliation: Department of Accelerator Science and Center for Accelerator Resear
 
 Repository:
 
-- Remote: `https://github.com/cspark7701/plasma_column.git`
+- Remote: `https://github.com/cspark7701/plasma-column.git`
 - Local working copy: `/home/cspark/Work/projects/plasma_column`
 - WarpX source tree used for this project: `/home/cspark/Work/simulation_codes-working/warpx`
 - Python environment: conda environment with WarpX/PICMI available

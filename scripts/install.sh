@@ -24,7 +24,7 @@ set -e
 DRY_RUN=false
 USE_VENV=false
 ENV_NAME="warpx-dev"
-REPO_URL="https://github.com/cspark7701/plasma_column.git"
+REPO_URL="https://github.com/cspark7701/plasma-column.git"
 CLONE_DIR="plasma_column"
 
 # Parse command-line arguments

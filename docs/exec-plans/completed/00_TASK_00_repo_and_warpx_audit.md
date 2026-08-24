@@ -8,7 +8,7 @@
 1. **Recorded Repository State**:
    - Repository: `/home/cspark/Work/projects/plasma_column`
    - Branch: `main` (commit `d5e3a9d`)
-   - Remote: `https://github.com/cspark7701/plasma_column.git`
+   - Remote: `https://github.com/cspark7701/plasma-column.git`
    - Working Tree: Clean
 
 2. **Python & WarpX Environment Audit**:

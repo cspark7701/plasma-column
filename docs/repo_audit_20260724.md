@@ -7,7 +7,7 @@ This audit records the initial repository state, file taxonomy, Python/WarpX exe
 - **Date**: 2026-07-24
 - **Repository Location**: `/home/cspark/Work/projects/plasma_column`
 - **Git Branch**: `main` (commit `d5e3a9d`)
-- **Remote**: `https://github.com/cspark7701/plasma_column.git`
+- **Remote**: `https://github.com/cspark7701/plasma-column.git`
 - **Active Environment**: `warpx-dev` (Python 3.13.13)
 - **PyWarpX Availability**: Import OK (`import pywarpx` succeeds)
 
@@ -17,7 +17,7 @@ This audit records the initial repository state, file taxonomy, Python/WarpX exe
 
 ```text
 Branch: main
-Remote: origin (https://github.com/cspark7701/plasma_column.git)
+Remote: origin (https://github.com/cspark7701/plasma-column.git)
 Recent commits:
 d5e3a9d Start using antigravity
 a5ff61c Add environment setup script

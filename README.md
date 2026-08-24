@@ -35,7 +35,7 @@ For a full step-by-step installation guide, see [`docs/installation.md`](file://
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/cspark7701/plasma_column.git
+git clone https://github.com/cspark7701/plasma-column.git
 cd plasma_column
 
 # 2. Run automated setup & verification script
