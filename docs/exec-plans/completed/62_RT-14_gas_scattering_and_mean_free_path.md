@@ -7,12 +7,12 @@
 
 ## Summary
 
-Implemented analytical models for proton-gas target interactions in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/gas.py):
+Implemented analytical models for proton-gas target interactions in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/gas.py):
 1. Collision mean free path $\lambda_{\text{mfp}} = 1 / (n_{\text{gas}} \sigma)$.
 2. Beam transmission fraction $T = \exp(-n_{\text{gas}} \sigma_{\text{loss}} L)$.
 3. Highland / Lynch-Dahl Multiple Coulomb Scattering (MCS) RMS projected angle $\theta_0$ across neutral $H_2$ and $Kr$ gas columns.
 
-Added physical radiation length mass density constants for $H_2$ and $Kr$ to [`src/plasma_column/constants.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/constants.py).
+Added physical radiation length mass density constants for $H_2$ and $Kr$ to [`src/plasma_column/constants.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/constants.py).
 
 ## Changes Made
 

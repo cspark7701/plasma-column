@@ -6,7 +6,7 @@
 ## Summary of Accomplishments
 
 1. **Recorded Repository State**:
-   - Repository: `/home/cspark/Work/projects/plasma_column`
+   - Repository: `/home/cspark/Work/projects/plasma-column`
    - Branch: `main` (commit `d5e3a9d`)
    - Remote: `https://github.com/cspark7701/plasma-column.git`
    - Working Tree: Clean
@@ -22,6 +22,6 @@
    - Custom Modifications: Added `ion_impact_ionization` scattering process and C++ MCC routines (`doBackgroundIonImpactIonization`) to `BackgroundMCCCollision.H/cpp` and `ScatteringProcess.H/cpp`.
 
 4. **Deliverables Created**:
-   - [`docs/repo_audit_20260724.md`](file:///home/cspark/Work/projects/plasma_column/docs/repo_audit_20260724.md)
-   - [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_customization.md)
-   - [`docs/exec-plans/completed/00_TASK_00_repo_and_warpx_audit.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/00_TASK_00_repo_and_warpx_audit.md)
+   - [`docs/repo_audit_20260724.md`](file:///home/cspark/Work/projects/plasma-column/docs/repo_audit_20260724.md)
+   - [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_customization.md)
+   - [`docs/exec-plans/completed/00_TASK_00_repo_and_warpx_audit.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/00_TASK_00_repo_and_warpx_audit.md)

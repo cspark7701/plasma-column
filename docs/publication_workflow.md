@@ -28,7 +28,7 @@ $$\text{buncher} \rightarrow \text{plasma neutralizer} \rightarrow \text{solenoi
 Before launching simulations or generating figures, activate the `warpx-dev` environment and verify repository integrity:
 
 ```bash
-cd /home/cspark/Work/projects/plasma_column
+cd /home/cspark/Work/projects/plasma-column
 conda activate warpx-dev
 
 # 1. Print environment details and WarpX git status
@@ -172,6 +172,6 @@ paper/
 ```
 
 ### 6.2 Documentation References
-- [`docs/publication/publication_result_set.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication/publication_result_set.md): Summary of frozen case result set.
-- [`docs/publication/results_interpretation.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication/results_interpretation.md): Physics interpretation of neutralization, bunched-beam scaling, and optics transport.
-- [`docs/publication/limitations.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication/limitations.md): Scientific limitations (local vs global metrics, RF peak compensation limits, gas load, MCC validation).
+- [`docs/publication/publication_result_set.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/publication_result_set.md): Summary of frozen case result set.
+- [`docs/publication/results_interpretation.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/results_interpretation.md): Physics interpretation of neutralization, bunched-beam scaling, and optics transport.
+- [`docs/publication/limitations.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/limitations.md): Scientific limitations (local vs global metrics, RF peak compensation limits, gas load, MCC validation).

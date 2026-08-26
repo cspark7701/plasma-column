@@ -7,7 +7,7 @@
 
 ## Summary
 
-Decoupled gas and beam physics helper functions from [`src/plasma_column/neutralization.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/neutralization.py) into their canonical homes in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/gas.py) and [`src/plasma_column/beam.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/beam.py). Added backward-compatibility aliases with `DeprecationWarning` in `neutralization.py` to allow graceful transition across downstream scripts and notebooks.
+Decoupled gas and beam physics helper functions from [`src/plasma_column/neutralization.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/neutralization.py) into their canonical homes in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/gas.py) and [`src/plasma_column/beam.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/beam.py). Added backward-compatibility aliases with `DeprecationWarning` in `neutralization.py` to allow graceful transition across downstream scripts and notebooks.
 
 ## Changes Made
 

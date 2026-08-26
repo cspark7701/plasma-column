@@ -5,7 +5,7 @@
 This audit records the initial repository state, file taxonomy, Python/WarpX execution environment, and WarpX C++ source modifications for the Plasma Column Neutralizer simulation project (`plasma_column`).
 
 - **Date**: 2026-07-24
-- **Repository Location**: `/home/cspark/Work/projects/plasma_column`
+- **Repository Location**: `/home/cspark/Work/projects/plasma-column`
 - **Git Branch**: `main` (commit `d5e3a9d`)
 - **Remote**: `https://github.com/cspark7701/plasma-column.git`
 - **Active Environment**: `warpx-dev` (Python 3.13.13)
@@ -24,26 +24,26 @@ a5ff61c Add environment setup script
 097101f First commit
 ```
 
-The working tree in `/home/cspark/Work/projects/plasma_column` is clean.
+The working tree in `/home/cspark/Work/projects/plasma-column` is clean.
 
 ---
 
 ## 2. File and Script Taxonomy
 
 ### 2.1 Front-End Notebooks (`/plasma_column`)
-- [plasma_column_analysis_plots_v2.ipynb](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots_v2.ipynb): Main analysis notebook for generating perveance and neutralization plots across methods.
-- [run_plasma_column_method_comparison.ipynb](file:///home/cspark/Work/projects/plasma_column/run_plasma_column_method_comparison.ipynb): Execution and comparison notebook for seeded, callback, and MCC methods.
-- [run_python_callback_source_diagnostics_v2.ipynb](file:///home/cspark/Work/projects/plasma_column/run_python_callback_source_diagnostics_v2.ipynb): Diagnostics notebook for Python callback dynamic source model.
-- [run_seeded_full_transport_diagnostics.ipynb](file:///home/cspark/Work/projects/plasma_column/run_seeded_full_transport_diagnostics.ipynb): Diagnostics for full seeded neutralization transport.
-- [plasma_column_analysis_plots.ipynb](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots.ipynb), [plasma_column_analysis_plots_v2--1.ipynb](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots_v2--1.ipynb): Legacy analysis notebooks.
+- [plasma_column_analysis_plots_v2.ipynb](file:///home/cspark/Work/projects/plasma-column/plasma_column_analysis_plots_v2.ipynb): Main analysis notebook for generating perveance and neutralization plots across methods.
+- [run_plasma_column_method_comparison.ipynb](file:///home/cspark/Work/projects/plasma-column/run_plasma_column_method_comparison.ipynb): Execution and comparison notebook for seeded, callback, and MCC methods.
+- [run_python_callback_source_diagnostics_v2.ipynb](file:///home/cspark/Work/projects/plasma-column/run_python_callback_source_diagnostics_v2.ipynb): Diagnostics notebook for Python callback dynamic source model.
+- [run_seeded_full_transport_diagnostics.ipynb](file:///home/cspark/Work/projects/plasma-column/run_seeded_full_transport_diagnostics.ipynb): Diagnostics for full seeded neutralization transport.
+- [plasma_column_analysis_plots.ipynb](file:///home/cspark/Work/projects/plasma-column/plasma_column_analysis_plots.ipynb), [plasma_column_analysis_plots_v2--1.ipynb](file:///home/cspark/Work/projects/plasma-column/plasma_column_analysis_plots_v2--1.ipynb): Legacy analysis notebooks.
 
 ### 2.2 Production & Diagnostic Python Scripts
-- [particle_number_diagnostics_v2.py](file:///home/cspark/Work/projects/plasma_column/particle_number_diagnostics_v2.py): Updated per-step particle number and global ratio diagnostic extractor.
-- [particle_number_diagnostics_compare.py](file:///home/cspark/Work/projects/plasma_column/particle_number_diagnostics_compare.py): Script comparing species count trajectories across simulation cases.
-- [plasma_column_analysis_plots_v2.py](file:///home/cspark/Work/projects/plasma_column/plasma_column_analysis_plots_v2.py): Python module for plotting transverse/longitudinal profiles, species populations, and effective perveance.
-- [plasma_column_callback_source_picmi_v3.py](file:///home/cspark/Work/projects/plasma_column/plasma_column_callback_source_picmi_v3.py): PICMI workflow script using Python callbacks for dynamic ion-electron pair creation.
-- [plasma_column_mcc_picmi_v7.py](file:///home/cspark/Work/projects/plasma_column/plasma_column_mcc_picmi_v7.py): PICMI simulation script configured for WarpX MCC.
-- [warpx_proton_impact_cross_sections_linear/generate_proton_impact_ionization_warpx_data_linear.py](file:///home/cspark/Work/projects/plasma_column/warpx_proton_impact_cross_sections_linear/generate_proton_impact_ionization_warpx_data_linear.py): Data generator for WarpX MCC proton impact cross-section files.
+- [particle_number_diagnostics_v2.py](file:///home/cspark/Work/projects/plasma-column/particle_number_diagnostics_v2.py): Updated per-step particle number and global ratio diagnostic extractor.
+- [particle_number_diagnostics_compare.py](file:///home/cspark/Work/projects/plasma-column/particle_number_diagnostics_compare.py): Script comparing species count trajectories across simulation cases.
+- [plasma_column_analysis_plots_v2.py](file:///home/cspark/Work/projects/plasma-column/plasma_column_analysis_plots_v2.py): Python module for plotting transverse/longitudinal profiles, species populations, and effective perveance.
+- [plasma_column_callback_source_picmi_v3.py](file:///home/cspark/Work/projects/plasma-column/plasma_column_callback_source_picmi_v3.py): PICMI workflow script using Python callbacks for dynamic ion-electron pair creation.
+- [plasma_column_mcc_picmi_v7.py](file:///home/cspark/Work/projects/plasma-column/plasma_column_mcc_picmi_v7.py): PICMI simulation script configured for WarpX MCC.
+- [warpx_proton_impact_cross_sections_linear/generate_proton_impact_ionization_warpx_data_linear.py](file:///home/cspark/Work/projects/plasma-column/warpx_proton_impact_cross_sections_linear/generate_proton_impact_ionization_warpx_data_linear.py): Data generator for WarpX MCC proton impact cross-section files.
 
 ### 2.3 Archived Files (`/archives`)
 - `archives/old_scripts/`: Early iterations of PICMI scripts (`v1`–`v6`) and diagnostic notebooks (`perstep_diagnostics`, `three_cases`).
@@ -67,7 +67,7 @@ Contains summary CSV files (`perveance_summary.csv`, `simulation_case_summary.cs
 - **Location**: `/home/cspark/Work/simulation_codes-working/warpx`
 - **Git Branch**: `development` (commit `6c04a74dc`)
 - **Status**: Contains local modifications adding proton-impact ionization to WarpX BackgroundMCC collision handler.
-- **Detailed Documentation**: See [docs/warpx_customization.md](file:///home/cspark/Work/projects/plasma_column/docs/warpx_customization.md).
+- **Detailed Documentation**: See [docs/warpx_customization.md](file:///home/cspark/Work/projects/plasma-column/docs/warpx_customization.md).
 
 ---
 

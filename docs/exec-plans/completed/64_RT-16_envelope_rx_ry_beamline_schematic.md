@@ -7,7 +7,7 @@
 
 ## Summary
 
-Refactored [`plot_beam_envelope_transport`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/transport.py) to support 2D transverse envelope tracking ($R_x(z)$ horizontal and $R_y(z)$ vertical) and added an automated top beamline element schematic overlay illustrating the physical layout of the axial injection matching section.
+Refactored [`plot_beam_envelope_transport`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/transport.py) to support 2D transverse envelope tracking ($R_x(z)$ horizontal and $R_y(z)$ vertical) and added an automated top beamline element schematic overlay illustrating the physical layout of the axial injection matching section.
 
 ## Changes Made
 

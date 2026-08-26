@@ -7,7 +7,7 @@
 
 ## Summary
 
-Consolidated repetitive multi-line `sys.path.insert` path setup boilerplate from 17 standalone scripts into a single centralized [`scripts/_path_setup.py`](file:///home/cspark/Work/projects/plasma_column/scripts/_path_setup.py) module. Standardized path setup imports using a robust `try...except` pattern that supports both direct command-line execution from any working directory and package-style module imports.
+Consolidated repetitive multi-line `sys.path.insert` path setup boilerplate from 17 standalone scripts into a single centralized [`scripts/_path_setup.py`](file:///home/cspark/Work/projects/plasma-column/scripts/_path_setup.py) module. Standardized path setup imports using a robust `try...except` pattern that supports both direct command-line execution from any working directory and package-style module imports.
 
 ## Changes Made
 

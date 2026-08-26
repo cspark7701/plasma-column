@@ -7,7 +7,7 @@
 
 ## Summary
 
-Replaced the manual 50+ line sub-field dictionary extraction in `SimulationCaseConfig.from_dict()` with a generic, recursive `_dataclass_from_dict(cls, data)` constructor helper in [`src/plasma_column/schema.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/schema.py). The helper uses `dataclasses.fields()` and `typing.get_type_hints()` to automatically instantiate and cast nested dataclasses (`BeamConfig`, `PlasmaConfig`, `SolenoidConfig`, `NumericsConfig`).
+Replaced the manual 50+ line sub-field dictionary extraction in `SimulationCaseConfig.from_dict()` with a generic, recursive `_dataclass_from_dict(cls, data)` constructor helper in [`src/plasma_column/schema.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/schema.py). The helper uses `dataclasses.fields()` and `typing.get_type_hints()` to automatically instantiate and cast nested dataclasses (`BeamConfig`, `PlasmaConfig`, `SolenoidConfig`, `NumericsConfig`).
 
 ## Changes Made
 

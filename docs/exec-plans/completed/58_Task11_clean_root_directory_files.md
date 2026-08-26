@@ -22,10 +22,10 @@ Relocated all legacy notebooks and WarpX/PICMI Python simulation runner scripts 
   - `run_seeded_full_transport_diagnostics.ipynb`
 
 ### Schema and Runner Path Updates
-- Updated `get_runner_script` in [`src/plasma_column/schema.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/schema.py) to resolve runner scripts inside `scripts/`.
-- Updated [`scripts/_gen_notebooks.py`](file:///home/cspark/Work/projects/plasma_column/scripts/_gen_notebooks.py) and regenerated all modular run notebooks to target `scripts/plasma_column_mcc_picmi_v7.py` and `scripts/plasma_column_callback_source_picmi_v3.py`.
-- Updated unit test assertions in [`tests/test_schema.py`](file:///home/cspark/Work/projects/plasma_column/tests/test_schema.py).
-- Updated repository audit in [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma_column/scripts/audit_repo.py) to verify that the root directory remains free of `.py` and `.ipynb` files.
+- Updated `get_runner_script` in [`src/plasma_column/schema.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/schema.py) to resolve runner scripts inside `scripts/`.
+- Updated [`scripts/_gen_notebooks.py`](file:///home/cspark/Work/projects/plasma-column/scripts/_gen_notebooks.py) and regenerated all modular run notebooks to target `scripts/plasma_column_mcc_picmi_v7.py` and `scripts/plasma_column_callback_source_picmi_v3.py`.
+- Updated unit test assertions in [`tests/test_schema.py`](file:///home/cspark/Work/projects/plasma-column/tests/test_schema.py).
+- Updated repository audit in [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma-column/scripts/audit_repo.py) to verify that the root directory remains free of `.py` and `.ipynb` files.
 
 ## Acceptance Criteria — All Met
 

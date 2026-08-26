@@ -38,5 +38,5 @@ A comprehensive repository audit was conducted across all Python source modules,
 
 ## Deliverables Summary
 
-- [`docs/development/repo_audit_repair.md`](file:///home/cspark/Work/projects/plasma_column/docs/development/repo_audit_repair.md)
+- [`docs/development/repo_audit_repair.md`](file:///home/cspark/Work/projects/plasma-column/docs/development/repo_audit_repair.md)
 - All 68 unit tests passing in `tests/`.

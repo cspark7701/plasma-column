@@ -7,10 +7,10 @@
 
 1. **WarpX Source Audit & Patch Export**:
    - Inspected WarpX source tree (`/home/cspark/Work/simulation_codes-working/warpx`) on branch `development`.
-   - Exported updated patch file to [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_patches/warpx_plasma_column_current.patch).
+   - Exported updated patch file to [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch).
 
 2. **Created Verification Benchmark Cases**:
-   - Added verification configurations under [`cases/verification/`](file:///home/cspark/Work/projects/plasma_column/cases/verification/):
+   - Added verification configurations under [`cases/verification/`](file:///home/cspark/Work/projects/plasma-column/cases/verification/):
      - `no_gas.yaml`: $p = 0\text{ Torr}$ vacuum test.
      - `zero_cross_section.yaml`: $\sigma_i = 0\text{ m}^2$ test.
      - `fixed_cross_section.yaml`: $\sigma_i = 1.0 \times 10^{-20}\text{ m}^2$ test.
@@ -18,14 +18,14 @@
      - `timestep_convergence.yaml`: Time-step convergence test.
 
 3. **Created Analytical Benchmarking & Analysis Tools**:
-   - Created [`scripts/run_mcc_verification.py`](file:///home/cspark/Work/projects/plasma_column/scripts/run_mcc_verification.py) implementing analytical ionization rate formulas $dN_e/dt = N_p n_{\text{gas}} \sigma_i v_p$, collision probabilities $P = 1 - \exp(-n_{\text{gas}} \sigma_i v_p \Delta t)$, physical weight conservation, and dry-run metadata writing.
-   - Created [`scripts/analyze_mcc_verification.py`](file:///home/cspark/Work/projects/plasma_column/scripts/analyze_mcc_verification.py) generating comparison plots (`plots/analytic_vs_simulated_ionization_rate.png` / `.pdf`) and validation documentation.
+   - Created [`scripts/run_mcc_verification.py`](file:///home/cspark/Work/projects/plasma-column/scripts/run_mcc_verification.py) implementing analytical ionization rate formulas $dN_e/dt = N_p n_{\text{gas}} \sigma_i v_p$, collision probabilities $P = 1 - \exp(-n_{\text{gas}} \sigma_i v_p \Delta t)$, physical weight conservation, and dry-run metadata writing.
+   - Created [`scripts/analyze_mcc_verification.py`](file:///home/cspark/Work/projects/plasma-column/scripts/analyze_mcc_verification.py) generating comparison plots (`plots/analytic_vs_simulated_ionization_rate.png` / `.pdf`) and validation documentation.
 
 4. **Added Unit Tests & Documentation**:
-   - Created [`tests/test_analytic_ionization_rate.py`](file:///home/cspark/Work/projects/plasma_column/tests/test_analytic_ionization_rate.py) testing no-gas zero rate, zero cross section, fixed cross section analytical rate ($dN_e/dt$), $\text{H}_2$ vs $\text{Kr}$ ratio, and collision probability scaling with $\Delta t$.
-   - Added `get_h2_cross_section` and `get_kr_cross_section` helper functions in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/gas.py).
-   - Created report [`docs/verification/custom_ion_impact_mcc_validation.md`](file:///home/cspark/Work/projects/plasma_column/docs/verification/custom_ion_impact_mcc_validation.md).
-   - Updated [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_customization.md) with Section 6 describing the verification test suite.
+   - Created [`tests/test_analytic_ionization_rate.py`](file:///home/cspark/Work/projects/plasma-column/tests/test_analytic_ionization_rate.py) testing no-gas zero rate, zero cross section, fixed cross section analytical rate ($dN_e/dt$), $\text{H}_2$ vs $\text{Kr}$ ratio, and collision probability scaling with $\Delta t$.
+   - Added `get_h2_cross_section` and `get_kr_cross_section` helper functions in [`src/plasma_column/gas.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/gas.py).
+   - Created report [`docs/verification/custom_ion_impact_mcc_validation.md`](file:///home/cspark/Work/projects/plasma-column/docs/verification/custom_ion_impact_mcc_validation.md).
+   - Updated [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_customization.md) with Section 6 describing the verification test suite.
 
 5. **Deliverables Summary**:
    - `docs/warpx_patches/warpx_plasma_column_current.patch`

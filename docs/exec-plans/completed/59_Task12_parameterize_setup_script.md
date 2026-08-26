@@ -6,7 +6,7 @@
 
 ## Summary
 
-Removed hardcoded user paths (`/home/cspark/...`) from [`setup.sh`](file:///home/cspark/Work/projects/plasma_column/setup.sh). Replaced them with portable environment variable expansions (`$HOME`, `$SIMULATION_CODES_DIR`, `$WARPX_INSTALL_DIR`, `$WARPX_DATA_DIR`, `$CONDA_ENV_NAME`) and directory existence guards.
+Removed hardcoded user paths (`/home/cspark/...`) from [`setup.sh`](file:///home/cspark/Work/projects/plasma-column/setup.sh). Replaced them with portable environment variable expansions (`$HOME`, `$SIMULATION_CODES_DIR`, `$WARPX_INSTALL_DIR`, `$WARPX_DATA_DIR`, `$CONDA_ENV_NAME`) and directory existence guards.
 
 ## Changes Made
 

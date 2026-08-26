@@ -7,7 +7,7 @@
 
 ## Summary
 
-Refactored [`compute_beam_envelope`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/injection_line.py) to support region-dependent space-charge perveance $K_{\text{eff}}(z)$, cleanly distinguishing between neutralization within the compact neutralizer cell ($0 \le z \le L_{\text{cell}}$) and downstream drift/matching optics in high vacuum ($z > L_{\text{cell}}$). Added support for arbitrary functional perveance profiles `keff_func(z)`.
+Refactored [`compute_beam_envelope`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/injection_line.py) to support region-dependent space-charge perveance $K_{\text{eff}}(z)$, cleanly distinguishing between neutralization within the compact neutralizer cell ($0 \le z \le L_{\text{cell}}$) and downstream drift/matching optics in high vacuum ($z > L_{\text{cell}}$). Added support for arbitrary functional perveance profiles `keff_func(z)`.
 
 ## Changes Made
 

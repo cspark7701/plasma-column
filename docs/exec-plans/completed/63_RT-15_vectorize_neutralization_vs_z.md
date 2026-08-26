@@ -7,7 +7,7 @@
 
 ## Summary
 
-Replaced the $O(N_z)$ Python slice loop in [`compute_local_neutralization_vs_z`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/diagnostics.py) with a vectorized 2D masked NumPy array reduction across spatial axes `(0, 1)`.
+Replaced the $O(N_z)$ Python slice loop in [`compute_local_neutralization_vs_z`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/diagnostics.py) with a vectorized 2D masked NumPy array reduction across spatial axes `(0, 1)`.
 
 ## Changes Made
 

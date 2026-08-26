@@ -7,7 +7,7 @@
 
 ## Summary
 
-Extracted the repeated safe-division pattern for computing neutralization fractions $\eta_e$ and $\eta_{\text{net}}$ into a single reusable helper function `safe_eta(ne, ni, np_val, eps=1e-30)` in [`src/plasma_column/diagnostics.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/diagnostics.py). Unified calculation across `compute_particle_number_metrics`, `compute_local_core_neutralization`, and `compute_local_neutralization_vs_z`, and removed duplicate-meaning dictionary keys (`_core` vs `_local`) from `compute_local_core_neutralization`.
+Extracted the repeated safe-division pattern for computing neutralization fractions $\eta_e$ and $\eta_{\text{net}}$ into a single reusable helper function `safe_eta(ne, ni, np_val, eps=1e-30)` in [`src/plasma_column/diagnostics.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/diagnostics.py). Unified calculation across `compute_particle_number_metrics`, `compute_local_core_neutralization`, and `compute_local_neutralization_vs_z`, and removed duplicate-meaning dictionary keys (`_core` vs `_local`) from `compute_local_core_neutralization`.
 
 ## Changes Made
 

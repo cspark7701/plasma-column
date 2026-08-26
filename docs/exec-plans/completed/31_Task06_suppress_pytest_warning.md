@@ -7,7 +7,7 @@
 
 ## Summary of Accomplishments
 
-1. **Suppressed Warning in Pytest Configuration ([`pyproject.toml`](file:///home/cspark/Work/projects/plasma_column/pyproject.toml))**:
+1. **Suppressed Warning in Pytest Configuration ([`pyproject.toml`](file:///home/cspark/Work/projects/plasma-column/pyproject.toml))**:
    - Configured `filterwarnings` in `[tool.pytest.ini_options]`:
      ```toml
      [tool.pytest.ini_options]
@@ -16,7 +16,7 @@
      ]
      ```
 
-2. **Added Warning Context Catching in Matrix Unit Test ([`tests/test_run_matrix.py`](file:///home/cspark/Work/projects/plasma_column/tests/test_run_matrix.py))**:
+2. **Added Warning Context Catching in Matrix Unit Test ([`tests/test_run_matrix.py`](file:///home/cspark/Work/projects/plasma-column/tests/test_run_matrix.py))**:
    - Wrapped `collect_scan_results()` invocation inside `test_collect_scan_results_empty` with `warnings.catch_warnings()` and `warnings.simplefilter("ignore", UserWarning)`:
      ```python
      with warnings.catch_warnings():
@@ -28,6 +28,6 @@
    - Ran `pytest -q` -> All **68 unit tests passed** in 3.09s with **0 warnings**.
 
 4. **Deliverables Summary**:
-   - [`pyproject.toml`](file:///home/cspark/Work/projects/plasma_column/pyproject.toml)
-   - [`tests/test_run_matrix.py`](file:///home/cspark/Work/projects/plasma_column/tests/test_run_matrix.py)
-   - [`docs/exec-plans/completed/31_Task06_suppress_pytest_warning.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/31_Task06_suppress_pytest_warning.md)
+   - [`pyproject.toml`](file:///home/cspark/Work/projects/plasma-column/pyproject.toml)
+   - [`tests/test_run_matrix.py`](file:///home/cspark/Work/projects/plasma-column/tests/test_run_matrix.py)
+   - [`docs/exec-plans/completed/31_Task06_suppress_pytest_warning.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/31_Task06_suppress_pytest_warning.md)

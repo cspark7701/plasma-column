@@ -23,13 +23,13 @@
 
 ## Deliverables Summary
 
-- [`docs/publication/figure_list.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication/figure_list.md)
-- [`docs/exec-plans/completed/46_Task10_extended_visualizations_and_notebook_kernel_update.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/46_Task10_extended_visualizations_and_notebook_kernel_update.md)
-- [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma_column/scripts/run_full_production.sh)
-- [`notebooks/analysis/nb_extended_visualizations.ipynb`](file:///home/cspark/Work/projects/plasma_column/notebooks/analysis/nb_extended_visualizations.ipynb)
-- [`notebooks/analysis/nb_bunched_beam_perveance.ipynb`](file:///home/cspark/Work/projects/plasma_column/notebooks/analysis/nb_bunched_beam_perveance.ipynb)
-- [`notebooks/analysis/nb_cross_section_comparison.ipynb`](file:///home/cspark/Work/projects/plasma_column/notebooks/analysis/nb_cross_section_comparison.ipynb)
-- [`notebooks/analysis/nb_local_neutralization_profiles.ipynb`](file:///home/cspark/Work/projects/plasma_column/notebooks/analysis/nb_local_neutralization_profiles.ipynb)
+- [`docs/publication/figure_list.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/figure_list.md)
+- [`docs/exec-plans/completed/46_Task10_extended_visualizations_and_notebook_kernel_update.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/46_Task10_extended_visualizations_and_notebook_kernel_update.md)
+- [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/run_full_production.sh)
+- [`notebooks/analysis/nb_extended_visualizations.ipynb`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis/nb_extended_visualizations.ipynb)
+- [`notebooks/analysis/nb_bunched_beam_perveance.ipynb`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis/nb_bunched_beam_perveance.ipynb)
+- [`notebooks/analysis/nb_cross_section_comparison.ipynb`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis/nb_cross_section_comparison.ipynb)
+- [`notebooks/analysis/nb_local_neutralization_profiles.ipynb`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis/nb_local_neutralization_profiles.ipynb)
 
 ## Physics Limitations
 - Note that phase-space and transverse density plots are synthetic demos (Gaussian model) — replace with WarpX plotfile data when available.

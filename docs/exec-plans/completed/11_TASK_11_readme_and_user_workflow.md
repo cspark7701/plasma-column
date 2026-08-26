@@ -5,11 +5,11 @@
 
 ## Summary of Accomplishments
 
-1. **Created Comprehensive [`README.md`](file:///home/cspark/Work/projects/plasma_column/README.md)**:
+1. **Created Comprehensive [`README.md`](file:///home/cspark/Work/projects/plasma-column/README.md)**:
    - Covers all 14 required sections: Project purpose, baseline beamline layout (`buncher -> neutralizer -> solenoid -> Q1 -> Q2 -> inflector`), physics models, repository structure, environment setup, quick dry-run commands, running a small simulation, postprocessing, generating plots, interpreting $K_{\text{eff}}/K_0$, bunched-beam caveat ($K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$), WarpX C++ source customization, data/output policy, and development roadmap.
 
 2. **Created Repository Audit Tool**:
-   - [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma_column/scripts/audit_repo.py): Script that audits directory structure, documentation files, Python module compilation, and unit test execution.
+   - [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma-column/scripts/audit_repo.py): Script that audits directory structure, documentation files, Python module compilation, and unit test execution.
    - Verified via `python scripts/audit_repo.py --root .`.
 
 3. **Executed Full Test Suite**:

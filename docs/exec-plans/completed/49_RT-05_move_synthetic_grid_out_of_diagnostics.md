@@ -7,7 +7,7 @@
 
 ## Summary
 
-Decoupled the non-operational test/illustration helper `generate_synthetic_3d_grid()` from the production diagnostics module [`src/plasma_column/diagnostics.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/diagnostics.py) into [`src/plasma_column/_testing.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/_testing.py) and created [`tests/conftest.py`](file:///home/cspark/Work/projects/plasma_column/tests/conftest.py). In [`scripts/postprocess_case.py`](file:///home/cspark/Work/projects/plasma_column/scripts/postprocess_case.py), fixed the bug where synthetic data was silently substituted when plotfiles were available or missing, replacing it with actual 3D field loading via `load_plotfile_densities()` and explicit domain warnings when spatial data is absent.
+Decoupled the non-operational test/illustration helper `generate_synthetic_3d_grid()` from the production diagnostics module [`src/plasma_column/diagnostics.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/diagnostics.py) into [`src/plasma_column/_testing.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/_testing.py) and created [`tests/conftest.py`](file:///home/cspark/Work/projects/plasma-column/tests/conftest.py). In [`scripts/postprocess_case.py`](file:///home/cspark/Work/projects/plasma-column/scripts/postprocess_case.py), fixed the bug where synthetic data was silently substituted when plotfiles were available or missing, replacing it with actual 3D field loading via `load_plotfile_densities()` and explicit domain warnings when spatial data is absent.
 
 ## Changes Made
 

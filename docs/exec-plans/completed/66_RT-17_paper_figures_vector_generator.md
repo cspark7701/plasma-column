@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implemented complete publication-grade vector figure generators (`generate_fig01` through `generate_fig05`) in [`src/plasma_column/plotting/paper_figures.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/paper_figures.py).
+Implemented complete publication-grade vector figure generators (`generate_fig01` through `generate_fig05`) in [`src/plasma_column/plotting/paper_figures.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/paper_figures.py).
 
 ## Changes Made
 

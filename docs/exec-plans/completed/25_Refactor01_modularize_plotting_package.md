@@ -8,7 +8,7 @@
 ## Summary of Accomplishments
 
 1. **Refactored Monolithic Module into Sub-Package Architecture**:
-   - Transformed monolithic [`src/plasma_column/plotting.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting.py) (~36 KB) into a structured sub-package [`src/plasma_column/plotting/`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/):
+   - Transformed monolithic [`src/plasma_column/plotting.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting.py) (~36 KB) into a structured sub-package [`src/plasma_column/plotting/`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/):
      ```text
      src/plasma_column/plotting/
      ├── __init__.py          # Package re-exporter (re-exports 22+ canonical plotting routines)
@@ -27,9 +27,9 @@
    - Ran test suite: `pytest -q` -> All 51 tests passed in 3.73s.
 
 4. **Deliverables Summary**:
-   - [`src/plasma_column/plotting/__init__.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/__init__.py)
-   - [`src/plasma_column/plotting/neutralization.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/neutralization.py)
-   - [`src/plasma_column/plotting/cross_sections.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/cross_sections.py)
-   - [`src/plasma_column/plotting/transport.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/transport.py)
-   - [`src/plasma_column/plotting/paper_figures.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/plotting/paper_figures.py)
-   - [`docs/exec-plans/completed/25_Refactor01_modularize_plotting_package.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/25_Refactor01_modularize_plotting_package.md)
+   - [`src/plasma_column/plotting/__init__.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/__init__.py)
+   - [`src/plasma_column/plotting/neutralization.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/neutralization.py)
+   - [`src/plasma_column/plotting/cross_sections.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/cross_sections.py)
+   - [`src/plasma_column/plotting/transport.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/transport.py)
+   - [`src/plasma_column/plotting/paper_figures.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/plotting/paper_figures.py)
+   - [`docs/exec-plans/completed/25_Refactor01_modularize_plotting_package.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/25_Refactor01_modularize_plotting_package.md)

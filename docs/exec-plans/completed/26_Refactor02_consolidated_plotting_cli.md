@@ -7,7 +7,7 @@
 
 ## Summary of Accomplishments
 
-1. **Unified CLI Plotting Entrypoint ([`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma_column/scripts/make_plots.py))**:
+1. **Unified CLI Plotting Entrypoint ([`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma-column/scripts/make_plots.py))**:
    - Unified fragmented plotting CLI flags into a single, cohesive command-line interface with `argparse`:
      - `--all`: Generate all figure categories (synthetic, cross-sections, bunched-beam, paper-figures).
      - `--paper-figures` / `--paper`: Run paper manuscript figure generation pipeline (fig01–fig10) targeting `paper/figures/`.
@@ -24,5 +24,5 @@
    - Executed unit test suite: `pytest -q` -> All 51 unit tests passed in 5.29s.
 
 3. **Deliverables Summary**:
-   - [`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma_column/scripts/make_plots.py)
-   - [`docs/exec-plans/completed/26_Refactor02_consolidated_plotting_cli.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/26_Refactor02_consolidated_plotting_cli.md)
+   - [`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma-column/scripts/make_plots.py)
+   - [`docs/exec-plans/completed/26_Refactor02_consolidated_plotting_cli.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/26_Refactor02_consolidated_plotting_cli.md)

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Corrected `RUNS_DIR` definition in `COMMON_IMPORTS` inside [`src/plasma_column/notebook_utils.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/notebook_utils.py) to point to `_ROOT / 'runs'` (raw simulation outputs) rather than duplicating `_ROOT / 'results'` (processed diagnostic tables). Clarified directory roles with comments and re-generated all notebooks via [`scripts/_gen_notebooks.py`](file:///home/cspark/Work/projects/plasma_column/scripts/_gen_notebooks.py).
+Corrected `RUNS_DIR` definition in `COMMON_IMPORTS` inside [`src/plasma_column/notebook_utils.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/notebook_utils.py) to point to `_ROOT / 'runs'` (raw simulation outputs) rather than duplicating `_ROOT / 'results'` (processed diagnostic tables). Clarified directory roles with comments and re-generated all notebooks via [`scripts/_gen_notebooks.py`](file:///home/cspark/Work/projects/plasma-column/scripts/_gen_notebooks.py).
 
 ## Changes Made
 

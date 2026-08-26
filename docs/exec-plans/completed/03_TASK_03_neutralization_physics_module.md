@@ -6,7 +6,7 @@
 ## Summary of Accomplishments
 
 1. **Implemented Analytical Neutralization Physics Module**:
-   - [`src/plasma_column/neutralization.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/neutralization.py) fully implemented with WarpX-independent functions:
+   - [`src/plasma_column/neutralization.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/neutralization.py) fully implemented with WarpX-independent functions:
      - `gas_density_m3(pressure_torr, temperature_K)`
      - `proton_beta_gamma_speed(kinetic_energy_keV)`
      - `ionization_tau_s(n_gas_m3, sigma_m2, beam_speed_m_s)`
@@ -18,11 +18,11 @@
      - `compute_neutralization_ratios(N_p, N_e, N_i)`
 
 2. **Created Physics Documentation**:
-   - [`docs/physics_notes/neutralization_model.md`](file:///home/cspark/Work/projects/plasma_column/docs/physics_notes/neutralization_model.md): Detailed physical mechanisms, ionization rates, space-charge metrics ($K_{\text{eff}}/K_0 = 1 - \eta_{\text{net}}$), and global vs local neutralization limits.
-   - [`docs/physics_notes/bunched_beam_neutralization.md`](file:///home/cspark/Work/projects/plasma_column/docs/physics_notes/bunched_beam_neutralization.md): RF bunching formulas, bunch lengths ($\Delta t_b, \Delta z_b$), and peak perveance calculation ($K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$).
+   - [`docs/physics_notes/neutralization_model.md`](file:///home/cspark/Work/projects/plasma-column/docs/physics_notes/neutralization_model.md): Detailed physical mechanisms, ionization rates, space-charge metrics ($K_{\text{eff}}/K_0 = 1 - \eta_{\text{net}}$), and global vs local neutralization limits.
+   - [`docs/physics_notes/bunched_beam_neutralization.md`](file:///home/cspark/Work/projects/plasma-column/docs/physics_notes/bunched_beam_neutralization.md): RF bunching formulas, bunch lengths ($\Delta t_b, \Delta z_b$), and peak perveance calculation ($K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$).
 
 3. **Executed Unit Tests**:
-   - [`tests/test_neutralization.py`](file:///home/cspark/Work/projects/plasma_column/tests/test_neutralization.py): Unit tests covering gas density, proton kinematics ($\beta \approx 0.008$), ionization time constants, build-up curves, perveance ratios, RF bunch lengths, and peak perveance reduction.
+   - [`tests/test_neutralization.py`](file:///home/cspark/Work/projects/plasma-column/tests/test_neutralization.py): Unit tests covering gas density, proton kinematics ($\beta \approx 0.008$), ionization time constants, build-up curves, perveance ratios, RF bunch lengths, and peak perveance reduction.
    - Verified via `pytest -q tests/test_neutralization.py` (8/8 passed).
 
 4. **Deliverables Summary**:

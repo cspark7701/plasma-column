@@ -8,7 +8,7 @@
 ## Summary of Accomplishments
 
 1. **Applied `synapticTrack` Site CSS System (`docs/style.css`)**:
-   - Inspected and applied the exact CSS architecture from [`/home/cspark/Work/simulation_codes-working/synapticTrack/docs/site/style.css`](file:///home/cspark/Work/simulation_codes-working/synapticTrack/docs/site/style.css) to [`docs/style.css`](file:///home/cspark/Work/projects/plasma_column/docs/style.css):
+   - Inspected and applied the exact CSS architecture from [`/home/cspark/Work/simulation_codes-working/synapticTrack/docs/site/style.css`](file:///home/cspark/Work/simulation_codes-working/synapticTrack/docs/site/style.css) to [`docs/style.css`](file:///home/cspark/Work/projects/plasma-column/docs/style.css):
      - Sidebar color scheme: `--rtd-sidebar: #343131;`, `--rtd-sidebar-dark: #252525;`, `--rtd-green: #2980b9;` (ReadTheDocs blue accent), `--rtd-content-bg: #ffffff;`.
      - Layout system: `display: grid; grid-template-columns: 320px minmax(0, 1fr);`
      - Main content container: `max-width: 980px; padding: 38px 54px 70px;`
@@ -17,17 +17,17 @@
      - Pygments code blocks (`pre { background: var(--rtd-code-bg); border: 1px solid var(--rtd-border); }`).
      - Footer attribution (`main::after { content: "Built with Sphinx-style static HTML using a Read the Docs-inspired theme."; }`).
 
-2. **Synced HTML Structure ([`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html))**:
+2. **Synced HTML Structure ([`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html))**:
    - Re-structured `index.html` to align with `synapticTrack`'s DOM hierarchy:
      - Header sidebar (`<header class="site-header">`) containing branding banner (`.rtd-brand`), search label (`.rtd-search`), version tag (`.rtd-version`), downloads grid (`.rtd-downloads`), and author byline (`.byline`).
      - Fixed TOC navigation tree (`<nav id="TOC" role="doc-toc">`).
      - Main area (`<main>`) with breadcrumbs tool header (`.page-tools`), stat cards, equations, tables, interactive simulator, and project sections.
 
-3. **Updated Interactive JS Controller ([`docs/app.js`](file:///home/cspark/Work/projects/plasma_column/docs/app.js))**:
+3. **Updated Interactive JS Controller ([`docs/app.js`](file:///home/cspark/Work/projects/plasma-column/docs/app.js))**:
    - Updated `app.js` to drive navigation links, update `.page-tools` breadcrumb text, handle real-time search filtering across TOC items, and render the interactive plasma neutralization SVG buildup chart matching synapticTrack's color tokens.
 
 4. **Deliverables Summary**:
-   - [`docs/style.css`](file:///home/cspark/Work/projects/plasma_column/docs/style.css)
-   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html)
-   - [`docs/app.js`](file:///home/cspark/Work/projects/plasma_column/docs/app.js)
-   - [`docs/exec-plans/completed/23_Task03b_synaptictrack_website_style.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/23_Task03b_synaptictrack_website_style.md)
+   - [`docs/style.css`](file:///home/cspark/Work/projects/plasma-column/docs/style.css)
+   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html)
+   - [`docs/app.js`](file:///home/cspark/Work/projects/plasma-column/docs/app.js)
+   - [`docs/exec-plans/completed/23_Task03b_synaptictrack_website_style.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/23_Task03b_synaptictrack_website_style.md)

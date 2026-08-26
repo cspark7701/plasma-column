@@ -7,11 +7,11 @@
 
 ## Summary of Accomplishments
 
-1. **Removed Security Vulnerability ([`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html))**:
+1. **Removed Security Vulnerability ([`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html))**:
    - Removed the compromised `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>` script tag from `docs/index.html`.
    - MathJax v3 handles ES6 polyfills natively, eliminating browser pop-ups, security warnings, and third-party script vulnerabilities.
 
-2. **Integrated Robust Score Analysis Section ([`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html))**:
+2. **Integrated Robust Score Analysis Section ([`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html))**:
    - Added `#robustness` navigation item to the dark-mode TOC sidebar menu.
    - Added a dedicated section: **Engineering Tolerance & Robust Score Analysis** (`#section-robustness`).
    - Rendered the formal MathJax LaTeX equation:
@@ -25,5 +25,5 @@
    - `pytest -q` -> All **68 unit tests passed** in 1.31s.
 
 4. **Deliverables Summary**:
-   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html)
-   - [`docs/exec-plans/completed/35_Task10_remove_polyfill_io_and_integrate_robust_score.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/35_Task10_remove_polyfill_io_and_integrate_robust_score.md)
+   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html)
+   - [`docs/exec-plans/completed/35_Task10_remove_polyfill_io_and_integrate_robust_score.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/35_Task10_remove_polyfill_io_and_integrate_robust_score.md)

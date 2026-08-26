@@ -6,7 +6,7 @@
 - **Git Branch**: `development`
 - **Base Commit**: `6c04a74dc` ("Implement reflection from embedded boundaries (#6588)")
 - **Remote**: `origin/development`
-- **Exported Patch Location**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_patches/warpx_plasma_column_current.patch)
+- **Exported Patch Location**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch)
 
 ---
 
@@ -65,7 +65,7 @@ This guarantees full auditability and reproducibility for every simulation resul
 
 ## 6. Verification and Benchmarking Suite
 
-The verification suite for custom ion-impact MCC is implemented in [`scripts/run_mcc_verification.py`](file:///home/cspark/Work/projects/plasma_column/scripts/run_mcc_verification.py) and [`scripts/analyze_mcc_verification.py`](file:///home/cspark/Work/projects/plasma_column/scripts/analyze_mcc_verification.py).
+The verification suite for custom ion-impact MCC is implemented in [`scripts/run_mcc_verification.py`](file:///home/cspark/Work/projects/plasma-column/scripts/run_mcc_verification.py) and [`scripts/analyze_mcc_verification.py`](file:///home/cspark/Work/projects/plasma-column/scripts/analyze_mcc_verification.py).
 
 ### Summary of Verification Tests
 1. **Test 1 — No-gas test**: Verified zero ionization rate when $p = 0$.
@@ -76,5 +76,5 @@ The verification suite for custom ion-impact MCC is implemented in [`scripts/run
 6. **Test 6 — Macroparticle weight conservation**: Verified physical particle count $N_{\text{phys}} = w \cdot N_{\text{macro}}$.
 7. **Test 7 — Energy bookkeeping**: Verified secondary electron energy assignment ($E_{e,\text{sec}} \approx 10\text{ eV}$).
 
-For detailed verification results, see [`docs/verification/custom_ion_impact_mcc_validation.md`](file:///home/cspark/Work/projects/plasma_column/docs/verification/custom_ion_impact_mcc_validation.md).
+For detailed verification results, see [`docs/verification/custom_ion_impact_mcc_validation.md`](file:///home/cspark/Work/projects/plasma-column/docs/verification/custom_ion_impact_mcc_validation.md).
 

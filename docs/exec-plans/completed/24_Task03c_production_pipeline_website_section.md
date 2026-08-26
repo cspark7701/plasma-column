@@ -7,7 +7,7 @@
 
 ## Summary of Accomplishments
 
-1. **Added Full Production Pipeline Section ([`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html))**:
+1. **Added Full Production Pipeline Section ([`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html))**:
    - Added a dedicated documentation section (`#section-pipeline`) and navigation TOC link (`Full Production Pipeline`) to the project website.
    - Comprehensive 8-Stage Procedure Table mapping shell script execution (`run_full_production.sh`) to log paths (`logs/step_*.log`) and output deliverables:
      1. **Stage 1: System & Environment Audit** (`scripts/print_environment.py`)
@@ -21,5 +21,5 @@
    - Included detailed description of CLI options (`--dry_run`, `--verbose`, `--cpu-pct`), parallel hardware CPU scaling formula ($\text{Target Cores} = \lfloor \text{nproc} \times \text{CPU\_PCT}/100 \rfloor$), log redirection map, and 1-to-1 consolidated notebook mirror link (`notebooks/runs/nb_full_production_pipeline.ipynb`).
 
 2. **Deliverables Summary**:
-   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma_column/docs/index.html)
-   - [`docs/exec-plans/completed/24_Task03c_production_pipeline_website_section.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/24_Task03c_production_pipeline_website_section.md)
+   - [`docs/index.html`](file:///home/cspark/Work/projects/plasma-column/docs/index.html)
+   - [`docs/exec-plans/completed/24_Task03c_production_pipeline_website_section.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/24_Task03c_production_pipeline_website_section.md)

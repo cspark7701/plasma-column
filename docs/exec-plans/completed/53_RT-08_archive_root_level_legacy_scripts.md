@@ -7,7 +7,7 @@
 
 ## Summary
 
-Archived root-level legacy standalone scripts and intermediary notebook revisions into [`archives/`](file:///home/cspark/Work/projects/plasma_column/archives/). Clarified canonical CLI and notebook entry points in [`README.md`](file:///home/cspark/Work/projects/plasma_column/README.md), and added automated verification in [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma_column/scripts/audit_repo.py).
+Archived root-level legacy standalone scripts and intermediary notebook revisions into [`archives/`](file:///home/cspark/Work/projects/plasma-column/archives/). Clarified canonical CLI and notebook entry points in [`README.md`](file:///home/cspark/Work/projects/plasma-column/README.md), and added automated verification in [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma-column/scripts/audit_repo.py).
 
 ## Changes Made
 
@@ -23,8 +23,8 @@ Archived root-level legacy standalone scripts and intermediary notebook revision
 - Retained canonical WarpX/PICMI kernels `plasma_column_mcc_picmi_v7.py` and `plasma_column_callback_source_picmi_v3.py` at the project root for subprocess execution dispatched by `scripts/run_case.py` and `scripts/run_scan.py`.
 
 ### Documentation and Auditing
-- Updated [`README.md`](file:///home/cspark/Work/projects/plasma_column/README.md) workflow summary to point directly to `scripts/run_case.py` and modular `notebooks/`.
-- Added section `[3. Legacy Root Files Check]` to [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma_column/scripts/audit_repo.py) to guard against unarchived root legacy scripts.
+- Updated [`README.md`](file:///home/cspark/Work/projects/plasma-column/README.md) workflow summary to point directly to `scripts/run_case.py` and modular `notebooks/`.
+- Added section `[3. Legacy Root Files Check]` to [`scripts/audit_repo.py`](file:///home/cspark/Work/projects/plasma-column/scripts/audit_repo.py) to guard against unarchived root legacy scripts.
 
 ## Acceptance Criteria — All Met
 

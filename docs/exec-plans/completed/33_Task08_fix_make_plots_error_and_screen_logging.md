@@ -21,6 +21,6 @@
    - Executed `pytest -q` -> All **68 unit tests passed** in 1.36s.
 
 4. **Deliverables Summary**:
-   - [`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma_column/scripts/make_plots.py)
-   - [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma_column/scripts/run_full_production.sh)
-   - [`docs/exec-plans/completed/33_Task08_fix_make_plots_error_and_screen_logging.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/33_Task08_fix_make_plots_error_and_screen_logging.md)
+   - [`scripts/make_plots.py`](file:///home/cspark/Work/projects/plasma-column/scripts/make_plots.py)
+   - [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/run_full_production.sh)
+   - [`docs/exec-plans/completed/33_Task08_fix_make_plots_error_and_screen_logging.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/33_Task08_fix_make_plots_error_and_screen_logging.md)

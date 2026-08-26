@@ -17,7 +17,7 @@ To deploy or synchronize these files to the standalone repository `https://githu
 git clone https://github.com/cspark7701/plasma-column.github.io.git /path/to/plasma-column.github.io
 
 # 2. Sync site files from docs/site/
-rsync -av --delete /home/cspark/Work/projects/plasma_column/docs/site/ /path/to/plasma-column.github.io/
+rsync -av --delete /home/cspark/Work/projects/plasma-column/docs/site/ /path/to/plasma-column.github.io/
 
 # 3. Commit and push from the plasma-column.github.io repository
 cd /path/to/plasma-column.github.io

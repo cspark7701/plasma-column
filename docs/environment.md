@@ -5,7 +5,7 @@
 This document describes the environment setup, dependencies, and execution workflow for the Plasma Column Neutralizer simulation project.
 
 - **OS**: Linux
-- **Project Directory**: `/home/cspark/Work/projects/plasma_column`
+- **Project Directory**: `/home/cspark/Work/projects/plasma-column`
 - **WarpX Source Tree**: `/home/cspark/Work/simulation_codes-working/warpx`
 - **Primary Conda Environment**: `warpx-dev`
 
@@ -29,7 +29,7 @@ Alternatively, to perform automated environment setup, dependency installation, 
 ```bash
 bash scripts/install.sh
 ```
-For detailed multi-platform installation options, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma_column/docs/installation.md).
+For detailed multi-platform installation options, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma-column/docs/installation.md).
 
 ### Python Dependencies
 - **Python**: 3.10+ (tested on Python 3.13.13)

@@ -31,12 +31,12 @@ buncher -> plasma neutralizer -> solenoid -> quadrupole Q1 -> quadrupole Q2 -> s
 
 ## 4. Quickstart & Installation
 
-For a full step-by-step installation guide, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma_column/docs/installation.md) or [`INSTALL.md`](file:///home/cspark/Work/projects/plasma_column/INSTALL.md).
+For a full step-by-step installation guide, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma-column/docs/installation.md) or [`INSTALL.md`](file:///home/cspark/Work/projects/plasma-column/INSTALL.md).
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/cspark7701/plasma-column.git
-cd plasma_column
+cd plasma-column
 
 # 2. Run automated setup & verification script
 bash scripts/install.sh
@@ -46,14 +46,14 @@ bash scripts/install.sh
 
 ## 5. Step-by-Step Publication Workflow
 
-For detailed instructions on running simulations for publication-quality figures, papers, and presentations, see [`docs/publication_workflow.md`](file:///home/cspark/Work/projects/plasma_column/docs/publication_workflow.md).
+For detailed instructions on running simulations for publication-quality figures, papers, and presentations, see [`docs/publication_workflow.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication_workflow.md).
 
 ### Quick Summary:
 1. **Environment Check**: `python scripts/print_environment.py`
 2. **Run Standard Cases**: `python scripts/run_case.py --case cases/baseline_h2.yaml` (calls `plasma_column_mcc_picmi_v7.py` under the hood)
 3. **Run Parameter Scans**: `python scripts/run_scan.py --matrix cases/method_comparison.yaml`
 4. **Postprocess Case Diagnostics**: `python scripts/postprocess_case.py --case-dir results/seeded_H2_baseline`
-5. **Notebook Analysis**: Use the modular notebooks in [`notebooks/runs/`](file:///home/cspark/Work/projects/plasma_column/notebooks/runs) and [`notebooks/analysis/`](file:///home/cspark/Work/projects/plasma_column/notebooks/analysis)
+5. **Notebook Analysis**: Use the modular notebooks in [`notebooks/runs/`](file:///home/cspark/Work/projects/plasma-column/notebooks/runs) and [`notebooks/analysis/`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis)
 6. **Generate Figures & Manifest**: `python scripts/make_plots.py`
 
 ---
@@ -154,7 +154,7 @@ plasma_column/
 Activate the pre-configured `warpx-dev` conda environment:
 
 ```bash
-cd /home/cspark/Work/projects/plasma_column
+cd /home/cspark/Work/projects/plasma-column
 conda activate warpx-dev
 # or: source ./setup.sh
 ```
@@ -207,8 +207,8 @@ For $B_f = 5$ and $\eta_{\text{avg}} = 90\%$, $K_{\text{eff,peak}}/K_{0,\text{pe
 
 Self-consistent proton-impact ionization ($p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$) uses custom C++ extensions added to the local WarpX source tree (`/home/cspark/Work/simulation_codes-working/warpx`).
 
-- **Documentation**: [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_customization.md)
-- **Patch File**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma_column/docs/warpx_patches/warpx_plasma_column_current.patch)
+- **Documentation**: [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_customization.md)
+- **Patch File**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch)
 
 ---
 

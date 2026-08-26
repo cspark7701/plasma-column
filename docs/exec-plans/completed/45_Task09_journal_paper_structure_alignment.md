@@ -7,7 +7,7 @@
 
 ## Summary of Accomplishments
 
-1. **Journal Paper Outline Update ([`paper/plasma_column_journal_outline.md`](file:///home/cspark/Work/projects/plasma_column/paper/plasma_column_journal_outline.md))**:
+1. **Journal Paper Outline Update ([`paper/plasma_column_journal_outline.md`](file:///home/cspark/Work/projects/plasma-column/paper/plasma_column_journal_outline.md))**:
    - Updated the canonical manuscript outline to match the exact 8-section journal structure:
      1. **Introduction**: High-current compact cyclotron injection limit, axial injection layout, residual-gas compensation and electron-column background, motivation for a compact neutralizer before the main solenoid.
      2. **Plasma Neutralizer Concept**: $\text{H}_2$ baseline, $\text{Kr}$ seeding, controlled-pressure short gas cell, optional local solenoid/electrode confinement.
@@ -22,5 +22,5 @@
    - `pytest -q` passed all **68 unit tests** in 3.20s.
 
 3. **Deliverables Summary**:
-   - [`paper/plasma_column_journal_outline.md`](file:///home/cspark/Work/projects/plasma_column/paper/plasma_column_journal_outline.md)
-   - [`docs/exec-plans/completed/45_Task09_journal_paper_structure_alignment.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/45_Task09_journal_paper_structure_alignment.md)
+   - [`paper/plasma_column_journal_outline.md`](file:///home/cspark/Work/projects/plasma-column/paper/plasma_column_journal_outline.md)
+   - [`docs/exec-plans/completed/45_Task09_journal_paper_structure_alignment.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/45_Task09_journal_paper_structure_alignment.md)

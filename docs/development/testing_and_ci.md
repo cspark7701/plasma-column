@@ -11,10 +11,10 @@ The `plasma_column` repository is fully packaged as a computational research pac
 
 ## Package Configuration & Environment Files
 
-- [`pyproject.toml`](file:///home/cspark/Work/projects/plasma_column/pyproject.toml): Standard PEP 621 package specification with `[project.optional-dependencies]` dev set and `[tool.pytest.ini_options]`.
-- [`environment.yml`](file:///home/cspark/Work/projects/plasma_column/environment.yml): Conda environment file for reproduction on local development workstations (`warpx-dev`).
-- [`requirements-dev.txt`](file:///home/cspark/Work/projects/plasma_column/requirements-dev.txt): Development requirements for lightweight CI runners.
-- [`.github/workflows/ci.yml`](file:///home/cspark/Work/projects/plasma_column/.github/workflows/ci.yml): GitHub Actions CI workflow executing multi-version Python testing (`3.10`, `3.11`, `3.12`).
+- [`pyproject.toml`](file:///home/cspark/Work/projects/plasma-column/pyproject.toml): Standard PEP 621 package specification with `[project.optional-dependencies]` dev set and `[tool.pytest.ini_options]`.
+- [`environment.yml`](file:///home/cspark/Work/projects/plasma-column/environment.yml): Conda environment file for reproduction on local development workstations (`warpx-dev`).
+- [`requirements-dev.txt`](file:///home/cspark/Work/projects/plasma-column/requirements-dev.txt): Development requirements for lightweight CI runners.
+- [`.github/workflows/ci.yml`](file:///home/cspark/Work/projects/plasma-column/.github/workflows/ci.yml): GitHub Actions CI workflow executing multi-version Python testing (`3.10`, `3.11`, `3.12`).
 
 ## Unit Test Coverage (`tests/`)
 

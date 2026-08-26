@@ -8,7 +8,7 @@ Affiliation: Department of Accelerator Science and Center for Accelerator Resear
 Repository:
 
 - Remote: `https://github.com/cspark7701/plasma-column.git`
-- Local working copy: `/home/cspark/Work/projects/plasma_column`
+- Local working copy: `/home/cspark/Work/projects/plasma-column`
 - WarpX source tree used for this project: `/home/cspark/Work/simulation_codes-working/warpx`
 - Python environment: conda environment with WarpX/PICMI available
 
@@ -61,7 +61,7 @@ Important limitation to preserve in documentation and code comments:
 1. Start each task by recording the repository state:
 
    ```bash
-   cd /home/cspark/Work/projects/plasma_column
+   cd /home/cspark/Work/projects/plasma-column
    git status --short
    git branch --show-current
    git log --oneline -5

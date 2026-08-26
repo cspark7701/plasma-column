@@ -12,7 +12,7 @@ Key goals:
 - **Reproducibility**: Automatic metadata tracking (`metadata.json`, git commit hash, WarpX patch diff).
 - **Parallel Core Utilization**: Automatically detects system hardware and allocates **~90% of available CPU cores**.
 - **Token Conservation**: Default quiet output mode redirects verbose logs to `logs/` to prevent terminal flooding and token exhaustion during automated execution.
-- **1-to-1 Notebook Mirror**: A consolidated Jupyter notebook ([`notebooks/nb_full_production_pipeline.ipynb`](file:///home/cspark/Work/projects/plasma_column/notebooks/nb_full_production_pipeline.ipynb)) mirrors every shell step.
+- **1-to-1 Notebook Mirror**: A consolidated Jupyter notebook ([`notebooks/nb_full_production_pipeline.ipynb`](file:///home/cspark/Work/projects/plasma-column/notebooks/nb_full_production_pipeline.ipynb)) mirrors every shell step.
 
 ---
 

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Refactored [`DataLoader`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/diagnostics.py) to ensure thread-safe caching using a `threading.Lock` across all cache lookups, insertions, clearing, and inspect methods. Streamlined the delegation between `DataLoader.load_particle_number` and `load_particle_number_diagnostic`, and added an automatic test teardown fixture in [`tests/conftest.py`](file:///home/cspark/Work/projects/plasma_column/tests/conftest.py) to guarantee clean test isolation.
+Refactored [`DataLoader`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/diagnostics.py) to ensure thread-safe caching using a `threading.Lock` across all cache lookups, insertions, clearing, and inspect methods. Streamlined the delegation between `DataLoader.load_particle_number` and `load_particle_number_diagnostic`, and added an automatic test teardown fixture in [`tests/conftest.py`](file:///home/cspark/Work/projects/plasma-column/tests/conftest.py) to guarantee clean test isolation.
 
 ## Changes Made
 

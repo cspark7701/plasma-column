@@ -25,7 +25,7 @@ For an automated setup that creates/activates the environment, installs all depe
 ```bash
 # 1. Clone the repository
 git clone https://github.com/cspark7701/plasma-column.git
-cd plasma_column
+cd plasma-column
 
 # 2. Run the automated installation script
 bash scripts/install.sh
@@ -56,7 +56,7 @@ If you prefer to configure your environment manually, follow these steps:
 
 ```bash
 git clone https://github.com/cspark7701/plasma-column.git
-cd plasma_column
+cd plasma-column
 ```
 
 ### Step 2: Set Up Python Environment

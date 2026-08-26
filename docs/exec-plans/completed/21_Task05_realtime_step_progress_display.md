@@ -8,7 +8,7 @@
 ## Summary of Accomplishments
 
 1. **Real-Time Step Indicator in Production Shell Script (`scripts/run_full_production.sh`)**:
-   - Updated `run_step()` helper function in [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma_column/scripts/run_full_production.sh):
+   - Updated `run_step()` helper function in [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/run_full_production.sh):
      - Added an immediate stdout status indicator `[RUNNING] Executing step X/Y: <Title>...` right before executing each pipeline command.
      - Preserves token-conservation (quiet mode) by maintaining stdout/stderr redirection to `logs/step_*.log` while providing instant visual feedback on terminal screen.
      - Formats output cleanly:
@@ -20,7 +20,7 @@
        ```
 
 2. **Unbuffered Stdout in Python Execution Wrappers (`scripts/run_case.py`)**:
-   - Added `flush=True` to print calls in [`scripts/run_case.py`](file:///home/cspark/Work/projects/plasma_column/scripts/run_case.py) to eliminate stdout buffering delays during long PIC simulation runs.
+   - Added `flush=True` to print calls in [`scripts/run_case.py`](file:///home/cspark/Work/projects/plasma-column/scripts/run_case.py) to eliminate stdout buffering delays during long PIC simulation runs.
 
 3. **Pipeline Dry-Run Verification**:
    - Executed `./run_full_production.sh --dry_run` to verify real-time status output across all 8 pipeline stages.
@@ -35,6 +35,6 @@
      - `[8/8] Repository Audit & Integrity Verification`
 
 4. **Deliverables Summary**:
-   - [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma_column/scripts/run_full_production.sh)
-   - [`scripts/run_case.py`](file:///home/cspark/Work/projects/plasma_column/scripts/run_case.py)
-   - [`docs/exec-plans/completed/21_Task05_realtime_step_progress_display.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/21_Task05_realtime_step_progress_display.md)
+   - [`scripts/run_full_production.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/run_full_production.sh)
+   - [`scripts/run_case.py`](file:///home/cspark/Work/projects/plasma-column/scripts/run_case.py)
+   - [`docs/exec-plans/completed/21_Task05_realtime_step_progress_display.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/21_Task05_realtime_step_progress_display.md)

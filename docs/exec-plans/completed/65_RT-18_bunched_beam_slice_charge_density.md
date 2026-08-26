@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implemented longitudinal slice line charge density profiles $\lambda(z)$ (parabolic, Gaussian, and top-hat) and radial space-charge electric field calculations $E_r(r, z)$ on `RFFocusedBeam` in [`src/plasma_column/beam.py`](file:///home/cspark/Work/projects/plasma_column/src/plasma_column/beam.py).
+Implemented longitudinal slice line charge density profiles $\lambda(z)$ (parabolic, Gaussian, and top-hat) and radial space-charge electric field calculations $E_r(r, z)$ on `RFFocusedBeam` in [`src/plasma_column/beam.py`](file:///home/cspark/Work/projects/plasma-column/src/plasma_column/beam.py).
 
 ## Changes Made
 

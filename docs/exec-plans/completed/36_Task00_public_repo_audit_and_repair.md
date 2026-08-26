@@ -3,7 +3,7 @@
 - **Date**: 2026-08-04
 - **Author**: Chong Shik Park
 - **Affiliation**: Department of Accelerator Science and Center for Accelerator Research, Korea University, Sejong, 30019 Republic of Korea
-- **Task Source**: [`docs/03_plasma_column_repo_analysis_task_prompts/TASK_00_public_repo_audit_and_repair.md`](file:///home/cspark/Work/projects/plasma_column/docs/03_plasma_column_repo_analysis_task_prompts/TASK_00_public_repo_audit_and_repair.md)
+- **Task Source**: [`docs/03_plasma_column_repo_analysis_task_prompts/TASK_00_public_repo_audit_and_repair.md`](file:///home/cspark/Work/projects/plasma-column/docs/03_plasma_column_repo_analysis_task_prompts/TASK_00_public_repo_audit_and_repair.md)
 
 ## Summary of Accomplishments
 
@@ -22,5 +22,5 @@
    - `python scripts/run_scan.py --matrix cases/method_comparison.yaml --dry_run` -> SUCCESS across all 9 matrix cases.
 
 5. **Deliverables Summary**:
-   - [`docs/development/repo_audit_repair.md`](file:///home/cspark/Work/projects/plasma_column/docs/development/repo_audit_repair.md)
-   - [`docs/exec-plans/completed/36_Task00_public_repo_audit_and_repair.md`](file:///home/cspark/Work/projects/plasma_column/docs/exec-plans/completed/36_Task00_public_repo_audit_and_repair.md)
+   - [`docs/development/repo_audit_repair.md`](file:///home/cspark/Work/projects/plasma-column/docs/development/repo_audit_repair.md)
+   - [`docs/exec-plans/completed/36_Task00_public_repo_audit_and_repair.md`](file:///home/cspark/Work/projects/plasma-column/docs/exec-plans/completed/36_Task00_public_repo_audit_and_repair.md)
