@@ -100,13 +100,26 @@ git checkout 6c04a74dc    # pinned: "Implement reflection from embedded boundari
 
 ### 3.2 Apply the plasma-column C++ patch
 
-The patch adds **proton-impact ionization** (`ion_impact_ionization`) to WarpX's Monte Carlo
-Collision (MCC) module, modifying 4 C++ source files:
+The patch modifies **5 files** across 3 components:
 
-- `Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H`
-- `Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp`
-- `Source/Particles/Collision/ScatteringProcess.H`
-- `Source/Particles/Collision/ScatteringProcess.cpp`
+**`BackgroundMCCCollision.H`** — adds the ion-impact ionization interface:
+- New public method `doBackgroundIonImpactIonization()` taking projectile, electron, and ion particle containers
+- Updated `get_nu_max()` signature to accept `mass_for_energy` parameter (fixes energy conversion for heavy ions)
+- New private members: `m_ion_impact_ionization_processes`, `ion_impact_ionization_flag`, `m_nu_max_ion_impact_ioniz`, `m_total_collision_prob_ion_impact_ioniz`, secondary electron/ion species names and energy
+
+**`BackgroundMCCCollision.cpp`** — implements the ion-impact collision physics:
+- New `#include` headers: `IonImpactIonization.H`, `KineticEnergy.H`, `BinaryCollisionUtils.H`, `TwoProductUtil.H`
+- `doCollisions()`: computes $\nu_{\max}$ and collision probability $P = 1 - e^{-\nu_{\max} \Delta t}$ for the ion-impact channel; dispatches `doBackgroundIonImpactIonization()` each timestep
+- `doBackgroundIonImpactIonization()`: full implementation using `filterCopyTransformParticles` with `IonImpactIonizationFilterFunc` and `IonImpactIonizationTransformFunc` to create secondary electrons and gas ions at the projectile position
+
+**`ScatteringProcess.H`** — extends the scattering type enum:
+- Adds `ION_IMPACT_IONIZATION` and `FORWARD` to `ScatteringProcessType`
+
+**`ScatteringProcess.cpp`** — extends parsing and file reading:
+- `parseProcessType()`: recognises the `"ion_impact_ionization"` process string
+- `readCrossSectionFile()`: rewritten to skip `#` comment lines and blank lines; better error messages including filename; validates that at least one data row was read
+
+**`.gitignore`** — adds build and patch artefact exclusions
 
 ```bash
 # From inside the warpx/ directory
@@ -117,7 +130,7 @@ Confirm the patch applied cleanly (no error output), then verify:
 
 ```bash
 git diff --stat
-# Should show: 4 files changed
+# 5 files changed: .gitignore, BackgroundMCCCollision.H/cpp, ScatteringProcess.H/cpp
 ```
 
 ### 3.3 Build and install PyWarpX
@@ -253,7 +266,7 @@ python scripts/print_environment.py
 - [ ] `import plasma_column` → version `1.0.0`
 - [ ] `pytest -q` → **101 passed, 0 warnings**
 - [ ] WarpX cloned and checked out at commit `6c04a74dc`
-- [ ] `git apply .../warpx_plasma_column_current.patch` → no errors, 4 files changed
+- [ ] `git apply .../warpx_plasma_column_current.patch` → no errors, 5 files changed
 - [ ] `pip install -e . --no-build-isolation` in warpx directory succeeded
 - [ ] `import pywarpx` → OK
 - [ ] `warpx-data` cloned to `~/Work/simulation_codes-working/warpx-data`
