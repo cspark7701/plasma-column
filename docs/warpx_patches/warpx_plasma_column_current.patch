@@ -1,22 +1,3 @@
-diff --cc Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
-index 1938291b3,b9763b2e2..000000000
---- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
-+++ b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
-@@@ -7,8 -7,8 +7,10 @@@
-  #include "BackgroundMCCCollision.H"
-  
-  #include "ImpactIonization.H"
- +#include "Particles/Collision/BinaryCollision/BinaryCollisionUtils.H"
- +#include "Particles/Collision/BinaryCollision/TwoProductUtil.H"
-+ #include "IonImpactIonization.H"
-+ #include "Particles/Algorithms/KineticEnergy.H"
-  #include "Particles/ParticleCreation/FilterCopyTransform.H"
-  #include "Particles/ParticleCreation/SmartCopy.H"
-  #include "Utils/Parser/ParserUtils.H"
-diff --cc Source/Particles/Collision/ScatteringProcess.H
-index c111a0123,62086b6ec..000000000
---- a/Source/Particles/Collision/ScatteringProcess.H
-+++ b/Source/Particles/Collision/ScatteringProcess.H
 diff --git a/.gitignore b/.gitignore
 index 8e6963db0..a98977dad 100644
 --- a/.gitignore
@@ -37,3 +18,393 @@ index 8e6963db0..a98977dad 100644
 +patch/
 +upgrade.sh
 +
+diff --git a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
+index 089262299..7030f54b6 100644
+--- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
++++ b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
+@@ -32,7 +32,12 @@ public:
+     BackgroundMCCCollision ( BackgroundMCCCollision&& )                  = delete;
+     BackgroundMCCCollision& operator= ( BackgroundMCCCollision&& )       = delete;
+ 
+-    [[nodiscard]] amrex::ParticleReal get_nu_max (amrex::Vector<ScatteringProcess> const& mcc_processes) const;
++    //[[nodiscard]] amrex::ParticleReal get_nu_max (amrex::Vector<ScatteringProcess> const& mcc_processes) const;
++
++    [[nodiscard]] amrex::ParticleReal get_nu_max (
++        amrex::Vector<ScatteringProcess> const& mcc_processes,
++        amrex::ParticleReal mass_for_energy) const;
++
+ 
+     /** Perform the collisions
+      *
+@@ -68,6 +73,15 @@ public:
+                                  amrex::Real t
+                                  );
+ 
++    void doBackgroundIonImpactIonization (
++                                 int lev,
++                                 amrex::LayoutData<amrex::Real>* cost,
++                                 WarpXParticleContainer& projectile_species,
++                                 WarpXParticleContainer& electron_species,
++                                 WarpXParticleContainer& ion_species,
++                                 amrex::Real t
++                                 );
++
+ private:
+ 
+     amrex::Vector<ScatteringProcess> m_scattering_processes;
+@@ -75,6 +89,15 @@ private:
+     amrex::Gpu::DeviceVector<ScatteringProcess::Executor> m_scattering_processes_exe;
+     amrex::Gpu::DeviceVector<ScatteringProcess::Executor> m_ionization_processes_exe;
+ 
++    amrex::Vector<ScatteringProcess> m_ion_impact_ionization_processes;
++    amrex::Gpu::DeviceVector<ScatteringProcess::Executor> m_ion_impact_ionization_processes_exe;
++    bool ion_impact_ionization_flag = false;
++    amrex::ParticleReal m_total_collision_prob_ion_impact_ioniz = 0;
++    amrex::ParticleReal m_nu_max_ion_impact_ioniz = 0;
++    std::string m_ion_impact_electron_species_name;
++    std::string m_ion_impact_ion_species_name;
++    amrex::ParticleReal m_ion_impact_secondary_electron_energy = 1.0;
++
+     bool init_flag = false;
+     bool ionization_flag = false;
+ 
+diff --git a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
+index 1938291b3..05eb5c3e7 100644
+--- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
++++ b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
+@@ -9,6 +9,8 @@
+ #include "ImpactIonization.H"
+ #include "Particles/Collision/BinaryCollision/BinaryCollisionUtils.H"
+ #include "Particles/Collision/BinaryCollision/TwoProductUtil.H"
++#include "IonImpactIonization.H"
++#include "Particles/Algorithms/KineticEnergy.H"
+ #include "Particles/ParticleCreation/FilterCopyTransform.H"
+ #include "Particles/ParticleCreation/SmartCopy.H"
+ #include "Utils/Parser/ParserUtils.H"
+@@ -112,6 +114,31 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+             m_species_names.push_back(secondary_species);
+ 
+             m_ionization_processes.push_back(std::move(process));
++        } else if (process.type() == ScatteringProcessType::ION_IMPACT_IONIZATION) {
++            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
++                !ion_impact_ionization_flag,
++                "Background MCC only supports a single ion_impact_ionization process");
++
++            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
++                !ionization_flag,
++                "Do not combine electron-impact ionization and ion-impact ionization in the same background_mcc collision.");
++
++            ion_impact_ionization_flag = true;
++
++            pp_collision_name.get(
++                "ion_impact_ionization_electron_species",
++                m_ion_impact_electron_species_name);
++
++            pp_collision_name.get(
++                "ion_impact_ionization_ion_species",
++                m_ion_impact_ion_species_name);
++
++            utils::parser::queryWithParser(
++                pp_collision_name,
++                "ion_impact_ionization_electron_energy",
++                m_ion_impact_secondary_electron_energy);
++
++            m_ion_impact_ionization_processes.push_back(std::move(process));
+         } else {
+             m_scattering_processes.push_back(std::move(process));
+         }
+@@ -120,18 +147,26 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+ #ifdef AMREX_USE_GPU
+     amrex::Gpu::HostVector<ScatteringProcess::Executor> h_scattering_processes_exe;
+     amrex::Gpu::HostVector<ScatteringProcess::Executor> h_ionization_processes_exe;
++    amrex::Gpu::HostVector<ScatteringProcess::Executor> h_ion_impact_ionization_processes_exe;
+     for (auto const& p : m_scattering_processes) {
+         h_scattering_processes_exe.push_back(p.executor());
+     }
+     for (auto const& p : m_ionization_processes) {
+         h_ionization_processes_exe.push_back(p.executor());
+     }
++    for (auto const& p : m_ion_impact_ionization_processes) {
++        h_ion_impact_ionization_processes_exe.push_back(p.executor());
++    }
+     m_scattering_processes_exe.resize(h_scattering_processes_exe.size());
+     m_ionization_processes_exe.resize(h_ionization_processes_exe.size());
++    m_ion_impact_ionization_processes_exe.resize(h_ion_impact_ionization_processes_exe.size());
+     amrex::Gpu::copyAsync(amrex::Gpu::hostToDevice, h_scattering_processes_exe.begin(),
+                           h_scattering_processes_exe.end(), m_scattering_processes_exe.begin());
+     amrex::Gpu::copyAsync(amrex::Gpu::hostToDevice, h_ionization_processes_exe.begin(),
+                           h_ionization_processes_exe.end(), m_ionization_processes_exe.begin());
++    amrex::Gpu::copyAsync(amrex::Gpu::hostToDevice, h_ion_impact_ionization_processes_exe.begin(),
++                          h_ion_impact_ionization_processes_exe.end(),
++                          m_ion_impact_ionization_processes_exe.begin());
+     amrex::Gpu::streamSynchronize();
+ #else
+     for (auto const& p : m_scattering_processes) {
+@@ -140,14 +175,21 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+     for (auto const& p : m_ionization_processes) {
+         m_ionization_processes_exe.push_back(p.executor());
+     }
++    for (auto const& p : m_ion_impact_ionization_processes) {
++        m_ion_impact_ionization_processes_exe.push_back(p.executor());
++    }
+ #endif
+ }
+ 
+ /** Calculate the maximum collision frequency using a fixed energy grid that
+  *  ranges from 1e-4 to 5000 eV in 0.2 eV increments
+  */
++//amrex::ParticleReal
++//BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_processes) const
+ amrex::ParticleReal
+-BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_processes) const
++BackgroundMCCCollision::get_nu_max (
++    amrex::Vector<ScatteringProcess> const& mcc_processes,
++    amrex::ParticleReal const mass_for_energy) const
+ {
+     using namespace amrex::literals;
+     amrex::ParticleReal nu, nu_max = 0.0;
+@@ -179,7 +221,8 @@ BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_p
+         // calculate collision frequency
+         nu = (
+               m_max_background_density
+-              * std::sqrt(2.0_prt / m_mass1 * PhysConst::q_e)
++              * std::sqrt(2.0_prt / mass_for_energy * PhysConst::q_e)
++              //* std::sqrt(2.0_prt / m_mass1 * PhysConst::q_e)
+               * sigma_E * std::sqrt(E)
+               );
+         nu_max = std::max(nu_max, nu);
+@@ -188,6 +231,17 @@ BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_p
+     return nu_max;
+ }
+ 
++// Normal collisions call:
++//   get_nu_max(m_scattering_processes, m_mass1)
++//
++// electron-impact ionization calls:
++//   get_nu_max(m_ionization_processes, m_mass1)
++//
++// ion-impact ionization calls:
++//   const auto mu = m_mass1*m_background_mass/(m_mass1 + m_background_mass);
++//   get_nu_max(m_ion_impact_ionization_processes, mu)
++
++
+ void
+ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleContainer* mypc)
+ {
+@@ -195,6 +249,14 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+     using namespace amrex::literals;
+ 
+     auto& species1 = mypc->GetParticleContainerFromName(m_species_names[0]);
++
++    WarpXParticleContainer* ionimpact_electrons = nullptr;
++    WarpXParticleContainer* ionimpact_ions = nullptr;
++    if (ion_impact_ionization_flag) {
++        ionimpact_electrons = &mypc->GetParticleContainerFromName(m_ion_impact_electron_species_name);
++        ionimpact_ions = &mypc->GetParticleContainerFromName(m_ion_impact_ion_species_name);
++    }
++
+     // this is a very ugly hack to have species2 be a reference and be
+     // defined in the scope of doCollisions
+     auto& species2 = (
+@@ -206,8 +268,23 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+     if (!init_flag) {
+         m_mass1 = species1.getMass();
+ 
++        if (ion_impact_ionization_flag) {
++            if (m_background_mass == -1) {
++                m_background_mass = ionimpact_ions->getMass();
++            }
++            const auto mu = m_mass1*m_background_mass/(m_mass1 + m_background_mass);
++            m_nu_max_ion_impact_ioniz = get_nu_max(m_ion_impact_ionization_processes, mu);
++            const auto coll_n = m_nu_max_ion_impact_ioniz * dt;
++            m_total_collision_prob_ion_impact_ioniz = 1.0_prt - std::exp(-coll_n);
++            if (coll_n > 0.1_prt) {
++                ablastr::warn_manager::WMRecordWarning(
++                    "BackgroundMCC Collisions",
++                    "dt is too large for accurate ion-impact ionization MCC.");
++            }
++        }
++
+         // calculate maximum collision frequency without ionization
+-        m_nu_max = get_nu_max(m_scattering_processes);
++        m_nu_max = get_nu_max(m_scattering_processes, m_mass1);
+ 
+         // calculate total collision probability
+         auto coll_n = m_nu_max * dt;
+@@ -225,7 +302,7 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+ 
+         if (ionization_flag) {
+             // calculate maximum collision frequency for ionization
+-            m_nu_max_ioniz = get_nu_max(m_ionization_processes);
++            m_nu_max_ioniz = get_nu_max(m_ionization_processes, m_mass1);
+ 
+             // calculate total ionization probability
+             auto coll_n_ioniz = m_nu_max_ioniz * dt;
+@@ -292,6 +369,12 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+         if (ionization_flag) {
+             doBackgroundIonization(lev, cost, species1, species2, cur_time);
+         }
++
++        if (ion_impact_ionization_flag) {
++            doBackgroundIonImpactIonization(
++                lev, cost, species1, *ionimpact_electrons, *ionimpact_ions, cur_time);
++        }
++
+     }
+ }
+ 
+@@ -474,3 +557,82 @@ void BackgroundMCCCollision::doBackgroundIonization
+         }
+     }
+ }
++
++
++void BackgroundMCCCollision::doBackgroundIonImpactIonization (
++    int lev,
++    amrex::LayoutData<amrex::Real>* cost,
++    WarpXParticleContainer& projectile_species,
++    WarpXParticleContainer& electron_species,
++    WarpXParticleContainer& ion_species,
++    amrex::Real t)
++{
++    ABLASTR_PROFILE("BackgroundMCCCollision::doBackgroundIonImpactIonization()");
++
++    const SmartCopyFactory copy_factory_electron(projectile_species, electron_species);
++    const SmartCopyFactory copy_factory_ion(projectile_species, ion_species);
++
++    const auto CopyElectron = copy_factory_electron.getSmartCopy();
++    const auto CopyIon = copy_factory_ion.getSmartCopy();
++
++    const auto Filter = IonImpactIonizationFilterFunc(
++        m_ion_impact_ionization_processes[0],
++        m_mass1,
++        m_background_mass,
++        m_total_collision_prob_ion_impact_ioniz,
++        m_nu_max_ion_impact_ioniz,
++        m_background_density_func,
++        t);
++
++    const amrex::ParticleReal sqrt_kb_m_gas =
++        std::sqrt(PhysConst::kb / m_background_mass);
++
++#ifdef AMREX_USE_OMP
++#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
++#endif
++    for (WarpXParIter pti(projectile_species, lev); pti.isValid(); ++pti)
++    {
++        if (cost && WarpX::load_balance_costs_update_algo == LoadBalanceCostsUpdateAlgo::Timers) {
++            amrex::Gpu::synchronize();
++        }
++
++        auto wt = static_cast<amrex::Real>(amrex::second());
++
++        auto& projectile_tile = projectile_species.ParticlesAt(lev, pti);
++        auto& electron_tile = electron_species.ParticlesAt(lev, pti);
++        auto& ion_tile = ion_species.ParticlesAt(lev, pti);
++
++        const auto np_electron = electron_tile.numParticles();
++        const auto np_ion = ion_tile.numParticles();
++
++        auto Transform = IonImpactIonizationTransformFunc(
++            m_ion_impact_ionization_processes[0].getEnergyPenalty(),
++            m_mass1,
++            m_ion_impact_secondary_electron_energy,
++            sqrt_kb_m_gas,
++            m_background_temperature_func,
++            t);
++
++        const auto num_added = filterCopyTransformParticles<1>(
++            electron_species,
++            ion_species,
++            electron_tile,
++            ion_tile,
++            projectile_tile,
++            np_electron,
++            np_ion,
++            Filter,
++            CopyElectron,
++            CopyIon,
++            Transform);
++
++        setNewParticleIDs(electron_tile, np_electron, num_added);
++        setNewParticleIDs(ion_tile, np_ion, num_added);
++
++        if (cost && WarpX::load_balance_costs_update_algo == LoadBalanceCostsUpdateAlgo::Timers) {
++            amrex::Gpu::synchronize();
++            wt = static_cast<amrex::Real>(amrex::second()) - wt;
++            amrex::HostDevice::Atomic::Add(&(*cost)[pti.index()], wt);
++        }
++    }
++}
+diff --git a/Source/Particles/Collision/ScatteringProcess.H b/Source/Particles/Collision/ScatteringProcess.H
+index c111a0123..cd77b1271 100644
+--- a/Source/Particles/Collision/ScatteringProcess.H
++++ b/Source/Particles/Collision/ScatteringProcess.H
+@@ -26,6 +26,8 @@ enum class ScatteringProcessType {
+     CHARGE_EXCHANGE,
+     EXCITATION,
+     IONIZATION,
++    ION_IMPACT_IONIZATION,
++    FORWARD,
+ };
+ 
+ class ScatteringProcess
+diff --git a/Source/Particles/Collision/ScatteringProcess.cpp b/Source/Particles/Collision/ScatteringProcess.cpp
+index 15771da35..c8de1bc56 100644
+--- a/Source/Particles/Collision/ScatteringProcess.cpp
++++ b/Source/Particles/Collision/ScatteringProcess.cpp
+@@ -10,6 +10,9 @@
+ 
+ #include "Utils/TextMsg.H"
+ 
++#include <fstream>
++#include <sstream>
++
+ ScatteringProcess::ScatteringProcess (
+                         const std::string& scattering_process,
+                         const std::string& cross_section_file,
+@@ -95,6 +98,8 @@ ScatteringProcess::parseProcessType(const std::string& scattering_process)
+         return ScatteringProcessType::TWOPRODUCT_REACTION;
+     } else if (scattering_process == "ionization") {
+         return ScatteringProcessType::IONIZATION;
++    } else if (scattering_process == "ion_impact_ionization") {
++        return ScatteringProcessType::ION_IMPACT_IONIZATION;
+     } else if (scattering_process.find("excitation") != std::string::npos) {
+         return ScatteringProcessType::EXCITATION;
+     } else {
+@@ -109,14 +114,29 @@ ScatteringProcess::readCrossSectionFile (
+                                   amrex::Gpu::HostVector<amrex::ParticleReal>& sigmas )
+ {
+     std::ifstream infile(cross_section_file);
+-    if(!infile.is_open()) { WARPX_ABORT_WITH_MESSAGE("Failed to open cross-section data file"); }
++    if(!infile.is_open()) { WARPX_ABORT_WITH_MESSAGE("Failed to open cross-section data file: " + cross_section_file); }
++
++    std::string line;
++    while (std::getline(infile, line)) {
++        // Allow comments and blank lines in cross-section files.
++        const auto first = line.find_first_not_of(" \t");
++        if (first == std::string::npos || line[first] == '#') {
++            continue;
++        }
+ 
+-    amrex::ParticleReal energy, sigma;
+-    while (infile >> energy >> sigma) {
+-        energies.push_back(energy);
+-        sigmas.push_back(sigma);
++        std::istringstream iss(line);
++        amrex::ParticleReal energy, sigma;
++        if (iss >> energy >> sigma) {
++            energies.push_back(energy);
++            sigmas.push_back(sigma);
++        }
+     }
+-    if (infile.bad()) { WARPX_ABORT_WITH_MESSAGE("Failed to read cross-section data from file."); }
++
++    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
++        (!energies.empty()),
++        "No cross-section data were read from file: " + cross_section_file);
++
++    if (infile.bad()) { WARPX_ABORT_WITH_MESSAGE("Failed to read cross-section data from file: " + cross_section_file); }
+     infile.close();
+ }
+ 
