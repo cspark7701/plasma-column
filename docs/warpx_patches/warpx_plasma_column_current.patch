@@ -408,3 +408,81 @@ index 15771da35..c8de1bc56 100644
      infile.close();
  }
  
+diff --git a/upgrade.sh b/upgrade.sh
+new file mode 100644
+index 0000000..8f4c28755c400e573f939756a1c28f01949e93a0
+--- /dev/null
++++ b/upgrade.sh
+@@ -0,0 +1,28 @@
++cd build && make clean
++cd ..
++rm -fr build install
++
++cmake -S . -B build \
++    -DWarpX_DIMS="1;2;3;RZ;RCYLINDER;RSPHERE" \
++    -DWarpX_FFT=ON \
++    -DWarpX_PYTHON=ON \
++    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
++    -DHDF5_ROOT=$CONDA_PREFIX \
++    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
++    -DCMAKE_INSTALL_PREFIX=/home/cspark/Work/simulation_codes-working/warpx/install \
++    2>&1 |tee warpx.cmake.out
++
++cmake --build build -j 4 2>&1 |tee warpx.build.out
++
++cmake --build build -j 4 --target install 2>&1 |tee warpx.install.out
++
++cmake --build build -j 4 --target pip_install 2>&1 |tee warpx.pip_install.out
++
++cd install/bin
++ln -s warpx.2d.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.2d
++ln -s warpx.1d.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.1d
++ln -s warpx.rcylinder.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rcylinder
++ln -s warpx.rz.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rz
++ln -s warpx.rsphere.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rsphere
++
++rm warp.*.out
+diff --git a/INSTALL.md b/INSTALL.md
+new file mode 100644
+index 0000000..5d32aaf3a1a1c2310ef9d2d25a4be0b0c71e7763
+--- /dev/null
++++ b/INSTALL.md
+@@ -0,0 +1,38 @@
++rm -fr build install
++mkdir install
++
++cmake -S . -B build \
++    -DWarpX_DIMS="1;2;3;RZ;RCYLINDER;RSPHERE" \
++    -DWarpX_FFT=ON \
++    -DWarpX_PYTHON=ON \
++    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
++    -DHDF5_ROOT=$CONDA_PREFIX \
++    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
++    -DCMAKE_INSTALL_PREFIX=/home/cspark/Work/simulation_codes-working/warpx/install \
++    2>&1 |tee warpx.cmake.out
++
++cmake --build build -j 4 2>&1 |tee warpx.build.out
++
++cmake --build build -j 4 --target install 2>&1 |tee warpx.install.out
++
++cmake --build build -j 4 --target pip_install 2>&1 |tee warpx.pip_install.out
++
++ctest --test-dir build -j 4 --output-on-failure
++
++
++ctest --test-dir build -R ionization_dsmc -V
++
++# conda install -c conda-forge setuptools wheel fftw=*=mpi_openmpi* adios2=*=mpi_openmpi* blaspp lapackpp pybind11 lasy matplotlib yt hdf5=*=mpi_openmpi* h5py=*=mpi_openmpi
++
++#mkdir -p $CONDA_PREFIX/etc/conda/activate.d
++#echo 'export LD_LIBRARY_PATH="/home/cspark/Work/simulation_codes-working/warpx/install/lib:$LD_LIBRARY_PATH"' > $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
++
++
++#conda install amrex=*=mpi_openmpi* fftw=*=mpi_openmpi* h5py=*=mpi_openmpi* pyamrex=*=mpi_openmpi*
++
++
++
++ctest --test-dir build -R "MCC|mcc|collision|capacitive|dsmc" \
++      --output-on-failure
++
++rm warpx.*.out
