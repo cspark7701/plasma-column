@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 8e6963db0..a98977dad 100644
+index 8e6963db0..7dc1fcaa2 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -77,3 +77,15 @@ WARP.md
+@@ -77,3 +77,14 @@ WARP.md
  .DS_Store
  .AppleDouble
  .LSOverride
@@ -17,7 +17,7 @@ index 8e6963db0..a98977dad 100644
 +install/
 +patch/
 +upgrade.sh
-+
+\ No newline at end of file
 diff --git a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
 index 089262299..7030f54b6 100644
 --- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
