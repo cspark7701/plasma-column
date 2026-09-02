@@ -135,6 +135,10 @@ class Config:
     nppc_seed: int = 4
     particle_shape: str = "quadratic"
 
+    # Hardware controls
+    cores: int = 16
+    gpu: str = "auto"
+
 
 def parse_args() -> Config:
     p = argparse.ArgumentParser()
@@ -612,6 +616,11 @@ def postprocess_particle_number(output_dir: Path):
 
 def main():
     cfg = parse_args()
+
+    # Configure CPU threads and GPU accelerator
+    from plasma_column.hardware import configure_runtime
+    configure_runtime(cores=cfg.cores, gpu=cfg.gpu)
+
     output_dir = Path(cfg.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 

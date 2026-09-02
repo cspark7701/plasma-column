@@ -33,6 +33,7 @@ from plasma_column.diagnostics import (
     compute_particle_number_metrics,
     warn_global_count_limitation,
 )
+from plasma_column.hardware import configure_runtime
 
 
 # ── Scan definition dataclasses ───────────────────────────────────────────────
@@ -116,6 +117,8 @@ def run_scan_matrix(
     scan_df: pd.DataFrame,
     matrix: ScanMatrix,
     *,
+    cores: int = 16,
+    gpu: str | int | None = "auto",
     extra_args: Optional[dict[str, str]] = None,
     warpx_data_dir: Optional[Path] = None,
 ) -> list[dict[str, Any]]:
@@ -128,6 +131,8 @@ def run_scan_matrix(
     Returns a list of result dicts:
         {case_name, out_dir, returncode (or 'dry_run'), stdout, stderr}
     """
+    configure_runtime(cores=cores, gpu=gpu)
+
     results = []
     extra_args = extra_args or {}
 
@@ -140,6 +145,8 @@ def run_scan_matrix(
         cmd += ["--output_dir", str(out_dir)]
         cmd += ["--gas",        row.get("gas",    "H2")]
         cmd += ["--method",     row.get("method", "seeded")]
+        cmd += ["--cores",      str(cores)]
+        cmd += ["--gpu",        str(gpu)]
 
         if "pressure_torr" in row:
             cmd += ["--pressure_torr", str(row["pressure_torr"])]

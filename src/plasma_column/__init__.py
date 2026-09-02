@@ -5,3 +5,11 @@ Simulation, physics, diagnostics, and plotting workflow for plasma-assisted spac
 """
 
 __version__ = "1.0.0"
+
+from .hardware import detect_gpu, configure_runtime
+
+__all__ = [
+    "__version__",
+    "detect_gpu",
+    "configure_runtime",
+]

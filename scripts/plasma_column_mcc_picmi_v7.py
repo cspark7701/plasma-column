@@ -157,6 +157,9 @@ class PlasmaColumnConfig:
     diag_period: int = 100
     reduced_diag_period: int = 50
 
+    cores: int = 16
+    gpu: str = "auto"
+
     # MCC mode
     # choices: none, electron_impact, charge_exchange, both
     mcc: str = "none"
@@ -166,6 +169,8 @@ class PlasmaColumnConfig:
 def parse_args() -> PlasmaColumnConfig:
     p = argparse.ArgumentParser(description="WarpX/PICMI plasma-column simulation with H2 MCC data support")
 
+    p.add_argument("--cores", type=int, default=PlasmaColumnConfig.cores, help="Number of CPU worker cores / OpenMP threads (default: 16).")
+    p.add_argument("--gpu", default=PlasmaColumnConfig.gpu, help="GPU device ID or 'auto' (checks GPU and makes default if available, default: auto).")
     p.add_argument("--warpx_data_dir", default=os.environ.get("WARPX_DATA_DIR", PlasmaColumnConfig.warpx_data_dir))
     p.add_argument("--h2_cross_section_dir", default=None)
     p.add_argument("--output_dir", default=PlasmaColumnConfig.output_dir)
@@ -989,6 +994,10 @@ def print_report(cfg: PlasmaColumnConfig, derived: dict):
 
 def main():
     cfg = parse_args()
+
+    # Configure CPU threads and GPU accelerator
+    from plasma_column.hardware import configure_runtime
+    configure_runtime(cores=cfg.cores, gpu=cfg.gpu)
 
     output_dir = Path(cfg.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)

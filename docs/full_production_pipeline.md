@@ -21,7 +21,7 @@ Key goals:
 Run the full production pipeline directly from the repository root:
 
 ```bash
-# Standard quiet execution (recommended for CLI / automated prompts)
+# Standard quiet execution (defaults: 16 CPU cores, auto-detect GPU)
 bash scripts/run_full_production.sh
 
 # Dry-run mode (validates all configurations, creates directories, writes metadata)
@@ -30,34 +30,36 @@ bash scripts/run_full_production.sh --dry_run
 # Verbose mode (prints all execution logs directly to screen)
 bash scripts/run_full_production.sh --verbose
 
-# Custom explicit worker core allocation (e.g. 8 cores)
-bash scripts/run_full_production.sh -w 8
+# Custom worker core allocation (default: 16) and explicit GPU device
+bash scripts/run_full_production.sh --cores 16 --gpu 0
 ```
 
 Alternatively, use the root executable wrapper:
 ```bash
-./run_full_production.sh --dry_run
+./run_full_production.sh --cores 16 --gpu auto --dry_run
 ```
 
 ---
 
-## 3. Parallel Execution & CPU Scaling (~90% Allocation)
+## 3. Parallel Execution & GPU Hardware Configuration
 
-The script computes target OpenMP and numerical worker threads based on detected hardware cores:
+The runner scripts and notebooks automatically configure CPU threads (OpenMP, MKL, NumExpr) and GPU accelerators:
 
 ```bash
-TOTAL_CORES=$(nproc)
-WORKERS=0  # 0 = auto: 90% of nproc
-if [ "$WORKERS" -gt 0 ]; then
-  TARGET_CORES=$WORKERS
-else
-  TARGET_CORES=$(( TOTAL_CORES * 90 / 100 ))
-fi
+# Default cores is 16; auto-detects GPU (defaults to GPU 0 if available)
+export OMP_NUM_THREADS=${CORES:-16}
+export OPENMP_NUM_THREADS=${CORES:-16}
+export MKL_NUM_THREADS=${CORES:-16}
+export NUMEXPR_NUM_THREADS=${CORES:-16}
+
+# If NVIDIA GPU detected via nvidia-smi or /dev/nvidia0:
+export CUDA_VISIBLE_DEVICES=0
+export HIP_VISIBLE_DEVICES=0
 ```
 
-The script allows setting an explicit core count via `-w W` (`--workers`). If omitted, it defaults to 90% auto-detection.
-
-Environment variables set automatically:
+CLI options available across all scripts (`run_full_production.sh`, `run_case.py`, `run_scan.py`, and simulation scripts):
+- `--cores, -c`: Number of CPU threads/cores (default: **16**).
+- `--gpu`: GPU device index (e.g. `0`) or `'auto'` (checks GPU availability and defaults to GPU 0 if available; default: **`auto`**).
 - `OMP_NUM_THREADS=$TARGET_CORES`
 - `OPENMP_NUM_THREADS=$TARGET_CORES`
 - `MKL_NUM_THREADS=$TARGET_CORES`
