@@ -49,7 +49,10 @@ def test_from_yaml_baseline_h2():
     assert config.beam.energy_keV == 30.0
     assert config.plasma.gas == "H2"
     assert config.plasma.pressure_torr == 1.0e-5
-    assert config.numerics.nz == 256
+    assert config.numerics.nz == 512
+    assert config.numerics.nx == 64
+    assert config.numerics.cfl == 0.5
+    assert config.numerics.nppc_beam == 16
 
 
 def test_validation_errors():

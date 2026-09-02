@@ -96,26 +96,24 @@ class PlasmaColumnConfig:
 
     # Diagnostics
     diagformat: str = "plotfile"
-    diag_period: int = 50
     full_diag_every_step: bool = False
 
     # Lightweight per-step text diagnostics
     record_particle_number: bool = True
     record_timestep: bool = True
-    reduced_diag_period: int = 1
     reduced_diag_dir: str = "reducedfiles/"
     postprocess_reduced: bool = True
     write_neutralization_model: bool = True
 
     # Grid
-    nx: int = 32
-    ny: int = 32
-    nz: int = 256
+    nx: int = 64
+    ny: int = 64
+    nz: int = 512
     xmax: float = 1.0e-2
     ymax: float = 1.0e-2
     zmin: float = -2.0e-2
     zmax: float = 2.4e-1
-    max_grid_size: int = 32
+    max_grid_size: int = 64
 
     # Beam
     beam_energy_keV: float = 30.0
@@ -142,13 +140,25 @@ class PlasmaColumnConfig:
     solenoid_Bz: float = 0.15
     field_margin: float = 0.0
 
-    # Numerics
-    max_steps: int = 2000
-    cfl: float = 0.7
+    # Numerics — production defaults
+    # Grid: 64×64×512 → dx=dy=0.31 mm, dz=0.51 mm (beam radius resolved by ~6 cells)
+    # cfl=0.5 → dt≈3.4e-13 s (conservative for temporal accuracy)
+    # max_steps=20000 → 9.5 ns = 2.7 beam transits (seeded equilibrium)
+    #   For callback/MCC cases use max_steps=120000 (16.2 beam transits) via YAML override.
+    # nppc=16 → reduces macro-particle shot noise by 4× vs development minimum of 4
+    # diag_period=100 → ~200 plotfile snapshots over 20000 steps
+    # reduced_diag_period=50 → fine-grained particle-count time series
+    max_steps: int = 20000
+    cfl: float = 0.5
     em_order: int = 3
-    nppc_beam: int = 4
-    nppc_plasma: int = 4
+    nppc_beam: int = 16
+    nppc_plasma: int = 16
     particle_shape: str = "quadratic"
+    diag_period: int = 100
+    reduced_diag_period: int = 50
+
+    cores: int = 8
+    gpu: str = "auto"
 
     # MCC mode
     # choices: none, electron_impact, charge_exchange, both
@@ -159,6 +169,8 @@ class PlasmaColumnConfig:
 def parse_args() -> PlasmaColumnConfig:
     p = argparse.ArgumentParser(description="WarpX/PICMI plasma-column simulation with H2 MCC data support")
 
+    p.add_argument("--cores", type=int, default=PlasmaColumnConfig.cores, help="Number of CPU worker cores / OpenMP threads (default: 8).")
+    p.add_argument("--gpu", default=PlasmaColumnConfig.gpu, help="GPU device ID or 'auto' (checks GPU and makes default if available, default: auto).")
     p.add_argument("--warpx_data_dir", default=os.environ.get("WARPX_DATA_DIR", PlasmaColumnConfig.warpx_data_dir))
     p.add_argument("--h2_cross_section_dir", default=None)
     p.add_argument("--output_dir", default=PlasmaColumnConfig.output_dir)
@@ -982,6 +994,10 @@ def print_report(cfg: PlasmaColumnConfig, derived: dict):
 
 def main():
     cfg = parse_args()
+
+    # Configure CPU threads and GPU accelerator
+    from plasma_column.hardware import configure_runtime
+    configure_runtime(cores=cfg.cores, gpu=cfg.gpu)
 
     output_dir = Path(cfg.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)

@@ -1,66 +1,92 @@
-# Method-comparison scan: vacuum / seeded / callback for H2 and Kr at baseline pressure
+# Method comparison scan at baseline pressure
 # Usage:
 #   python scripts/run_scan.py --matrix cases/method_scan_baseline.yaml --dry_run
 
 matrix_name: method_scan_baseline
 description: >
-  Side-by-side comparison of simulation methods (vacuum, seeded, callback)
-  for H2 (1e-5 Torr) and Kr (1e-6 Torr) at the nominal 30 keV / 10 mA beam.
+  Method comparison (seeded / callback / cxx_mcc) at baseline gas pressures
+  for H2 (1e-5 Torr) and Kr (1e-6 Torr).
 
 defaults:
   beam:
     energy_keV: 30.0
     current_mA: 10.0
     radius_m: 0.002
+    rms_divergence: 0.0
   solenoid:
     Bz_T: 0.15
+  # Production settings: 64x64x512 grid.
+  # Seeded cases: 20000 steps (2.7 beam transits).
+  # Callback/MCC cases: 120000 steps (16.2 beam transits).
+  # nppc=16 throughout. cfl=0.5 for temporal accuracy.
   numerics:
-    nx: 32
-    ny: 32
-    nz: 256
-    max_steps: 2000    # increase to full for production
-    diag_period: 500
-    reduced_diag_period: 100
+    nx: 64
+    ny: 64
+    nz: 512
+    xmax_m: 0.01
+    ymax_m: 0.01
+    zmin_m: -0.02
+    zmax_m: 0.24
+    max_steps: 20000
+    cfl: 0.5
+    nppc_beam: 16
+    nppc_plasma: 16
+    diag_period: 100
+    reduced_diag_period: 50
 
 cases:
-  # ── Vacuum reference ───────────────────────────────────────────────────────
-  - case_name: method_vacuum_reference
-    gas: none
-    method: vacuum
-    method_category: baseline_reference
-    pressure_torr: 0.0
-    physics_note: "Exact uncompensated vacuum beam propagation; K_eff/K0 = 1"
-
-  # ── Seeded H2 ──────────────────────────────────────────────────────────────
-  - case_name: method_seeded_H2
-    gas: H2
-    method: seeded
+  - case_name: seeded_H2_baseline
+    method: seeded_compensation
     method_category: static_analytic_seeded
-    pressure_torr: 1.0e-5
-    neutralization: 0.5
-    physics_note: "Analytic/data-driven seeded source — not self-consistent MCC"
-
-  # ── Seeded Kr ──────────────────────────────────────────────────────────────
-  - case_name: method_seeded_Kr
-    gas: Kr
-    method: seeded
-    method_category: static_analytic_seeded
-    pressure_torr: 1.0e-6
-    neutralization: 0.5
-    physics_note: "Analytic/data-driven seeded source — not self-consistent MCC"
-
-  # ── Callback H2 ────────────────────────────────────────────────────────────
-  - case_name: method_callback_H2
     gas: H2
-    method: callback
-    method_category: python_callback_source
     pressure_torr: 1.0e-5
-    physics_note: "Python-callback proton-impact ionisation; data-driven, not self-consistent MCC"
+    numerics:
+      mcc: electron_impact
 
-  # ── Callback Kr ────────────────────────────────────────────────────────────
-  - case_name: method_callback_Kr
+  - case_name: seeded_Kr_baseline
+    method: seeded_compensation
+    method_category: static_analytic_seeded
     gas: Kr
-    method: callback
-    method_category: python_callback_source
     pressure_torr: 1.0e-6
-    physics_note: "Python-callback proton-impact ionisation; data-driven, not self-consistent MCC"
+    numerics:
+      mcc: electron_impact
+
+  - case_name: callback_H2_baseline
+    method: python_callback
+    method_category: dynamic_source_approximation
+    gas: H2
+    pressure_torr: 1.0e-5
+    numerics:
+      max_steps: 120000
+      diag_period: 600
+      reduced_diag_period: 100
+
+  - case_name: callback_Kr_baseline
+    method: python_callback
+    method_category: dynamic_source_approximation
+    gas: Kr
+    pressure_torr: 1.0e-6
+    numerics:
+      max_steps: 120000
+      diag_period: 600
+      reduced_diag_period: 100
+
+  - case_name: cxx_mcc_H2_baseline
+    method: cxx_mcc_custom
+    method_category: full_self_consistent_cxx_mcc
+    gas: H2
+    pressure_torr: 1.0e-5
+    numerics:
+      max_steps: 120000
+      diag_period: 600
+      reduced_diag_period: 100
+
+  - case_name: cxx_mcc_Kr_baseline
+    method: cxx_mcc_custom
+    method_category: full_self_consistent_cxx_mcc
+    gas: Kr
+    pressure_torr: 1.0e-6
+    numerics:
+      max_steps: 120000
+      diag_period: 600
+      reduced_diag_period: 100

@@ -34,6 +34,7 @@ from plasma_column.schema import (
     get_runner_script,
 )
 from plasma_column.warpx_io import get_git_info, collect_metadata
+from plasma_column.hardware import configure_runtime
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,6 +63,17 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Override maximum simulation steps.",
+    )
+    parser.add_argument(
+        "--cores",
+        type=int,
+        default=8,
+        help="Number of CPU worker cores / OpenMP threads (default: 8).",
+    )
+    parser.add_argument(
+        "--gpu",
+        default="auto",
+        help="GPU device ID (e.g. 0) or 'auto' (enables GPU 0 if available, default: auto).",
     )
     return parser.parse_args()
 
@@ -119,6 +131,8 @@ def main() -> None:
         print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
         return
 
+    hw_info = configure_runtime(cores=args.cores, gpu=args.gpu)
+
     print(f"\n[RUNNING] Executing production simulation steps for {case_name} (max_steps={steps})...", flush=True)
 
     script_path = get_runner_script(config.method)
@@ -131,6 +145,8 @@ def main() -> None:
         "--max_steps", str(steps),
         "--beam_energy_keV", str(e_kev),
         "--beam_current_mA", str(i_ma),
+        "--cores", str(args.cores),
+        "--gpu", str(args.gpu),
         "--run",
     ]
 

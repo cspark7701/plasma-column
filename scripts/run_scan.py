@@ -33,6 +33,7 @@ from plasma_column.schema import (
     get_runner_script,
 )
 from plasma_column.warpx_io import collect_metadata
+from plasma_column.hardware import configure_runtime
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,6 +56,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Execute simulation runs for all cases in the matrix.",
     )
+    parser.add_argument(
+        "--cores",
+        type=int,
+        default=8,
+        help="Number of CPU worker cores / OpenMP threads (default: 8).",
+    )
+    parser.add_argument(
+        "--gpu",
+        default="auto",
+        help="GPU device ID (e.g. 0) or 'auto' (enables GPU 0 if available, default: auto).",
+    )
     return parser.parse_args()
 
 
@@ -70,6 +82,9 @@ def merge_dicts(default: dict[str, Any], override: dict[str, Any]) -> dict[str, 
 
 def main() -> None:
     args = parse_args()
+
+    # Configure hardware runtime (default cores=8, GPU auto-detected)
+    configure_runtime(cores=args.cores, gpu=args.gpu)
 
     if not args.matrix.exists():
         print(f"Error: Matrix configuration file '{args.matrix}' not found.", file=sys.stderr)
@@ -133,6 +148,8 @@ def main() -> None:
                 "--max_steps", str(config.numerics.max_steps),
                 "--beam_energy_keV", str(config.beam.energy_keV),
                 "--beam_current_mA", str(config.beam.current_mA),
+                "--cores", str(args.cores),
+                "--gpu", str(args.gpu),
                 "--run",
             ]
             # Map physics method to WarpX CLI flags via the single canonical helper (RT-02)

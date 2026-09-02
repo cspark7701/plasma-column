@@ -34,7 +34,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Default settings
 DRY_RUN=false
 VERBOSE=false
-WORKERS=0  # 0 means "auto" (90% of available cores)
+CORES=8  # Default: 8 cores
+GPU="auto"  # Default: auto-detect GPU; if available make it default
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
 LOG_DIR="$PROJECT_ROOT/logs"
 
@@ -49,8 +50,12 @@ while [[ $# -gt 0 ]]; do
       VERBOSE=true
       shift
       ;;
-    --workers|-w)
-      WORKERS="$2"
+    --cores|-c|--workers|-w)
+      CORES="$2"
+      shift 2
+      ;;
+    --gpu)
+      GPU="$2"
       shift 2
       ;;
     --matrix)
@@ -63,7 +68,8 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --dry_run        Validate matrix & metadata without running heavy PIC steps."
       echo "  --verbose, -v    Print full execution logs to screen (default: quiet mode)."
-      echo "  --workers, -w    Number of parallel CPU worker cores (default: 90% of available cores)."
+      echo "  --cores, -c      Number of CPU worker cores / OpenMP threads (default: 8)."
+      echo "  --gpu [ID|auto]  GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
       echo "  --matrix FILE    Matrix configuration file (default: cases/method_comparison.yaml)."
       echo "  --help, -h       Display this help message."
       exit 0
@@ -80,22 +86,34 @@ cd "$PROJECT_ROOT"
 mkdir -p "$LOG_DIR"
 
 # ------------------------------------------------------------------------------
-# Parallel Core Calculation
+# CPU Core & GPU Hardware Configuration
 # ------------------------------------------------------------------------------
-TOTAL_CORES=$(nproc 2>/dev/null || python3 -c "import os; print(os.cpu_count() or 1)")
-if [ "$WORKERS" -gt 0 ] 2>/dev/null; then
-  TARGET_CORES=$WORKERS
-else
-  TARGET_CORES=$(( TOTAL_CORES * 90 / 100 ))
-fi
-if [ "$TARGET_CORES" -lt 1 ]; then
-  TARGET_CORES=1
+TARGET_CORES=${CORES:-8}
+if [ "$TARGET_CORES" -lt 1 ] 2>/dev/null; then
+  TARGET_CORES=8
 fi
 
 export OMP_NUM_THREADS=$TARGET_CORES
 export OPENMP_NUM_THREADS=$TARGET_CORES
 export MKL_NUM_THREADS=$TARGET_CORES
 export NUMEXPR_NUM_THREADS=$TARGET_CORES
+
+GPU_STATUS="None (CPU only)"
+if [ "$GPU" = "auto" ]; then
+  if command -v nvidia-smi &>/dev/null && nvidia-smi -L &>/dev/null; then
+    export CUDA_VISIBLE_DEVICES=0
+    export HIP_VISIBLE_DEVICES=0
+    GPU_STATUS="GPU 0 (auto-detected via nvidia-smi)"
+  elif [ -e /dev/nvidia0 ]; then
+    export CUDA_VISIBLE_DEVICES=0
+    export HIP_VISIBLE_DEVICES=0
+    GPU_STATUS="GPU 0 (auto-detected via /dev/nvidia0)"
+  fi
+elif [ -n "$GPU" ] && [ "$GPU" != "none" ] && [ "$GPU" != "cpu" ] && [ "$GPU" != "false" ]; then
+  export CUDA_VISIBLE_DEVICES="$GPU"
+  export HIP_VISIBLE_DEVICES="$GPU"
+  GPU_STATUS="GPU $GPU (user specified)"
+fi
 
 echo "======================================================================"
 echo " Plasma Column Simulation - Full Production & Analysis Pipeline"
@@ -104,7 +122,8 @@ echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
-echo "  CPU Cores Used: $TARGET_CORES / $TOTAL_CORES"
+echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
+echo "  GPU Status    : $GPU_STATUS"
 echo "  Log File Path : $LOG_DIR/full_production.log"
 echo "======================================================================"
 
