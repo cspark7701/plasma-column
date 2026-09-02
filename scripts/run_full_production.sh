@@ -34,7 +34,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Default settings
 DRY_RUN=false
 VERBOSE=false
-CORES=16  # Default: 16 cores
+CORES=8  # Default: 8 cores
 GPU="auto"  # Default: auto-detect GPU; if available make it default
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
 LOG_DIR="$PROJECT_ROOT/logs"
@@ -68,7 +68,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --dry_run        Validate matrix & metadata without running heavy PIC steps."
       echo "  --verbose, -v    Print full execution logs to screen (default: quiet mode)."
-      echo "  --cores, -c      Number of CPU worker cores / OpenMP threads (default: 16)."
+      echo "  --cores, -c      Number of CPU worker cores / OpenMP threads (default: 8)."
       echo "  --gpu [ID|auto]  GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
       echo "  --matrix FILE    Matrix configuration file (default: cases/method_comparison.yaml)."
       echo "  --help, -h       Display this help message."
@@ -88,9 +88,9 @@ mkdir -p "$LOG_DIR"
 # ------------------------------------------------------------------------------
 # CPU Core & GPU Hardware Configuration
 # ------------------------------------------------------------------------------
-TARGET_CORES=${CORES:-16}
+TARGET_CORES=${CORES:-8}
 if [ "$TARGET_CORES" -lt 1 ] 2>/dev/null; then
-  TARGET_CORES=16
+  TARGET_CORES=8
 fi
 
 export OMP_NUM_THREADS=$TARGET_CORES
@@ -122,7 +122,7 @@ echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
-echo "  CPU Cores Used: $TARGET_CORES (default: 16)"
+echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
 echo "  GPU Status    : $GPU_STATUS"
 echo "  Log File Path : $LOG_DIR/full_production.log"
 echo "======================================================================"

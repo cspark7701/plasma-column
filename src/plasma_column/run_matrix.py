@@ -117,7 +117,7 @@ def run_scan_matrix(
     scan_df: pd.DataFrame,
     matrix: ScanMatrix,
     *,
-    cores: int = 16,
+    cores: int = 8,
     gpu: str | int | None = "auto",
     extra_args: Optional[dict[str, str]] = None,
     warpx_data_dir: Optional[Path] = None,

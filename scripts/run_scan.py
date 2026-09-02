@@ -59,8 +59,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cores",
         type=int,
-        default=16,
-        help="Number of CPU worker cores / OpenMP threads (default: 16).",
+        default=8,
+        help="Number of CPU worker cores / OpenMP threads (default: 8).",
     )
     parser.add_argument(
         "--gpu",
@@ -83,7 +83,7 @@ def merge_dicts(default: dict[str, Any], override: dict[str, Any]) -> dict[str, 
 def main() -> None:
     args = parse_args()
 
-    # Configure hardware runtime (default cores=16, GPU auto-detected)
+    # Configure hardware runtime (default cores=8, GPU auto-detected)
     configure_runtime(cores=args.cores, gpu=args.gpu)
 
     if not args.matrix.exists():

@@ -136,7 +136,7 @@ class Config:
     particle_shape: str = "quadratic"
 
     # Hardware controls
-    cores: int = 16
+    cores: int = 8
     gpu: str = "auto"
 
 

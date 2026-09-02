@@ -61,7 +61,7 @@ def detect_gpu() -> int | None:
 
 
 def configure_runtime(
-    cores: int = 16,
+    cores: int = 8,
     gpu: int | str | None = "auto",
     verbose: bool = True,
 ) -> dict[str, Any]:
@@ -69,7 +69,7 @@ def configure_runtime(
     Configure CPU thread limits and GPU device selection in the process environment.
 
     Args:
-        cores: Number of CPU threads for OpenMP, MKL, NumExpr. Defaults to 16.
+        cores: Number of CPU threads for OpenMP, MKL, NumExpr. Defaults to 8.
         gpu: GPU selection mode:
             - 'auto': Automatically detect GPU; if available, default to GPU 0.
             - int or str (e.g. 0, '0', 1): Explicit GPU device index.
@@ -79,7 +79,7 @@ def configure_runtime(
     Returns:
         dict: Summary containing applied cores, selected gpu index, and availability status.
     """
-    cores = int(cores) if cores is not None else 16
+    cores = int(cores) if cores is not None else 8
     if cores < 1:
         cores = 1
 

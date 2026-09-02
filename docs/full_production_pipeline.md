@@ -21,7 +21,7 @@ Key goals:
 Run the full production pipeline directly from the repository root:
 
 ```bash
-# Standard quiet execution (defaults: 16 CPU cores, auto-detect GPU)
+# Standard quiet execution (defaults: 8 CPU cores, auto-detect GPU)
 bash scripts/run_full_production.sh
 
 # Dry-run mode (validates all configurations, creates directories, writes metadata)
@@ -30,13 +30,13 @@ bash scripts/run_full_production.sh --dry_run
 # Verbose mode (prints all execution logs directly to screen)
 bash scripts/run_full_production.sh --verbose
 
-# Custom worker core allocation (default: 16) and explicit GPU device
-bash scripts/run_full_production.sh --cores 16 --gpu 0
+# Custom worker core allocation (default: 8) and explicit GPU device
+bash scripts/run_full_production.sh --cores 8 --gpu 0
 ```
 
 Alternatively, use the root executable wrapper:
 ```bash
-./run_full_production.sh --cores 16 --gpu auto --dry_run
+./run_full_production.sh --cores 8 --gpu auto --dry_run
 ```
 
 ---
@@ -46,11 +46,11 @@ Alternatively, use the root executable wrapper:
 The runner scripts and notebooks automatically configure CPU threads (OpenMP, MKL, NumExpr) and GPU accelerators:
 
 ```bash
-# Default cores is 16; auto-detects GPU (defaults to GPU 0 if available)
-export OMP_NUM_THREADS=${CORES:-16}
-export OPENMP_NUM_THREADS=${CORES:-16}
-export MKL_NUM_THREADS=${CORES:-16}
-export NUMEXPR_NUM_THREADS=${CORES:-16}
+# Default cores is 8; auto-detects GPU (defaults to GPU 0 if available)
+export OMP_NUM_THREADS=${CORES:-8}
+export OPENMP_NUM_THREADS=${CORES:-8}
+export MKL_NUM_THREADS=${CORES:-8}
+export NUMEXPR_NUM_THREADS=${CORES:-8}
 
 # If NVIDIA GPU detected via nvidia-smi or /dev/nvidia0:
 export CUDA_VISIBLE_DEVICES=0
@@ -58,7 +58,7 @@ export HIP_VISIBLE_DEVICES=0
 ```
 
 CLI options available across all scripts (`run_full_production.sh`, `run_case.py`, `run_scan.py`, and simulation scripts):
-- `--cores, -c`: Number of CPU threads/cores (default: **16**).
+- `--cores, -c`: Number of CPU threads/cores (default: **8**).
 - `--gpu`: GPU device index (e.g. `0`) or `'auto'` (checks GPU availability and defaults to GPU 0 if available; default: **`auto`**).
 - `OMP_NUM_THREADS=$TARGET_CORES`
 - `OPENMP_NUM_THREADS=$TARGET_CORES`

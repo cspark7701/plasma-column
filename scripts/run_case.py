@@ -67,8 +67,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cores",
         type=int,
-        default=16,
-        help="Number of CPU worker cores / OpenMP threads (default: 16).",
+        default=8,
+        help="Number of CPU worker cores / OpenMP threads (default: 8).",
     )
     parser.add_argument(
         "--gpu",
