@@ -87,19 +87,22 @@ class Config:
     inputs_name: str = "inputs_plasma_column_callback"
 
     # Grid/diagnostics
-    nx: int = 24
-    ny: int = 24
-    nz: int = 128
+    # Production defaults: 64×64×512, cfl=0.5, 120000 steps (16.2 beam transits)
+    # to accumulate sufficient ionization events for accurate dynamic neutralization.
+    # nppc_beam=16 reduces macro-particle shot noise. diag_period=600 → 200 snapshots.
+    nx: int = 64
+    ny: int = 64
+    nz: int = 512
     xmax: float = 1.0e-2
     ymax: float = 1.0e-2
     zmin: float = -2.0e-2
     zmax: float = 2.4e-1
-    max_grid_size: int = 32
-    max_steps: int = 500
-    cfl: float = 0.7
+    max_grid_size: int = 64
+    max_steps: int = 120000
+    cfl: float = 0.5
     em_order: int = 3
     diagformat: str = "plotfile"
-    diag_period: int = 100
+    diag_period: int = 600
     reduced_diag_period: int = 100
     reduced_diag_dir: str = "reducedfiles/"
 
@@ -128,8 +131,8 @@ class Config:
     subtract_ionization_energy: int = 0
 
     # Particles
-    nppc_beam: int = 4
-    nppc_seed: int = 1
+    nppc_beam: int = 16
+    nppc_seed: int = 4
     particle_shape: str = "quadratic"
 
 

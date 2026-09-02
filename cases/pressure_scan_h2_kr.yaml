@@ -22,13 +22,22 @@ defaults:
     electron_temperature_eV: 1.0
   solenoid:
     Bz_T: 0.15
+  # Production settings: 64x64x512 grid, 20000 steps (2.7 beam transits),
+  # nppc=16 for low statistical noise, cfl=0.5 for temporal accuracy.
   numerics:
-    nx: 32
-    ny: 32
-    nz: 256
-    max_steps: 2000    # increase to 120000 for production
-    diag_period: 500
-    reduced_diag_period: 100
+    nx: 64
+    ny: 64
+    nz: 512
+    xmax_m: 0.01
+    ymax_m: 0.01
+    zmin_m: -0.02
+    zmax_m: 0.24
+    max_steps: 20000
+    cfl: 0.5
+    nppc_beam: 16
+    nppc_plasma: 16
+    diag_period: 100
+    reduced_diag_period: 50
     mcc: electron_impact
 
 cases:

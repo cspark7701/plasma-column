@@ -11,15 +11,24 @@ defaults:
     rms_divergence: 0.0
   solenoid:
     Bz_T: 0.15
+  # Production settings: 64x64x512 grid.
+  # Seeded cases: 20000 steps (2.7 beam transits).
+  # Callback/MCC cases: 120000 steps (16.2 beam transits) to accumulate ionization events.
+  # nppc=16 throughout for low statistical noise. cfl=0.5 for temporal accuracy.
   numerics:
-    nx: 32
-    ny: 32
-    nz: 256
+    nx: 64
+    ny: 64
+    nz: 512
     xmax_m: 0.01
     ymax_m: 0.01
     zmin_m: -0.02
     zmax_m: 0.24
-    max_steps: 2000
+    max_steps: 20000        # overridden per case for callback/MCC
+    cfl: 0.5
+    nppc_beam: 16
+    nppc_plasma: 16
+    diag_period: 100
+    reduced_diag_period: 50
 
 cases:
   - case_name: vacuum_reference
@@ -28,6 +37,9 @@ cases:
     physics_nature: Exact uncompensated vacuum beam propagation
     gas: none
     pressure_torr: 0.0
+    numerics:
+      nppc_plasma: 0
+      mcc: none
 
   - case_name: seeded_H2_1e-6Torr
     method: seeded_compensation
@@ -35,6 +47,8 @@ cases:
     physics_nature: Static analytical electron density estimate
     gas: H2
     pressure_torr: 1.0e-6
+    numerics:
+      mcc: electron_impact
 
   - case_name: seeded_H2_1e-5Torr
     method: seeded_compensation
@@ -42,6 +56,8 @@ cases:
     physics_nature: Static analytical electron density estimate
     gas: H2
     pressure_torr: 1.0e-5
+    numerics:
+      mcc: electron_impact
 
   - case_name: seeded_Kr_1e-6Torr
     method: seeded_compensation
@@ -49,6 +65,8 @@ cases:
     physics_nature: Static analytical electron density estimate
     gas: Kr
     pressure_torr: 1.0e-6
+    numerics:
+      mcc: electron_impact
 
   - case_name: seeded_Kr_1e-5Torr
     method: seeded_compensation
@@ -56,6 +74,8 @@ cases:
     physics_nature: Static analytical electron density estimate
     gas: Kr
     pressure_torr: 1.0e-5
+    numerics:
+      mcc: electron_impact
 
   - case_name: callback_H2_dynamic
     method: python_callback
@@ -63,6 +83,10 @@ cases:
     physics_nature: Dynamic pair injection via python callback
     gas: H2
     pressure_torr: 1.0e-5
+    numerics:
+      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      diag_period: 600
+      reduced_diag_period: 100
 
   - case_name: callback_Kr_dynamic
     method: python_callback
@@ -70,6 +94,10 @@ cases:
     physics_nature: Dynamic pair injection via python callback
     gas: Kr
     pressure_torr: 1.0e-6
+    numerics:
+      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      diag_period: 600
+      reduced_diag_period: 100
 
   - case_name: cxx_H2_mcc_or_custom
     method: cxx_mcc_custom
@@ -77,6 +105,10 @@ cases:
     physics_nature: C++ MCC Monte Carlo collision tracking
     gas: H2
     pressure_torr: 1.0e-5
+    numerics:
+      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      diag_period: 600
+      reduced_diag_period: 100
 
   - case_name: cxx_Kr_mcc_or_custom
     method: cxx_mcc_custom
@@ -84,3 +116,7 @@ cases:
     physics_nature: C++ MCC Monte Carlo collision tracking
     gas: Kr
     pressure_torr: 1.0e-6
+    numerics:
+      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      diag_period: 600
+      reduced_diag_period: 100
