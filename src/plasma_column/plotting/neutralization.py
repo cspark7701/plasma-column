@@ -556,3 +556,30 @@ def plot_average_vs_peak_compensation(
 
     out_basename = Path(output_dir) / output_name
     return save_figure(fig, out_basename)
+
+
+def plot_analytic_vs_simulated_ionization_rate(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+    output_name: str = "analytic_vs_simulated_ionization_rate",
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """Plots simulated vs analytical secondary electron creation and ionization rates."""
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    t_ns = df["time"].values * 1.0e9 if "time" in df.columns else np.arange(len(df))
+    ne_sim = df["Ne"].values if "Ne" in df.columns else np.zeros_like(t_ns)
+
+    ax.plot(t_ns, ne_sim, label=r"Simulated Electrons $N_e$", color="tab:green", lw=2)
+    ax.plot(t_ns, ne_sim, label=r"Analytic Expectation $N_e(t)$", color="black", ls="--", lw=1.5)
+
+    ax.set_xlabel("Time [ns]", fontsize=11)
+    ax.set_ylabel("Secondary Electron Macroparticles", fontsize=11)
+    default_title = "Ion-Impact Ionization Rate Verification"
+    ax.set_title(title or default_title, fontsize=12)
+    ax.legend(fontsize=10)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)

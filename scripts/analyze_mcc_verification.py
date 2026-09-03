@@ -24,7 +24,11 @@ import pandas as pd
 
 from _path_setup import PROJECT_ROOT
 
-from plasma_column.plotting import save_figure, setup_publication_style
+from plasma_column.plotting import (
+    save_figure,
+    setup_publication_style,
+    plot_analytic_vs_simulated_ionization_rate,
+)
 
 
 def main() -> None:
@@ -39,20 +43,12 @@ def main() -> None:
     test3_dir = verification_dir / "test3_fixed_cross_section"
     if (test3_dir / "particle_counts.csv").exists():
         df3 = pd.read_csv(test3_dir / "particle_counts.csv")
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        t_ns = df3["time"].values * 1.0e9
-
-        ax.plot(t_ns, df3["Ne"], label="Simulated Electrons $N_e$", color="tab:green", lw=2)
-        ax.plot(t_ns, df3["Ne"], label="Analytic Expectation $N_e(t)$", color="black", ls="--", lw=1.5)
-
-        ax.set_xlabel("Time [ns]")
-        ax.set_ylabel("Secondary Electron Macroparticles")
-        ax.set_title("Test 3: Fixed-Cross-Section Ionization Rate Verification")
-        ax.legend()
-        out_path = plots_dir / "analytic_vs_simulated_ionization_rate"
-        save_figure(fig, out_path)
-        plt.close(fig)
-        print(f"  Saved plot: {out_path}.png / .pdf")
+        p1, p2 = plot_analytic_vs_simulated_ionization_rate(
+            df3,
+            output_dir=plots_dir,
+            title="Test 3: Fixed-Cross-Section Ionization Rate Verification",
+        )
+        print(f"  Saved plot: {p1} / {p2}")
 
     # 2. Generate Markdown Report
     doc_dir = PROJECT_ROOT / "docs" / "verification"

@@ -26,6 +26,7 @@ from .neutralization import (
     plot_peak_keff_vs_bunching_factor,
     plot_bunch_length_vs_phase_width,
     plot_average_vs_peak_compensation,
+    plot_analytic_vs_simulated_ionization_rate,
     plot_neutralization_panel,
 )
 from .scan import (
@@ -70,6 +71,7 @@ __all__ = [
     "plot_peak_keff_vs_bunching_factor",
     "plot_bunch_length_vs_phase_width",
     "plot_average_vs_peak_compensation",
+    "plot_analytic_vs_simulated_ionization_rate",
     "plot_neutralization_panel",
     "plot_scan_eta_vs_pressure",
     "plot_scan_keff_vs_pressure",

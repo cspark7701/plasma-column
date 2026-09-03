@@ -268,3 +268,54 @@ def get_kr_cross_section(e_lab_keV: float = 30.0) -> float:
     db = CrossSectionDatabase()
     return db.get_proton_impact_cross_section("Kr", e_lab_keV * 1000.0)
 
+
+def compute_analytic_mcc_rates(
+    energy_keV: float = 30.0,
+    pressure_torr: float = 1.0e-5,
+    temp_k: float = 300.0,
+    sigma_m2: float = 1.0e-20,
+    N_protons: float = 1000.0,
+    macro_weight: float = 1.0e5,
+    dt_s: float = 1.0e-11,
+    n_steps: int = 100,
+) -> dict[str, float]:
+    """Computes analytical ion-impact ionization rate, collision probability, and expected particle counts.
+
+    Formula:
+        rate_per_proton = n_gas * sigma * v_beam
+        prob_per_step = 1 - exp(-n_gas * sigma * v_beam * dt)
+    """
+    from plasma_column.beam import ProtonBeam
+
+    beam = ProtonBeam(energy_keV=energy_keV)
+    speed = beam.velocity
+    n_gas = gas_density_m3(pressure_torr, temp_k) if pressure_torr > 0 else 0.0
+
+    # Rate per proton [s^-1]
+    rate_per_proton = n_gas * sigma_m2 * speed
+    # Total physical ionization rate [s^-1]
+    total_phys_rate = N_protons * macro_weight * rate_per_proton
+    # Total macroparticle ionization rate [s^-1]
+    total_macro_rate = N_protons * rate_per_proton
+
+    # Collision probability per step
+    prob_per_step = 1.0 - math.exp(-n_gas * sigma_m2 * speed * dt_s) if n_gas > 0 and sigma_m2 > 0 else 0.0
+
+    total_time_s = n_steps * dt_s
+    expected_macro_electrons = total_macro_rate * total_time_s
+    expected_phys_electrons = expected_macro_electrons * macro_weight
+
+    return {
+        "proton_energy_keV": energy_keV,
+        "proton_speed_m_s": speed,
+        "gas_density_m3": n_gas,
+        "cross_section_m2": sigma_m2,
+        "rate_per_proton_s1": rate_per_proton,
+        "total_phys_rate_s1": total_phys_rate,
+        "prob_per_step": prob_per_step,
+        "total_time_s": total_time_s,
+        "expected_macro_electrons": expected_macro_electrons,
+        "expected_phys_electrons": expected_phys_electrons,
+        "macro_weight": macro_weight,
+    }
+

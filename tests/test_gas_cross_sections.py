@@ -161,5 +161,31 @@ def test_mcc_script_interp_sigma_matches_gas_db():
         assert 1.0e-21 < sigma_mcc < 1.0e-19
 
 
+def test_compute_analytic_mcc_rates():
+    from plasma_column.gas import compute_analytic_mcc_rates
+
+    res = compute_analytic_mcc_rates(
+        energy_keV=30.0,
+        pressure_torr=1.0e-5,
+        sigma_m2=1.0e-20,
+        N_protons=1000.0,
+        macro_weight=1.0e5,
+        dt_s=1.0e-11,
+        n_steps=100,
+    )
+    assert res["proton_energy_keV"] == 30.0
+    assert res["gas_density_m3"] > 3.0e17
+    assert res["rate_per_proton_s1"] > 0.0
+    assert res["expected_macro_electrons"] > 0.0
+    assert res["expected_phys_electrons"] == res["expected_macro_electrons"] * 1.0e5
+    assert 0.0 < res["prob_per_step"] < 1.0
+
+    # Zero pressure -> zero rate
+    res_zero = compute_analytic_mcc_rates(pressure_torr=0.0)
+    assert res_zero["rate_per_proton_s1"] == 0.0
+    assert res_zero["expected_macro_electrons"] == 0.0
+    assert res_zero["prob_per_step"] == 0.0
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

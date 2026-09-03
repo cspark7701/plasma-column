@@ -29,6 +29,7 @@ from plasma_column.plotting import (
     plot_peak_keff_vs_bunching_factor,
     plot_bunch_length_vs_phase_width,
     plot_average_vs_peak_compensation,
+    plot_analytic_vs_simulated_ionization_rate,
     generate_fig01_axial_injection_concept,
     generate_fig02_plasma_neutralizer_module,
     generate_fig03_cross_sections,
@@ -239,6 +240,13 @@ def test_bunched_beam_plotting_helpers():
         assert p1.exists() and p2.exists()
 
         p1, p2 = plot_average_vs_peak_compensation(df_scan, tmp_dir, bunching_factor=5.0)
+        assert p1.exists() and p2.exists()
+
+        df_rate = pd.DataFrame({
+            "time": np.linspace(0, 1e-9, 20),
+            "Ne": np.linspace(0, 100, 20),
+        })
+        p1, p2 = plot_analytic_vs_simulated_ionization_rate(df_rate, tmp_dir)
         assert p1.exists() and p2.exists()
         plt.close("all")
 
