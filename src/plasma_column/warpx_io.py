@@ -7,8 +7,10 @@ WarpX plotfile / openPMD diagnostic reader wrappers, metadata I/O utilities, and
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from .schema import (
     SimulationCaseConfig,
@@ -260,6 +262,86 @@ def collect_metadata(
     }
 
 
+def compute_file_sha256(filepath: str | Path) -> str:
+    """Computes SHA-256 hexadecimal digest for a file."""
+    import hashlib
+
+    path = Path(filepath)
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def freeze_dataset(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    dry_run: bool = False,
+    cases: Optional[list[str]] = None,
+) -> dict[str, Any]:
+    """Freezes CSV datasets into output_dir and creates a cryptographically hashed manifest.
+
+    Args:
+        source_dir: Source directory containing dataset files (e.g. data/).
+        output_dir: Target directory for frozen publication dataset (e.g. paper/data/).
+        dry_run: If True, hashes and validates files without copying to disk.
+        cases: Optional list of case identifiers.
+
+    Returns:
+        dict: Manifest metadata with file checksums and sizes.
+    """
+    import datetime
+    import shutil
+
+    source_path = Path(source_dir).resolve()
+    target_path = Path(output_dir).resolve()
+    project_root = Path(__file__).resolve().parent.parent.parent
+    warpx_dir = Path("/home/cspark/Work/simulation_codes-working/warpx")
+
+    if cases is None:
+        cases = [
+            "vacuum_reference",
+            "h2_baseline",
+            "kr_assisted",
+            "h2_bunched",
+            "kr_bunched",
+            "custom_mcc_h2_verified",
+            "custom_mcc_kr_verified",
+        ]
+
+    manifest: dict[str, Any] = {
+        "dataset_name": "plasma_column_publication_dataset_v1",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "project_git_commit": get_git_info(project_root).get("commit", "unknown"),
+        "warpx_git_commit": get_git_info(warpx_dir).get("commit", "unknown"),
+        "conda_environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
+        "cases": cases,
+        "files": {},
+    }
+
+    if source_path.exists():
+        if not dry_run:
+            target_path.mkdir(parents=True, exist_ok=True)
+        for item in sorted(source_path.glob("*.csv")):
+            sha = compute_file_sha256(item)
+            size = item.stat().st_size
+            manifest["files"][item.name] = {
+                "sha256": sha,
+                "size_bytes": size,
+            }
+            if not dry_run:
+                shutil.copy(item, target_path / item.name)
+
+    if not dry_run:
+        save_metadata(manifest, target_path / "dataset_manifest.json")
+
+    return manifest
+
+
 __all__ = [
     "save_metadata",
     "find_plotfiles",
@@ -267,6 +349,8 @@ __all__ = [
     "load_plotfile_densities",
     "get_git_info",
     "collect_metadata",
+    "compute_file_sha256",
+    "freeze_dataset",
     "SimulationCaseConfig",
     "BeamConfig",
     "PlasmaConfig",

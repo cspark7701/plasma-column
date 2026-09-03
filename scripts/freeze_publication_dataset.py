@@ -2,73 +2,73 @@
 """
 scripts/freeze_publication_dataset.py
 
-Freezes the canonical publication dataset and generates paper/data/ dataset files and dataset_manifest.json.
+Freezes the canonical publication dataset, computes SHA-256 checksums,
+and generates paper/data/ dataset files and dataset_manifest.json.
 
 Usage:
+    python scripts/freeze_publication_dataset.py --dry_run
     python scripts/freeze_publication_dataset.py
 """
 
 from __future__ import annotations
 
-import datetime
-import json
-import os
-import shutil
-import subprocess
+import argparse
 import sys
 from pathlib import Path
-import pandas as pd
 
 try:
     from _path_setup import PROJECT_ROOT
 except ImportError:
     from scripts._path_setup import PROJECT_ROOT
 
-from plasma_column.warpx_io import save_metadata
+from plasma_column.warpx_io import freeze_dataset
 
 
-def get_git_commit(path: Path) -> str:
-    try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=path, text=True).strip()
-    except Exception:
-        return "unknown"
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Freeze canonical publication datasets with SHA-256 cryptographic verification."
+    )
+    parser.add_argument(
+        "--source_dir",
+        "--source-dir",
+        type=Path,
+        default=PROJECT_ROOT / "data",
+        help="Source directory containing simulation summary datasets.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        "--output-dir",
+        type=Path,
+        default=PROJECT_ROOT / "paper" / "data",
+        help="Target output directory for frozen datasets and manifest.",
+    )
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        help="Compute SHA-256 checksums and validate manifest without copying files.",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
-    print("=== Freezing Canonical Publication Dataset under paper/data/ ===")
-    paper_data_dir = PROJECT_ROOT / "paper" / "data"
-    paper_data_dir.mkdir(parents=True, exist_ok=True)
+    args = parse_args()
+    print(f"=== Freezing Publication Dataset [{'DRY RUN' if args.dry_run else 'WRITE'}] ===")
 
-    warpx_dir = Path("/home/cspark/Work/simulation_codes-working/warpx")
+    manifest = freeze_dataset(
+        source_dir=args.source_dir,
+        output_dir=args.output_dir,
+        dry_run=args.dry_run,
+    )
 
-    cases_frozen = [
-        "vacuum_reference",
-        "h2_baseline",
-        "kr_assisted",
-        "h2_bunched",
-        "kr_bunched",
-        "custom_mcc_h2_verified",
-        "custom_mcc_kr_verified",
-    ]
+    files = manifest.get("files", {})
+    print(f"  Processed {len(files)} files:")
+    for fname, info in files.items():
+        print(f"    - {fname} ({info['size_bytes']} bytes, SHA-256: {info['sha256'][:12]}...)")
 
-    manifest = {
-        "dataset_name": "plasma_column_publication_dataset_v1",
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "project_git_commit": get_git_commit(PROJECT_ROOT),
-        "warpx_git_commit": get_git_commit(warpx_dir),
-        "conda_environment": os.environ.get("CONDA_DEFAULT_ENV", "warpx-dev"),
-        "cases": cases_frozen,
-    }
-
-    # Copy data files from data/ if available or generate canonical summary
-    source_data_dir = PROJECT_ROOT / "data"
-    if source_data_dir.exists():
-        for item in source_data_dir.glob("*.csv"):
-            shutil.copy(item, paper_data_dir / item.name)
-            print(f"  Frozen: {item.name}")
-
-    save_metadata(manifest, paper_data_dir / "dataset_manifest.json")
-    print(f"  Wrote dataset manifest to: {paper_data_dir / 'dataset_manifest.json'}")
+    if args.dry_run:
+        print(f"  [DRY RUN SUCCESS] Validated dataset manifest without writing files.")
+    else:
+        print(f"  Wrote dataset manifest to: {args.output_dir / 'dataset_manifest.json'}")
 
 
 if __name__ == "__main__":
