@@ -117,5 +117,71 @@ def test_paper_figure_generators():
             plt.close("all")
 
 
+def test_scan_plotting_module():
+    """Verify all scan plotting routines work when imported from plotting.scan and plotting."""
+    import plasma_column.plotting.scan as scan_mod
+    from plasma_column.plotting import (
+        plot_keff_pressure_scan,
+        plot_scan_eta_vs_pressure,
+        plot_scan_keff_vs_pressure,
+        plot_scan_method_comparison_bar,
+        plot_scan_heatmap,
+        plot_scan_neutralization_timeseries_grid,
+        plot_scan_final_eta_bar_by_gas,
+    )
+
+    # Test direct module exports
+    for fn in [
+        "plot_keff_pressure_scan",
+        "plot_scan_eta_vs_pressure",
+        "plot_scan_keff_vs_pressure",
+        "plot_scan_method_comparison_bar",
+        "plot_scan_heatmap",
+        "plot_scan_neutralization_timeseries_grid",
+        "plot_scan_final_eta_bar_by_gas",
+    ]:
+        assert hasattr(scan_mod, fn)
+
+    # Create synthetic scan DataFrame
+    df = pd.DataFrame({
+        "case_name": ["h2_1e5", "h2_3e5", "kr_1e6", "kr_3e6"],
+        "gas": ["H2", "H2", "Kr", "Kr"],
+        "method": ["seeded", "seeded", "seeded", "seeded"],
+        "pressure_torr": [1.0e-5, 3.0e-5, 1.0e-6, 3.0e-6],
+        "final_eta_net": [0.85, 0.92, 0.88, 0.95],
+        "final_keff_over_k0": [0.15, 0.08, 0.12, 0.05],
+        "keff_over_k0": [0.15, 0.08, 0.12, 0.05],
+    })
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        p1, p2 = plot_keff_pressure_scan(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_scan_eta_vs_pressure(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_scan_keff_vs_pressure(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_scan_method_comparison_bar(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_scan_heatmap(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_scan_final_eta_bar_by_gas(df, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        # Test timeseries grid
+        ts_df = pd.DataFrame({
+            "time": np.linspace(0, 1e-8, 20),
+            "eta_net": np.linspace(0, 0.9, 20),
+        })
+        cases = [("case_1", ts_df), ("case_2", ts_df)]
+        p1, p2 = plot_scan_neutralization_timeseries_grid(cases, tmp_dir)
+        assert p1.exists() and p2.exists()
+        plt.close("all")
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
