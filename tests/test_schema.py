@@ -240,6 +240,7 @@ def test_schema_checkpoint_options():
 
     cfg2 = SimulationCaseConfig.from_dict({
         "case_name": "test_chk2",
+        "method": "seeded_compensation",
         "numerics": {"checkpoint_period": 500, "restart_from": "auto"}
     })
     assert cfg2.numerics.checkpoint_period == 500
