@@ -52,6 +52,7 @@ from .paper_figures import (
     generate_fig03_cross_sections,
     generate_fig04_neutralization_evolution,
     generate_fig05_inflector_phase_space,
+    generate_paper_tables,
 )
 
 __all__ = [
@@ -90,4 +91,5 @@ __all__ = [
     "generate_fig03_cross_sections",
     "generate_fig04_neutralization_evolution",
     "generate_fig05_inflector_phase_space",
+    "generate_paper_tables",
 ]

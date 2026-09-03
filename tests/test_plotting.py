@@ -35,6 +35,7 @@ from plasma_column.plotting import (
     generate_fig03_cross_sections,
     generate_fig04_neutralization_evolution,
     generate_fig05_inflector_phase_space,
+    generate_paper_tables,
     write_plot_manifest,
 )
 
@@ -248,6 +249,16 @@ def test_bunched_beam_plotting_helpers():
         })
         p1, p2 = plot_analytic_vs_simulated_ionization_rate(df_rate, tmp_dir)
         assert p1.exists() and p2.exists()
+
+        # Test generate_paper_tables
+        tables_dry = generate_paper_tables(tmp_dir, dry_run=True)
+        assert len(tables_dry) == 5
+        assert not (Path(tmp_dir) / "table_beam_parameters.csv").exists()
+
+        tables_write = generate_paper_tables(tmp_dir, dry_run=False)
+        assert len(tables_write) == 5
+        assert (Path(tmp_dir) / "table_beam_parameters.csv").exists()
+        assert (Path(tmp_dir) / "table_validation_summary.csv").exists()
         plt.close("all")
 
 
