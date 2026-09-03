@@ -87,6 +87,7 @@ def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
             "np_3d": np.zeros((nx, ny, nz)),
         }
 
+        # Attempt 1: extract species charge density grids from field diagnostics (e.g. boxlib rho_<species>)
         try:
             cg = ds.covering_grid(level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions)
             field_list = [f[1] for f in ds.field_list] if hasattr(ds, "field_list") else []
@@ -101,6 +102,46 @@ def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
                     result["ni_3d"] = np.abs(np.array(cg[("boxlib", f)])) / ELEMENTARY_CHARGE
         except Exception:
             pass
+
+        # Attempt 2: if field density grids were absent or empty, reconstruct 3D number density
+        # from particle positions and weights (particle diagnostics)
+        if not np.any(result["np_3d"]) and hasattr(ds, "particle_types"):
+            try:
+                ad = ds.all_data()
+                x_edges = np.linspace(float(ds.domain_left_edge[0]), float(ds.domain_right_edge[0]), nx + 1)
+                y_edges = np.linspace(float(ds.domain_left_edge[1]), float(ds.domain_right_edge[1]), ny + 1)
+                z_edges = np.linspace(float(ds.domain_left_edge[2]), float(ds.domain_right_edge[2]), nz + 1)
+                dx = (float(ds.domain_right_edge[0]) - float(ds.domain_left_edge[0])) / nx
+                dy = (float(ds.domain_right_edge[1]) - float(ds.domain_left_edge[1])) / ny
+                dz = (float(ds.domain_right_edge[2]) - float(ds.domain_left_edge[2])) / nz
+                dV = float(dx * dy * dz)
+
+                if dV > 0:
+                    for ptype in ds.particle_types:
+                        plower = ptype.lower()
+                        if plower in ("all", "nbody"):
+                            continue
+                        try:
+                            px = np.array(ad[(ptype, "particle_position_x")])
+                            if len(px) == 0:
+                                continue
+                            py = np.array(ad[(ptype, "particle_position_y")])
+                            pz = np.array(ad[(ptype, "particle_position_z")])
+                            pw = np.array(ad[(ptype, "particle_weight")])
+
+                            H, _ = np.histogramdd((px, py, pz), bins=(x_edges, y_edges, z_edges), weights=pw)
+                            dens = H / dV
+
+                            if "proton" in plower or "beam" in plower:
+                                result["np_3d"] += dens
+                            elif "electron" in plower:
+                                result["ne_3d"] += dens
+                            elif "ion" in plower:
+                                result["ni_3d"] += dens
+                        except Exception:
+                            continue
+            except Exception:
+                pass
 
         return result
     except Exception:

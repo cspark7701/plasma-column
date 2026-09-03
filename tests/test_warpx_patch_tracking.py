@@ -34,3 +34,19 @@ def test_warpx_git_tracking():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_load_plotfile_densities_from_particles():
+    from plasma_column.warpx_io import load_plotfile_densities
+    test_plt = project_root / "results" / "callback_Kr_dynamic" / "diags" / "diag1002000"
+    if not test_plt.exists():
+        pytest.skip("Test plotfile not present in results/")
+
+    data = load_plotfile_densities(test_plt)
+    assert data is not None
+    assert "ne_3d" in data
+    assert "np_3d" in data
+    assert "ni_3d" in data
+    assert data["np_3d"].any()
+    assert data["ne_3d"].any()
+    assert data["ni_3d"].any()
