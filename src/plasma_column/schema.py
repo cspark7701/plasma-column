@@ -203,7 +203,7 @@ class NumericsConfig:
     cfl: float = 0.7
     nppc_beam: int = 4
     nppc_plasma: int = 4
-    mcc: str = "electron_impact"
+    mcc: str = "none"
     checkpoint_period: int = 0
     restart_from: Optional[str] = None
 
@@ -289,13 +289,18 @@ class SimulationCaseConfig:
             plasma_dict["pressure_torr"] = d["pressure_torr"]
         d["plasma"] = plasma_dict
 
-        # Default numerics (max_steps and checkpoint_period) tailored to method if omitted
+        # Default numerics (max_steps, checkpoint_period, and mcc) tailored to method if omitted
         rec_steps, rec_chk = get_default_numerics_for_method(canonical_method)
         raw_numerics = dict(d.get("numerics") or {})
         if "max_steps" not in raw_numerics:
             raw_numerics["max_steps"] = rec_steps
         if "checkpoint_period" not in raw_numerics:
             raw_numerics["checkpoint_period"] = rec_chk
+        if "mcc" not in raw_numerics:
+            if canonical_method == "cxx_mcc_custom":
+                raw_numerics["mcc"] = "electron_impact"
+            else:
+                raw_numerics["mcc"] = "none"
         d["numerics"] = raw_numerics
 
         config = _dataclass_from_dict(cls, d)
@@ -367,6 +372,10 @@ class ScanMatrixConfig:
 
         for case_item in raw_case_list:
             merged = merge_dicts(defaults, case_item)
+            case_method = _normalise_method(merged.get("method", "vacuum"))
+            if case_method == "vacuum" and "mcc" not in case_item.get("numerics", {}):
+                if "numerics" in merged:
+                    merged["numerics"]["mcc"] = "none"
             case_config = SimulationCaseConfig.from_dict(merged)
             parsed_cases.append(case_config)
             raw_cases_merged.append(merged)
