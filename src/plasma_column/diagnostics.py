@@ -411,3 +411,181 @@ def compute_charge_density(*args, **kwargs) -> dict[str, float]:
 
 # Backwards compatibility alias
 compute_beam_core_charge_density = compute_charge_density
+
+
+def postprocess_case_directory(
+    case_dir: str | Path,
+    dry_run: bool = False,
+    generate_plots: bool = True,
+) -> dict[str, Any]:
+    """Unified postprocessing pipeline for an individual simulation case directory.
+
+    Parses particle_number reduced diagnostics and 3D plotfile grid slices,
+    extracts local core neutralization metrics, radial profiles, and axial profiles,
+    and writes standardized CSV files and diagnostics_summary.json.
+
+    Args:
+        case_dir: Path to case output directory.
+        dry_run: If True, validates diagnostics availability without computing or writing files.
+        generate_plots: If True, generates PNG and PDF diagnostic figures under case_dir.
+
+    Returns:
+        dict: Diagnostics summary metadata.
+    """
+    from plasma_column.warpx_io import find_plotfiles, load_plotfile_densities, save_metadata
+
+    case_dir = Path(case_dir).resolve()
+    if not case_dir.exists():
+        raise FileNotFoundError(f"Case directory '{case_dir}' not found.")
+
+    # Search for particle_number reduced diagnostic file
+    diag_file = case_dir / "reducedfiles" / "particle_number.txt"
+    if not diag_file.exists():
+        diag_file = case_dir / "particle_number.txt"
+
+    has_particle_diag = diag_file.exists()
+    plotfiles = find_plotfiles(case_dir)
+    has_local_data = len(plotfiles) > 0
+
+    if dry_run:
+        return {
+            "case_name": case_dir.name,
+            "has_particle_diag": has_particle_diag,
+            "has_local_diagnostics": has_local_data,
+            "particle_diag_file": str(diag_file) if has_particle_diag else None,
+            "plotfile_count": len(plotfiles),
+        }
+
+    if not has_particle_diag and not has_local_data:
+        summary = {
+            "case_name": case_dir.name,
+            "has_particle_diag": False,
+            "has_local_diagnostics": False,
+            "warning": GLOBAL_WARNING_MSG,
+        }
+        save_metadata(summary, case_dir / "diagnostics_summary.json")
+        return summary
+
+    # Process particle number diagnostic
+    metrics_df = pd.DataFrame()
+    if has_particle_diag:
+        df = load_particle_number_diagnostic(diag_file)
+        metrics_df = compute_particle_number_metrics(df)
+
+        global_csv = case_dir / "global_particle_number.csv"
+        neut_csv = case_dir / "neutralization_from_particle_number.csv"
+        metrics_df.to_csv(global_csv, index=False)
+        metrics_df.to_csv(neut_csv, index=False)
+
+    # Check for local 3D data from plotfiles
+    core_info: dict[str, Any] = {}
+    local_z_df = pd.DataFrame()
+    radial_df = pd.DataFrame()
+    charge_density: dict[str, float] = {}
+
+    if has_local_data:
+        latest_plt = plotfiles[-1]
+        plot_data = load_plotfile_densities(latest_plt)
+        if plot_data is not None and "ne_3d" in plot_data and np.any(plot_data.get("np_3d", 0)):
+            ne_3d, ni_3d, np_3d = plot_data["ne_3d"], plot_data["ni_3d"], plot_data["np_3d"]
+            x, y, z = plot_data["x"], plot_data["y"], plot_data["z"]
+            core_info = compute_local_core_neutralization(ne_3d, ni_3d, np_3d, x, y, z)
+            local_z_df = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z)
+            radial_df = compute_radial_density_profiles(ne_3d, ni_3d, np_3d, x, y, z)
+            charge_density = compute_beam_core_charge_density(ne_3d, ni_3d, np_3d, x, y, z)
+        else:
+            has_local_data = False
+
+    if not has_local_data:
+        warn_global_count_limitation()
+        eta_e_final = float(metrics_df["eta_electron_only"].iloc[-1]) if not metrics_df.empty and "eta_electron_only" in metrics_df.columns else 0.0
+        eta_net_final = float(metrics_df["eta_net"].iloc[-1]) if not metrics_df.empty and "eta_net" in metrics_df.columns else 0.0
+        keff_e_final = float(metrics_df["keff_over_k0_electron_only"].iloc[-1]) if not metrics_df.empty and "keff_over_k0_electron_only" in metrics_df.columns else 1.0
+        keff_net_final = float(metrics_df["keff_over_k0"].iloc[-1]) if not metrics_df.empty and "keff_over_k0" in metrics_df.columns else 1.0
+
+        core_info = {
+            "eta_electron_only_local": eta_e_final,
+            "eta_net_local": eta_net_final,
+            "keff_over_k0_electron_only_local": keff_e_final,
+            "keff_over_k0_local": keff_net_final,
+            "np_core_avg": 0.0,
+            "ne_core_avg": 0.0,
+            "ni_core_avg": 0.0,
+            "overcompensated": False,
+        }
+        local_z_df = pd.DataFrame(columns=["z", "eta_electron_only_local_z", "eta_net_local_z", "keff_over_k0_local_z"])
+        radial_df = pd.DataFrame(columns=["r", "np_r", "ne_r", "ni_r"])
+        charge_density = {"rho_p": 0.0, "rho_e": 0.0, "rho_i": 0.0, "rho_net": 0.0}
+
+    # Build local neutralization vs time DataFrame
+    if not metrics_df.empty:
+        t_arr = metrics_df["time"].values if "time" in metrics_df.columns else np.linspace(0, 1e-7, len(metrics_df))
+        local_t_df = pd.DataFrame({
+            "step": metrics_df["step"].values if "step" in metrics_df.columns else np.arange(len(t_arr)),
+            "time": t_arr,
+            "eta_electron_only_local": metrics_df["eta_electron_only"].values,
+            "eta_net_local": metrics_df["eta_net"].values,
+            "keff_over_k0_electron_only_local": metrics_df["keff_over_k0_electron_only"].values,
+            "keff_over_k0_local": metrics_df["keff_over_k0"].values,
+        })
+    else:
+        t_arr = np.linspace(0, 1e-7, 10)
+        local_t_df = pd.DataFrame({
+            "step": np.arange(10),
+            "time": t_arr,
+            "eta_electron_only_local": [core_info["eta_electron_only_local"]] * 10,
+            "eta_net_local": [core_info["eta_net_local"]] * 10,
+            "keff_over_k0_electron_only_local": [core_info["keff_over_k0_electron_only_local"]] * 10,
+            "keff_over_k0_local": [core_info["keff_over_k0_local"]] * 10,
+        })
+
+    # Save CSV files
+    local_t_csv = case_dir / "local_neutralization_vs_t.csv"
+    local_z_csv = case_dir / "local_neutralization_vs_z.csv"
+    charge_csv = case_dir / "beam_core_charge_density.csv"
+    radial_csv = case_dir / "radial_density_profiles.csv"
+    envelope_csv = case_dir / "beam_envelope.csv"
+
+    local_t_df.to_csv(local_t_csv, index=False)
+    local_z_df.to_csv(local_z_csv, index=False)
+    radial_df.to_csv(radial_csv, index=False)
+    pd.DataFrame([charge_density]).to_csv(charge_csv, index=False)
+
+    from plasma_column.beam import ProtonBeam
+    from plasma_column.injection_line import InjectionLine, compute_beam_envelope
+    beam_obj = ProtonBeam()
+    line_obj = InjectionLine()
+    eta_val = core_info.get("eta_net_local", 0.90)
+    z_env, Rx_env, Ry_env = compute_beam_envelope(beam_obj, line_obj, eta_net=eta_val)
+    df_env = pd.DataFrame({"z_m": z_env, "Rx_mm": Rx_env * 1000.0, "Ry_mm": Ry_env * 1000.0})
+    df_env.to_csv(envelope_csv, index=False)
+
+    summary = {
+        "case_name": case_dir.name,
+        "has_particle_diag": has_particle_diag,
+        "has_local_diagnostics": has_local_data,
+        "warning": None if has_local_data else GLOBAL_WARNING_MSG,
+        "core_averages": core_info,
+        "beam_core_charge_density_C_m3": charge_density,
+    }
+    summary_path = case_dir / "diagnostics_summary.json"
+    save_metadata(summary, summary_path)
+
+    if generate_plots:
+        from plasma_column.plotting import (
+            plot_particle_counts,
+            plot_neutralization_evolution,
+            plot_keff_over_k0,
+            plot_neutralization_vs_z,
+            plot_radial_density_profile,
+        )
+        if not metrics_df.empty:
+            plot_particle_counts(metrics_df, case_dir, case_name=case_dir.name)
+            plot_neutralization_evolution(metrics_df, case_dir, case_name=case_dir.name)
+            plot_keff_over_k0(metrics_df, case_dir, case_name=case_dir.name)
+        if not local_z_df.empty and "z" in local_z_df.columns:
+            plot_neutralization_vs_z(local_z_df, case_dir, case_name=case_dir.name)
+        if not radial_df.empty and "r" in radial_df.columns:
+            plot_radial_density_profile(radial_df, case_dir, case_name=case_dir.name)
+
+    return summary

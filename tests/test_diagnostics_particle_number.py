@@ -138,3 +138,40 @@ def test_load_particle_number_diagnostic_restart_deduplication():
         assert list(df["step"]) == [0, 1, 2, 3, 4]
     finally:
         shutil.rmtree(td)
+
+
+def test_postprocess_case_directory():
+    from plasma_column.diagnostics import postprocess_case_directory
+    import tempfile, shutil
+
+    td = Path(tempfile.mkdtemp())
+    try:
+        # 1. Dry run on empty dir
+        res_dry = postprocess_case_directory(td, dry_run=True)
+        assert res_dry["case_name"] == td.name
+        assert not res_dry["has_particle_diag"]
+        assert not res_dry["has_local_diagnostics"]
+
+        # 2. Add particle number file and test full postprocessing
+        rdir = td / "reducedfiles"
+        rdir.mkdir()
+        pn_file = rdir / "particle_number.txt"
+        pn_file.write_text(
+            "#[0]step() [1]time(s) [2]tot_macro [3]p_macro [4]e_macro [5]p_phys [6]e_phys [7]i_phys\n"
+            "0 0.0 10 10 0 1000 0 0\n"
+            "100 1e-9 10 10 0 1000 500 50\n"
+            "200 2e-9 10 10 0 1000 900 100\n"
+        )
+
+        res_full = postprocess_case_directory(td, dry_run=False, generate_plots=False)
+        assert res_full["has_particle_diag"]
+        assert (td / "global_particle_number.csv").exists()
+        assert (td / "neutralization_from_particle_number.csv").exists()
+        assert (td / "local_neutralization_vs_t.csv").exists()
+        assert (td / "local_neutralization_vs_z.csv").exists()
+        assert (td / "beam_core_charge_density.csv").exists()
+        assert (td / "radial_density_profiles.csv").exists()
+        assert (td / "beam_envelope.csv").exists()
+        assert (td / "diagnostics_summary.json").exists()
+    finally:
+        shutil.rmtree(td)
