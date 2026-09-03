@@ -18,8 +18,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
 
 try:
     import _path_setup  # noqa: F401
@@ -27,8 +25,7 @@ except ImportError:
     from scripts import _path_setup  # noqa: F401
 
 from plasma_column.beam import RFFocusedBeam
-from plasma_column.neutralization import peak_keff_over_k0_from_average_eta
-from plasma_column.plotting import save_figure
+from plasma_column.plotting import plot_bunched_beam_perveance_scan
 
 
 def parse_args() -> argparse.Namespace:
@@ -77,32 +74,13 @@ def main() -> None:
         print("\n[DRY RUN SUCCESS] RF-bunched beam parameters validated.")
         return
 
-    bf_arr = np.linspace(1.0, 10.0, 200)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    colors = ["tab:red", "tab:orange", "tab:blue"]
-    for eta, color in zip(eta_avg_levels, colors):
-        k_ratios = [peak_keff_over_k0_from_average_eta(eta, bf) for bf in bf_arr]
-        ax.plot(bf_arr, k_ratios, label=f"Average neutralization $\\eta_{{\\text{{avg}}}} = {eta*100:.0f}\\%$", color=color, lw=2.5)
-
-    # Highlight B_f = 5 operating points
-    for eta, color in zip(eta_avg_levels, colors):
-        k_val = peak_keff_over_k0_from_average_eta(eta, 5.0)
-        ax.scatter([5.0], [k_val], color=color, s=70, zorder=5)
-
-    ax.axvline(5.0, color="gray", ls=":", alpha=0.7, label="Baseline bunching factor $B_f = 5$")
-    ax.set_xlabel(r"Bunching Factor $B_f = I_{\text{peak}} / I_{\text{avg}}$", fontsize=12)
-    ax.set_ylabel(r"Peak Effective Perveance Ratio $K_{\text{eff,peak}} / K_{0,\text{peak}}$", fontsize=12)
-    ax.set_title(r"RF-Bunched Beam Peak Space-Charge Reduction", fontsize=13)
-    ax.set_ylim(0.0, 1.05)
-    ax.grid(True, ls="--", alpha=0.5)
-    ax.legend(fontsize=10, loc="lower right")
-
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    out_basename = args.output_dir / "bunched_beam_perveance"
-    png_path, pdf_path = save_figure(fig, out_basename)
-    plt.close(fig)
+    png_path, pdf_path = plot_bunched_beam_perveance_scan(
+        eta_levels=eta_avg_levels,
+        output_dir=args.output_dir,
+        bunching_factor_max=10.0,
+        output_name="bunched_beam_perveance",
+    )
 
     print(f"\nSaved bunched beam perveance figures:")
     print(f"  PNG: {png_path}")

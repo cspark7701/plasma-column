@@ -15,8 +15,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 
 try:
     import _path_setup  # noqa: F401
@@ -31,7 +30,7 @@ from plasma_column.gas import (
     MKR,
     MP,
 )
-from plasma_column.plotting import save_figure
+from plasma_column.plotting import plot_cross_section_comparison
 
 
 def parse_args() -> argparse.Namespace:
@@ -86,45 +85,21 @@ def main() -> None:
         print("\n[DRY RUN SUCCESS] Cross-section files and operating points validated.")
         return
 
-    # Load full curves
+    # Load full curves and build DataFrames
     e_h2, sig_h2, _ = load_cross_section_table(h2_file)
     e_kr, sig_kr, _ = load_cross_section_table(kr_file)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.plot(e_h2 / 1000.0, sig_h2 * 1.0e20, label=r"$p^+ + \text{H}_2 \rightarrow p^+ + \text{H}_2^+ + e^-$", color="tab:blue", lw=2)
-    ax.plot(e_kr / 1000.0, sig_kr * 1.0e20, label=r"$p^+ + \text{Kr} \rightarrow p^+ + \text{Kr}^+ + e^-$", color="tab:orange", lw=2)
-
-    # Plot operating points
-    ax.scatter(
-        [e_cm_h2_30k / 1000.0],
-        [sigma_h2_30k * 1.0e20],
-        color="blue",
-        s=80,
-        zorder=5,
-        label=f"H2 (30 keV lab): {sigma_h2_30k*1e20:.2f} Å²",
-    )
-    ax.scatter(
-        [e_cm_kr_30k / 1000.0],
-        [sigma_kr_30k * 1.0e20],
-        color="darkorange",
-        s=80,
-        zorder=5,
-        label=f"Kr (30 keV lab): {sigma_kr_30k*1e20:.2f} Å²",
-    )
-
-    ax.set_xlabel(r"Center-of-Mass Collision Energy $E_{\text{cm}}$ [keV]", fontsize=12)
-    ax.set_ylabel(r"Ionization Cross Section $\sigma_{\text{ion}}$ [$10^{-20} \text{ m}^2$ = Å²]", fontsize=12)
-    ax.set_title(r"Proton-Impact Ionization Cross Sections ($\text{H}_2$ vs $\text{Kr}$)", fontsize=13)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.grid(True, which="both", ls="--", alpha=0.5)
-    ax.legend(fontsize=10, loc="lower right")
+    h2_df = pd.DataFrame({"energy_kev": e_h2 / 1000.0, "sigma_m2": sig_h2})
+    kr_df = pd.DataFrame({"energy_kev": e_kr / 1000.0, "sigma_m2": sig_kr})
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    out_basename = args.output_dir / "h2_kr_cross_sections"
-    png_path, pdf_path = save_figure(fig, out_basename)
-    plt.close(fig)
+    png_path, pdf_path = plot_cross_section_comparison(
+        h2_df,
+        kr_df,
+        output_dir=args.output_dir,
+        operating_energy_kev=30.0,
+        output_name="h2_kr_cross_sections",
+    )
 
     print(f"\nSaved cross section figures:")
     print(f"  PNG: {png_path}")

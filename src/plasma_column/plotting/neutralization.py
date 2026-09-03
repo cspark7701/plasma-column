@@ -359,6 +359,38 @@ def plot_bunched_beam_keff(
     return save_figure(fig, out_basename)
 
 
+def plot_bunched_beam_perveance_scan(
+    eta_levels: Sequence[float],
+    output_dir: str | Path,
+    bunching_factor_max: float = 10.0,
+    output_name: str = "bunched_beam_perveance",
+    title: str = r"RF-Bunched Beam Peak Space-Charge Reduction",
+) -> tuple[Path, Path]:
+    """Plots peak space charge perveance K_eff,peak / K0,peak vs bunching factor B_f for various average neutralization levels."""
+    setup_publication_style()
+    bf_arr = np.linspace(1.0, bunching_factor_max, 200)
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    colors = ["tab:red", "tab:orange", "tab:blue", "tab:green", "tab:purple"]
+    for i, eta in enumerate(eta_levels):
+        color = colors[i % len(colors)]
+        k_ratios = [1.0 - eta / bf for bf in bf_arr]
+        ax.plot(bf_arr, k_ratios, label=f"Average neutralization $\\eta_{{\\text{{avg}}}} = {eta*100:.0f}\\%$", color=color, lw=2.5)
+        k_val = 1.0 - eta / 5.0
+        ax.scatter([5.0], [k_val], color=color, s=70, zorder=5)
+
+    ax.axvline(5.0, color="gray", ls=":", alpha=0.7, label="Baseline bunching factor $B_f = 5$")
+    ax.set_xlabel(r"Bunching Factor $B_f = I_{\text{peak}} / I_{\text{avg}}$", fontsize=12)
+    ax.set_ylabel(r"Peak Effective Perveance Ratio $K_{\text{eff,peak}} / K_{0,\text{peak}}$", fontsize=12)
+    ax.set_title(title, fontsize=13)
+    ax.set_ylim(0.0, 1.05)
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.legend(fontsize=10, loc="lower right")
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
 def plot_neutralization_panel(
     df: pd.DataFrame,
     output_dir: str | Path,

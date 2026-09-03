@@ -22,6 +22,7 @@ from .neutralization import (
     plot_radial_density_profile,
     plot_neutralization_vs_z,
     plot_bunched_beam_keff,
+    plot_bunched_beam_perveance_scan,
     plot_neutralization_panel,
 )
 from .scan import (
@@ -56,6 +57,7 @@ __all__ = [
     "plot_neutralization_vs_z",
     "plot_keff_pressure_scan",
     "plot_bunched_beam_keff",
+    "plot_bunched_beam_perveance_scan",
     "plot_neutralization_panel",
     "plot_scan_eta_vs_pressure",
     "plot_scan_keff_vs_pressure",
