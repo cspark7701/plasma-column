@@ -58,3 +58,16 @@ def test_plotting_import_without_warpx():
     """Verify plotting functions can be imported and styled without pywarpx/WarpX."""
     setup_publication_style()
     assert True
+
+
+def test_estimate_cfl_timestep():
+    """Verify 3D FDTD CFL timestep calculation matches analytical formula."""
+    from plasma_column.constants import estimate_cfl_timestep, SPEED_OF_LIGHT, C
+
+    assert SPEED_OF_LIGHT == C
+    dx, dy, dz = 0.001, 0.001, 0.001  # 1 mm cubic cell
+    cfl = 0.5
+    expected_dt = cfl / (C * math.sqrt(3 * (1.0 / 0.001**2)))
+    calculated_dt = estimate_cfl_timestep(dx, dy, dz, cfl=cfl)
+    assert math.isclose(calculated_dt, expected_dt, rel_tol=1e-9)
+    assert 9.6e-13 < calculated_dt < 9.7e-13

@@ -13,6 +13,8 @@ from typing import Any, Optional, get_type_hints
 import warnings
 import yaml
 
+from .constants import estimate_cfl_timestep
+
 
 def _dataclass_from_dict(cls: type, data: dict[str, Any] | None) -> Any:
     """Populate a dataclass from a dict, casting to each field's type."""
@@ -204,6 +206,13 @@ class NumericsConfig:
     mcc: str = "electron_impact"
     checkpoint_period: int = 0
     restart_from: Optional[str] = None
+
+    def estimate_dt(self) -> float:
+        """Computes the 3D FDTD Courant-Friedrichs-Lewy (CFL) stable electromagnetic timestep [s]."""
+        dx = 2.0 * self.xmax_m / self.nx
+        dy = 2.0 * self.ymax_m / self.ny
+        dz = (self.zmax_m - self.zmin_m) / self.nz
+        return estimate_cfl_timestep(dx, dy, dz, self.cfl)
 
 
 # ── Top-level case configuration ───────────────────────────────────────────────

@@ -8,6 +8,7 @@ build_warpx_cmd_flags, and cross-field consistency checks.
 
 from __future__ import annotations
 
+import math
 import warnings
 import pytest
 from pathlib import Path
@@ -265,3 +266,24 @@ def test_get_default_numerics_for_method():
     cfg_cb = SimulationCaseConfig.from_dict({"case_name": "auto_cb", "method": "callback"})
     assert cfg_cb.numerics.max_steps == 120000
     assert cfg_cb.numerics.checkpoint_period == 10000
+
+
+def test_numerics_config_estimate_dt():
+    """Verify NumericsConfig.estimate_dt evaluates accurate 3D CFL timestep."""
+    num = NumericsConfig(
+        nx=64, ny=64, nz=512,
+        xmax_m=0.01, ymax_m=0.01,
+        zmin_m=-0.02, zmax_m=0.24,
+        cfl=0.5,
+    )
+    dt = num.estimate_dt()
+    assert 3.0e-13 < dt < 4.0e-13
+
+    # Test scaling with CFL
+    num_cfl07 = NumericsConfig(
+        nx=64, ny=64, nz=512,
+        xmax_m=0.01, ymax_m=0.01,
+        zmin_m=-0.02, zmax_m=0.24,
+        cfl=0.7,
+    )
+    assert math.isclose(num_cfl07.estimate_dt(), dt * (0.7 / 0.5), rel_tol=1e-9)

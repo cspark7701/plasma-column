@@ -57,6 +57,7 @@ try:
 except ImportError:
     from scripts import _path_setup  # noqa: F401
 
+from plasma_column.constants import estimate_cfl_timestep
 from pywarpx import picmi
 
 try:
@@ -190,7 +191,7 @@ def estimate_pic_dt(cfg: Config) -> float:
     dx = 2.0 * cfg.xmax / cfg.nx
     dy = 2.0 * cfg.ymax / cfg.ny
     dz = (cfg.zmax - cfg.zmin) / cfg.nz
-    return cfg.cfl / (C * math.sqrt(dx**-2 + dy**-2 + dz**-2))
+    return estimate_cfl_timestep(dx, dy, dz, cfg.cfl)
 
 
 def load_cross_section(cfg: Config):

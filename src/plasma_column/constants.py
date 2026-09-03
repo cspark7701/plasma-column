@@ -9,6 +9,7 @@ import math
 
 # Fundamental physical constants (CODATA 2018 / standard physics values)
 C: float = 299792458.0                # Speed of light [m/s]
+SPEED_OF_LIGHT: float = C             # Alias for speed of light
 QE: float = 1.602176634e-19           # Elementary charge [C]
 ELEMENTARY_CHARGE: float = QE         # Alias for QE
 ME: float = 9.1093837015e-31          # Electron mass [kg]
@@ -30,3 +31,22 @@ EV_TO_KELVIN: float = QE / KB         # 1 eV in Kelvin
 # Radiation length mass density for neutral gases [kg/m^2] (PDG: 1 g/cm^2 = 10 kg/m^2)
 RADIATION_LENGTH_H2: float = 630.5     # H2 radiation length [kg/m^2] (63.05 g/cm^2)
 RADIATION_LENGTH_KR: float = 353.4     # Kr radiation length [kg/m^2] (35.34 g/cm^2)
+
+
+def estimate_cfl_timestep(dx: float, dy: float, dz: float, cfl: float = 0.5) -> float:
+    """
+    Computes the 3D FDTD Courant-Friedrichs-Lewy (CFL) stable electromagnetic timestep [s].
+
+    Formula:
+        dt = cfl / (c * sqrt(dx^-2 + dy^-2 + dz^-2))
+
+    Args:
+        dx: Grid spacing in x [m]
+        dy: Grid spacing in y [m]
+        dz: Grid spacing in z [m]
+        cfl: Courant factor (typically 0.5 to 0.7 for Yee FDTD, default 0.5)
+
+    Returns:
+        float: Estimated maximum stable timestep [s]
+    """
+    return float(cfl / (C * math.sqrt(dx**-2 + dy**-2 + dz**-2)))
