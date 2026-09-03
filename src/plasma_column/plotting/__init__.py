@@ -23,6 +23,9 @@ from .neutralization import (
     plot_neutralization_vs_z,
     plot_bunched_beam_keff,
     plot_bunched_beam_perveance_scan,
+    plot_peak_keff_vs_bunching_factor,
+    plot_bunch_length_vs_phase_width,
+    plot_average_vs_peak_compensation,
     plot_neutralization_panel,
 )
 from .scan import (
@@ -64,6 +67,9 @@ __all__ = [
     "plot_keff_pressure_scan",
     "plot_bunched_beam_keff",
     "plot_bunched_beam_perveance_scan",
+    "plot_peak_keff_vs_bunching_factor",
+    "plot_bunch_length_vs_phase_width",
+    "plot_average_vs_peak_compensation",
     "plot_neutralization_panel",
     "plot_scan_eta_vs_pressure",
     "plot_scan_keff_vs_pressure",

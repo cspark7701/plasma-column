@@ -176,3 +176,53 @@ class RFFocusedBeam(ProtonBeam):
         else:
             core_factor = 1.0 - math.exp(-0.5 * (r / sig_r)**2)
             return (lam / (2.0 * math.pi * EPSILON_0 * r)) * core_factor
+
+
+def compute_bunched_beam_compensation_scan(
+    bunching_factors: Sequence[float] = (1.0, 2.0, 3.0, 5.0, 10.0),
+    eta_avg_values: Sequence[float] = (0.0, 0.50, 0.80, 0.90, 0.95),
+    energy_keV: float = 30.0,
+    current_mA: float = 10.0,
+    rf_frequency_hz: float = 50.0e6,
+    bunch_phase_width_deg: float = 36.0,
+) -> pd.DataFrame:
+    """Evaluates RF-bunched beam perveance scaling across bunching factors and neutralization fractions.
+
+    Args:
+        bunching_factors: Sequence of peak-to-average bunching factors B_f.
+        eta_avg_values: Sequence of average plasma neutralization fractions eta_avg.
+        energy_keV: Proton beam kinetic energy in keV.
+        current_mA: Average proton beam current in mA.
+        rf_frequency_hz: RF bunching frequency in Hz.
+        bunch_phase_width_deg: RF bunch phase width in degrees.
+
+    Returns:
+        pd.DataFrame containing bunch metrics and perveance ratios.
+    """
+    import pandas as pd
+    records = []
+    for Bf in bunching_factors:
+        beam = RFFocusedBeam(
+            energy_keV=energy_keV,
+            current_mA=current_mA,
+            rf_frequency_hz=rf_frequency_hz,
+            bunch_phase_width_deg=bunch_phase_width_deg,
+            bunching_factor=Bf,
+        )
+        for eta_avg in eta_avg_values:
+            records.append({
+                "bunching_factor": float(Bf),
+                "eta_avg": float(eta_avg),
+                "rf_frequency_hz": beam.rf_frequency_hz,
+                "rf_period_s": 1.0 / beam.rf_frequency_hz,
+                "bunch_phase_width_deg": beam.bunch_phase_width_deg,
+                "bunch_duration_s": beam.bunch_duration_s,
+                "bunch_length_m": beam.bunch_length_m,
+                "I_avg_mA": beam.beam_current_average_mA,
+                "I_peak_mA": beam.beam_current_peak_mA,
+                "K0_avg": beam.perveance_K0,
+                "K0_peak": beam.peak_perveance_K0,
+                "K_eff_avg_over_K0": 1.0 - float(eta_avg),
+                "K_eff_peak_over_K0_peak": beam.peak_effective_perveance_ratio(float(eta_avg)),
+            })
+    return pd.DataFrame(records)

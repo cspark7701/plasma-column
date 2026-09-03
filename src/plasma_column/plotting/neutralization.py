@@ -450,3 +450,109 @@ def plot_neutralization_panel(
     fig.tight_layout()
     out_basename = Path(output_dir) / f"{case_name}_neutralization_panel"
     return save_figure(fig, out_basename)
+
+
+def plot_peak_keff_vs_bunching_factor(
+    df_scan: pd.DataFrame,
+    output_dir: str | Path,
+    output_name: str = "peak_Keff_vs_bunching_factor",
+    title: str = "Peak-Bunch Space-Charge Perveance Reduction vs Bunching Factor",
+) -> tuple[Path, Path]:
+    """Plots peak Keff/K0 vs bunching factor across average neutralization fractions."""
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    eta_vals = sorted(df_scan["eta_avg"].unique())
+    for eta_val in eta_vals:
+        if eta_val <= 0.0:
+            continue
+        sub_df = df_scan[df_scan["eta_avg"] == eta_val]
+        ax.plot(
+            sub_df["bunching_factor"],
+            sub_df["K_eff_peak_over_K0_peak"],
+            marker="o",
+            lw=2,
+            label=rf"Average Compensation $\eta_{{\text{{avg}}}} = {eta_val:.2f}$",
+        )
+
+    ax.axhline(1.0, color="gray", ls=":", label="Uncompensated Reference")
+    ax.set_xlabel("Bunching Factor $B_f = I_{\\text{peak}} / I_{\\text{avg}}$", fontsize=11)
+    ax.set_ylabel(r"Peak Perveance Ratio $K_{\text{eff,peak}} / K_{0,\text{peak}}$", fontsize=11)
+    ax.set_title(title, fontsize=12)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
+def plot_bunch_length_vs_phase_width(
+    output_dir: str | Path,
+    energy_keV: float = 30.0,
+    rf_frequency_hz: float = 50.0e6,
+    output_name: str = "bunch_length_vs_phase_width",
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """Plots RF bunch spatial length Delta z_b vs bunch phase width Delta phi."""
+    from plasma_column.beam import RFFocusedBeam
+    setup_publication_style()
+    beam_ref = RFFocusedBeam(energy_keV=energy_keV, rf_frequency_hz=rf_frequency_hz)
+
+    phase_widths = np.linspace(5.0, 90.0, 50)
+    bunch_lengths_cm = [
+        (beam_ref.velocity * (phi / 360.0) / beam_ref.rf_frequency_hz) * 100.0
+        for phi in phase_widths
+    ]
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot(phase_widths, bunch_lengths_cm, color="tab:blue", lw=2)
+    ax.set_xlabel(r"RF Bunch Phase Width $\Delta \phi$ [deg]", fontsize=11)
+    ax.set_ylabel(r"Bunch Spatial Length $\Delta z_b$ [cm]", fontsize=11)
+    default_title = rf"RF Bunch Length vs Phase Width (${energy_keV:.0f}\text{{ keV}}$ Protons, ${rf_frequency_hz/1e6:.0f}\text{{ MHz}}$)"
+    ax.set_title(title or default_title, fontsize=12)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
+def plot_average_vs_peak_compensation(
+    df_scan: pd.DataFrame,
+    output_dir: str | Path,
+    bunching_factor: float = 5.0,
+    output_name: str = "average_vs_peak_compensation",
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """Plots average vs peak compensation curves for a chosen bunching factor."""
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    bf_sub = df_scan[df_scan["bunching_factor"] == bunching_factor]
+    if bf_sub.empty:
+        bf_sub = df_scan.copy()
+
+    ax.plot(
+        bf_sub["eta_avg"],
+        bf_sub["K_eff_avg_over_K0"],
+        label=r"Average Compensation $K_{\text{eff,avg}}/K_0$",
+        color="tab:green",
+        lw=2,
+    )
+    ax.plot(
+        bf_sub["eta_avg"],
+        bf_sub["K_eff_peak_over_K0_peak"],
+        label=rf"Peak-Bunch Compensation $K_{{\text{{eff,peak}}}}/K_{{0,\text{{peak}}}}$ ($B_f={bunching_factor:.0f}$)",
+        color="tab:red",
+        lw=2,
+        ls="--",
+    )
+
+    ax.set_xlabel(r"Average Plasma Neutralization Fraction $\eta_{\text{avg}}$", fontsize=11)
+    ax.set_ylabel("Effective Perveance Ratio", fontsize=11)
+    default_title = f"Average vs Peak-Bunch Space-Charge Compensation ($B_f={bunching_factor:.0f}$)"
+    ax.set_title(title or default_title, fontsize=12)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)

@@ -26,6 +26,9 @@ from plasma_column.plotting import (
     plot_multi_case_beam_envelopes,
     plot_inflector_phase_space_comparison,
     plot_transmission_comparison_bar,
+    plot_peak_keff_vs_bunching_factor,
+    plot_bunch_length_vs_phase_width,
+    plot_average_vs_peak_compensation,
     generate_fig01_axial_injection_concept,
     generate_fig02_plasma_neutralizer_module,
     generate_fig03_cross_sections,
@@ -215,6 +218,27 @@ def test_transport_multi_case_and_phase_space_plots():
             "transmission_percent": [45.2, 94.8],
         })
         p1, p2 = plot_transmission_comparison_bar(summary_df, tmp_dir)
+        assert p1.exists() and p2.exists()
+        plt.close("all")
+
+
+def test_bunched_beam_plotting_helpers():
+    """Verify plot_peak_keff_vs_bunching_factor, plot_bunch_length_vs_phase_width, and plot_average_vs_peak_compensation."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        from plasma_column.beam import compute_bunched_beam_compensation_scan
+
+        df_scan = compute_bunched_beam_compensation_scan(
+            bunching_factors=[1.0, 2.0, 5.0],
+            eta_avg_values=[0.50, 0.90],
+        )
+
+        p1, p2 = plot_peak_keff_vs_bunching_factor(df_scan, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_bunch_length_vs_phase_width(tmp_dir, energy_keV=30.0, rf_frequency_hz=50.0e6)
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_average_vs_peak_compensation(df_scan, tmp_dir, bunching_factor=5.0)
         assert p1.exists() and p2.exists()
         plt.close("all")
 

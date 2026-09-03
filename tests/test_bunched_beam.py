@@ -105,5 +105,22 @@ def test_radial_space_charge_electric_field():
         beam.radial_electric_field(-0.001)
 
 
+def test_compute_bunched_beam_compensation_scan():
+    from plasma_column.beam import compute_bunched_beam_compensation_scan
+
+    df = compute_bunched_beam_compensation_scan(
+        bunching_factors=[1.0, 5.0],
+        eta_avg_values=[0.0, 0.90],
+    )
+    assert len(df) == 4
+    assert "bunching_factor" in df.columns
+    assert "eta_avg" in df.columns
+    assert "K_eff_peak_over_K0_peak" in df.columns
+
+    # B_f=5, eta_avg=0.9 -> 1 - 0.9/5 = 0.82
+    row = df[(df["bunching_factor"] == 5.0) & (df["eta_avg"] == 0.90)].iloc[0]
+    assert math.isclose(row["K_eff_peak_over_K0_peak"], 0.82, rel_tol=1e-5)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
