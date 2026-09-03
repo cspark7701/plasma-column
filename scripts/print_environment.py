@@ -51,7 +51,20 @@ def main() -> None:
     conda_env = os.environ.get("CONDA_DEFAULT_ENV", "N/A (Derived path: " + str(Path(sys.executable).parent.parent.name) + ")")
     print(f"  Conda Environment : {conda_env}")
 
-    # 2. Key Package Dependencies
+    # 2. Hardware & Threading Configuration
+    print(f"\n[Hardware & Parallel Runtime]")
+    cpu_count = os.cpu_count() or 1
+    omp_threads = os.environ.get("OMP_NUM_THREADS", "Not set")
+    omp_bind = os.environ.get("OMP_PROC_BIND", "Not set")
+    cuda_vis = os.environ.get("CUDA_VISIBLE_DEVICES", "Not set")
+    warpx_accel = os.environ.get("WARPX_ACCELERATOR", "Not set")
+    print(f"  Available CPUs    : {cpu_count}")
+    print(f"  OMP_NUM_THREADS   : {omp_threads}")
+    print(f"  OMP_PROC_BIND     : {omp_bind}")
+    print(f"  CUDA_VISIBLE_DEVICES: {cuda_vis}")
+    print(f"  WARPX_ACCELERATOR : {warpx_accel}")
+
+    # 3. Key Package Dependencies
     print(f"\n[Package Dependencies]")
     packages = ["plasma_column", "numpy", "pandas", "matplotlib", "scipy", "yaml"]
     for pkg in packages:

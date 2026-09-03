@@ -88,6 +88,7 @@ def configure_runtime(
     os.environ["OPENMP_NUM_THREADS"] = str(cores)
     os.environ["MKL_NUM_THREADS"] = str(cores)
     os.environ["NUMEXPR_NUM_THREADS"] = str(cores)
+    os.environ["OMP_PROC_BIND"] = "close"
 
     # Determine GPU selection
     selected_gpu: int | None = None
@@ -104,6 +105,9 @@ def configure_runtime(
     if selected_gpu is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(selected_gpu)
         os.environ["HIP_VISIBLE_DEVICES"] = str(selected_gpu)
+        os.environ["WARPX_ACCELERATOR"] = "cuda"
+    else:
+        os.environ["WARPX_ACCELERATOR"] = "none"
 
     info = {
         "cores": cores,
