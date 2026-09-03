@@ -294,8 +294,43 @@ def gas_ion_name(cfg: PlasmaColumnConfig) -> str:
     return "gas_ions" if cfg.gas == "H2" else "kr_ions"
 
 
-def gas_ionization_energy_eV(cfg: PlasmaColumnConfig) -> float:
-    # First ionization energies, used only for electron-impact MCC.
+def gas_ionization_energy_eV(cfg: PlasmaColumnConfig, cross_section_file: Optional[Path] = None) -> float:
+    """
+    First ionization threshold energy [eV] used for electron-impact MCC.
+
+    WarpX ScatteringProcess requires that the cross section at energy_penalty
+    must be identically zero: WARPX_ALWAYS_ASSERT(getCrossSection(energy_penalty) == 0).
+    If a cross-section data file is provided, determine the threshold energy
+    directly from the file's zero-crossing / first energy entry so that this
+    numerical condition is always strictly satisfied.
+    """
+    if cross_section_file is not None and cross_section_file.exists():
+        try:
+            with cross_section_file.open("r") as f:
+                first_e = None
+                zero_crossing_e = None
+                for line in f:
+                    s = line.strip()
+                    if not s or s.startswith("#"):
+                        continue
+                    parts = s.replace(",", " ").split()
+                    if len(parts) >= 2:
+                        e_val = float(parts[0])
+                        sig_val = float(parts[1])
+                        if first_e is None:
+                            first_e = e_val
+                        if sig_val == 0.0:
+                            zero_crossing_e = e_val
+                        else:
+                            break
+                if zero_crossing_e is not None:
+                    return zero_crossing_e
+                if first_e is not None:
+                    return first_e
+        except Exception:
+            pass
+
+    # Physical default ionization thresholds (used if file not provided)
     return 15.43 if cfg.gas == "H2" else 14.00
 
 
@@ -846,7 +881,7 @@ def build_sim(cfg: PlasmaColumnConfig):
             electron_scattering_processes = {
                 "ionization": {
                     "cross_section": str(eion_file),
-                    "energy": gas_ionization_energy_eV(cfg),
+                    "energy": gas_ionization_energy_eV(cfg, cross_section_file=eion_file),
                     "species": gas_ions,
                 }
             }
