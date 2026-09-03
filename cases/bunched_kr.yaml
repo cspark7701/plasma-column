@@ -41,6 +41,7 @@ numerics:
   zmin_m: -0.02
   zmax_m: 0.24
   max_steps: 20000
+  checkpoint_period: 2000
   cfl: 0.5
   nppc_beam: 16
   nppc_plasma: 16

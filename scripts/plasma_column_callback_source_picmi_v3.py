@@ -103,7 +103,7 @@ class Config:
     em_order: int = 3
     diagformat: str = "plotfile"
     diag_period: int = 600
-    checkpoint_period: int = 0
+    checkpoint_period: int = 10000
     restart_from: Optional[str] = None
     reduced_diag_period: int = 100
     reduced_diag_dir: str = "reducedfiles/"

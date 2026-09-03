@@ -142,7 +142,7 @@ echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
 echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
 echo "  GPU Status    : $GPU_STATUS"
-echo "  Checkpoint Int: $( [ "$CHECKPOINT_PERIOD" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps" || echo "Disabled" )"
+echo "  Checkpoint Int: $( [ "$CHECKPOINT_PERIOD" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps (CLI override)" || echo "Per-case defaults (2k seeded/vacuum, 10k callback/MCC)" )"
 echo "  Resume Mode   : $( [ "$RESUME" = true ] && echo "Auto-Resume Enabled" || ( [ -n "$RESTART_FROM" ] && echo "Restart from $RESTART_FROM" || echo "Fresh Run" ) )"
 echo "  Log File Path : $LOG_DIR/full_production.log"
 echo "======================================================================"

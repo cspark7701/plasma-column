@@ -60,6 +60,8 @@ ALLOWED_METHODS: frozenset[str] = frozenset({
 METHOD_ALIASES: dict[str, str] = {
     "seeded":   "seeded_compensation",
     "callback": "python_callback",
+    "cxx_mcc":  "cxx_mcc_custom",
+    "mcc":      "cxx_mcc_custom",
 }
 
 
@@ -131,6 +133,30 @@ def build_warpx_cmd_flags(method: str) -> list[str]:
     elif method == "vacuum":
         return ["--neutralization", "0.0"]
     return []  # pragma: no cover
+
+
+def get_default_numerics_for_method(method: str) -> tuple[int, int]:
+    """Return recommended (max_steps, checkpoint_period) for a given simulation method.
+
+    Recommendations:
+    - quick / vacuum / small test: max_steps=2000, checkpoint_period=500
+    - seeded_compensation: max_steps=20000, checkpoint_period=2000
+    - python_callback / cxx_mcc_custom: max_steps=120000, checkpoint_period=10000
+
+    Args:
+        method: Canonical or alias method string.
+
+    Returns:
+        tuple (max_steps, checkpoint_period)
+    """
+    method = _normalise_method(method)
+    if method in ("python_callback", "cxx_mcc_custom"):
+        return 120000, 10000
+    elif method == "seeded_compensation":
+        return 20000, 2000
+    elif method == "vacuum":
+        return 20000, 2000
+    return 2000, 500
 
 
 # ── Sub-config dataclasses ─────────────────────────────────────────────────────
@@ -243,7 +269,17 @@ class SimulationCaseConfig:
         d = dict(data or {})
         if "case_name" not in d:
             d["case_name"] = "unnamed_case"
-        d["method"] = _normalise_method(d.get("method", "vacuum"))
+        canonical_method = _normalise_method(d.get("method", "vacuum"))
+        d["method"] = canonical_method
+
+        # Default numerics (max_steps and checkpoint_period) tailored to method if omitted
+        rec_steps, rec_chk = get_default_numerics_for_method(canonical_method)
+        raw_numerics = dict(d.get("numerics") or {})
+        if "max_steps" not in raw_numerics:
+            raw_numerics["max_steps"] = rec_steps
+        if "checkpoint_period" not in raw_numerics:
+            raw_numerics["checkpoint_period"] = rec_chk
+        d["numerics"] = raw_numerics
 
         config = _dataclass_from_dict(cls, d)
         config.validate()

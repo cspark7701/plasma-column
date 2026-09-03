@@ -24,6 +24,7 @@ defaults:
     zmin_m: -0.02
     zmax_m: 0.24
     max_steps: 20000        # overridden per case for callback/MCC
+    checkpoint_period: 2000 # overridden per case for callback/MCC
     cfl: 0.5
     nppc_beam: 16
     nppc_plasma: 16
@@ -85,6 +86,7 @@ cases:
     pressure_torr: 1.0e-5
     numerics:
       max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      checkpoint_period: 10000
       diag_period: 600
       reduced_diag_period: 100
 
@@ -96,6 +98,7 @@ cases:
     pressure_torr: 1.0e-6
     numerics:
       max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      checkpoint_period: 10000
       diag_period: 600
       reduced_diag_period: 100
 
@@ -107,6 +110,7 @@ cases:
     pressure_torr: 1.0e-5
     numerics:
       max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      checkpoint_period: 10000
       diag_period: 600
       reduced_diag_period: 100
 
@@ -118,5 +122,6 @@ cases:
     pressure_torr: 1.0e-6
     numerics:
       max_steps: 120000     # 16.2 beam transits to accumulate ionization events
+      checkpoint_period: 10000
       diag_period: 600
       reduced_diag_period: 100

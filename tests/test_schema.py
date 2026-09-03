@@ -22,6 +22,7 @@ from plasma_column.schema import (
     METHOD_ALIASES,
     build_warpx_cmd_flags,
     get_runner_script,
+    get_default_numerics_for_method,
 )
 
 
@@ -245,3 +246,22 @@ def test_schema_checkpoint_options():
     })
     assert cfg2.numerics.checkpoint_period == 500
     assert cfg2.numerics.restart_from == "auto"
+
+
+def test_get_default_numerics_for_method():
+    assert get_default_numerics_for_method("vacuum") == (20000, 2000)
+    assert get_default_numerics_for_method("seeded_compensation") == (20000, 2000)
+    assert get_default_numerics_for_method("seeded") == (20000, 2000)
+    assert get_default_numerics_for_method("python_callback") == (120000, 10000)
+    assert get_default_numerics_for_method("callback") == (120000, 10000)
+    assert get_default_numerics_for_method("cxx_mcc_custom") == (120000, 10000)
+    assert get_default_numerics_for_method("cxx_mcc") == (120000, 10000)
+
+    # from_dict automatically populates recommended defaults per method
+    cfg_seeded = SimulationCaseConfig.from_dict({"case_name": "auto_seeded", "method": "seeded"})
+    assert cfg_seeded.numerics.max_steps == 20000
+    assert cfg_seeded.numerics.checkpoint_period == 2000
+
+    cfg_cb = SimulationCaseConfig.from_dict({"case_name": "auto_cb", "method": "callback"})
+    assert cfg_cb.numerics.max_steps == 120000
+    assert cfg_cb.numerics.checkpoint_period == 10000

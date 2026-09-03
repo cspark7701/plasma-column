@@ -97,7 +97,7 @@ class PlasmaColumnConfig:
     # Diagnostics
     diagformat: str = "plotfile"
     full_diag_every_step: bool = False
-    checkpoint_period: int = 0
+    checkpoint_period: int = 2000
     restart_from: Optional[str] = None
 
     # Lightweight per-step text diagnostics
