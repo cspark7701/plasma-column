@@ -15,6 +15,8 @@ from pathlib import Path
 
 from plasma_column.schema import (
     SimulationCaseConfig,
+    ScanMatrixConfig,
+    merge_dicts,
     BeamConfig,
     PlasmaConfig,
     SolenoidConfig,
@@ -287,3 +289,91 @@ def test_numerics_config_estimate_dt():
         cfl=0.7,
     )
     assert math.isclose(num_cfl07.estimate_dt(), dt * (0.7 / 0.5), rel_tol=1e-9)
+
+
+# ── RT-24: ScanMatrixConfig tests ──────────────────────────────────────────────
+
+def test_scan_matrix_config_from_yaml():
+    cases_dir = Path(__file__).resolve().parent.parent / "cases"
+    
+    # Test method_comparison.yaml
+    mc_path = cases_dir / "method_comparison.yaml"
+    if mc_path.exists():
+        matrix = ScanMatrixConfig.from_yaml(mc_path)
+        assert matrix.matrix_name == "plasma_column_method_comparison"
+        assert len(matrix.cases) >= 9
+        assert all(isinstance(c, SimulationCaseConfig) for c in matrix.cases)
+        # Check first case
+        assert matrix.cases[0].case_name == "vacuum_reference"
+        assert matrix.cases[0].method == "vacuum"
+
+    # Test pressure_scan_h2_kr.yaml
+    ps_path = cases_dir / "pressure_scan_h2_kr.yaml"
+    if ps_path.exists():
+        matrix_ps = ScanMatrixConfig.from_yaml(ps_path)
+        assert matrix_ps.matrix_name == "pressure_scan_h2_kr"
+        assert len(matrix_ps.cases) == 12
+        assert matrix_ps.cases[0].plasma.gas == "H2"
+        assert matrix_ps.cases[6].plasma.gas == "Kr"
+
+
+def test_scan_matrix_config_validation():
+    # Empty matrix_name raises ValueError
+    with pytest.raises(ValueError, match="matrix_name cannot be empty"):
+        ScanMatrixConfig(matrix_name="").validate()
+
+    # Empty cases list raises ValueError
+    with pytest.raises(ValueError, match="contains no cases"):
+        ScanMatrixConfig(matrix_name="test_mat", cases=[]).validate()
+
+    # Invalid case inside matrix raises ValueError during from_dict
+    bad_data = {
+        "matrix_name": "bad_matrix",
+        "cases": [
+            {"case_name": "valid_case", "method": "vacuum"},
+            {"case_name": "invalid_case", "beam": {"energy_keV": -10.0}},
+        ]
+    }
+    with pytest.raises(ValueError, match="Beam energy_keV must be positive"):
+        ScanMatrixConfig.from_dict(bad_data)
+
+
+def test_scan_matrix_config_defaults_merging():
+    data = {
+        "matrix_name": "test_merge",
+        "defaults": {
+            "beam": {"energy_keV": 35.0, "current_mA": 12.0},
+            "numerics": {"max_steps": 5000, "nx": 64},
+        },
+        "cases": [
+            {"case_name": "c1", "gas": "H2", "pressure_torr": 1e-5},
+            {"case_name": "c2", "gas": "Kr", "pressure_torr": 1e-6, "beam": {"current_mA": 20.0}},
+        ]
+    }
+    matrix = ScanMatrixConfig.from_dict(data)
+    assert len(matrix.cases) == 2
+    assert matrix.cases[0].beam.energy_keV == 35.0
+    assert matrix.cases[0].beam.current_mA == 12.0
+    assert matrix.cases[0].plasma.gas == "H2"
+    assert matrix.cases[0].plasma.pressure_torr == 1e-5
+    assert matrix.cases[0].numerics.max_steps == 5000
+
+    # Overridden beam.current_mA in c2
+    assert matrix.cases[1].beam.current_mA == 20.0
+    assert matrix.cases[1].beam.energy_keV == 35.0
+    assert matrix.cases[1].plasma.gas == "Kr"
+
+
+def test_scan_matrix_config_to_dict():
+    data = {
+        "matrix_name": "test_to_dict",
+        "description": "Matrix to dict conversion test",
+        "defaults": {"beam": {"energy_keV": 30.0}},
+        "cases": [{"case_name": "case_a", "gas": "H2"}]
+    }
+    matrix = ScanMatrixConfig.from_dict(data)
+    d = matrix.to_dict()
+    assert d["matrix_name"] == "test_to_dict"
+    assert d["description"] == "Matrix to dict conversion test"
+    assert len(d["cases"]) == 1
+    assert d["cases"][0]["case_name"] == "case_a"

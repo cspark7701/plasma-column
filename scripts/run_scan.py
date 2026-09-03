@@ -29,6 +29,8 @@ except ImportError:
 
 from plasma_column.schema import (
     SimulationCaseConfig,
+    ScanMatrixConfig,
+    merge_dicts,
     build_warpx_cmd_flags,
     get_runner_script,
 )
@@ -76,19 +78,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="Automatically detect and resume from existing checkpoints under results/<case_name>/.",
+        help="Auto-resume from latest existing checkpoint (chk<step>/) in case directory if available.",
     )
     return parser.parse_args()
-
-
-def merge_dicts(default: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-    merged = default.copy()
-    for key, val in override.items():
-        if isinstance(val, dict) and key in merged and isinstance(merged[key], dict):
-            merged[key] = merge_dicts(merged[key], val)
-        else:
-            merged[key] = val
-    return merged
 
 
 def main() -> None:
@@ -101,37 +93,28 @@ def main() -> None:
         print(f"Error: Matrix configuration file '{args.matrix}' not found.", file=sys.stderr)
         sys.exit(1)
 
-    with open(args.matrix, "r", encoding="utf-8") as f:
-        matrix_data = yaml.safe_load(f)
-
-    matrix_name = matrix_data.get("matrix_name", args.matrix.stem)
-    defaults = matrix_data.get("defaults", {})
-    cases = matrix_data.get("cases", [])
+    try:
+        matrix_cfg = ScanMatrixConfig.from_yaml(args.matrix)
+    except Exception as exc:
+        print(f"Error loading matrix configuration '{args.matrix}': {exc}", file=sys.stderr)
+        sys.exit(1)
 
     print("=" * 85)
-    print(f" Matrix Scan: {matrix_name} ({'DRY RUN' if args.dry_run else 'RUN'})")
+    print(f" Matrix Scan: {matrix_cfg.matrix_name} ({'DRY RUN' if args.dry_run else 'RUN'})")
     print("=" * 85)
     print(f"  Matrix File : {args.matrix}")
-    print(f"  Total Cases : {len(cases)}\n")
+    print(f"  Total Cases : {len(matrix_cfg.cases)}\n")
 
     print(f"{'Case Name':<25} | {'Gas':<5} | {'Pressure [Torr]':<15} | {'Method Category':<30}")
     print("-" * 85)
 
-    for case_item in cases:
-        case_name = case_item.get("case_name", "unnamed_case")
-        gas = case_item.get("gas", "none")
-        pressure = case_item.get("pressure_torr", 0.0)
-        cat = case_item.get("method_category", "unspecified")
+    for config, raw_item in zip(matrix_cfg.cases, matrix_cfg.raw_cases):
+        case_name = config.case_name
+        gas = config.plasma.gas
+        pressure = config.plasma.pressure_torr
+        cat = raw_item.get("method_category", "unspecified")
 
         print(f"{case_name:<25} | {gas:<5} | {pressure:<15.1e} | {cat:<30}")
-
-        # Build full merged config for case and validate schema
-        raw_config = merge_dicts(defaults, case_item)
-        try:
-            config = SimulationCaseConfig.from_dict(raw_config)
-        except Exception as exc:
-            print(f"Error validating case '{case_name}': {exc}", file=sys.stderr)
-            sys.exit(1)
 
         # Output directory
         output_dir = Path("results") / case_name
@@ -196,9 +179,9 @@ def main() -> None:
 
     print("-" * 85)
     if args.dry_run:
-        print(f"[DRY RUN SUCCESS] All {len(cases)} cases validated and metadata generated under results/", flush=True)
+        print(f"[DRY RUN SUCCESS] All {len(matrix_cfg.cases)} cases validated and metadata generated under results/", flush=True)
     else:
-        print(f"[RUN COMPLETE] Full PIC matrix production execution finished for {len(cases)} cases.", flush=True)
+        print(f"[RUN COMPLETE] Full PIC matrix production execution finished for {len(matrix_cfg.cases)} cases.", flush=True)
 
 
 if __name__ == "__main__":

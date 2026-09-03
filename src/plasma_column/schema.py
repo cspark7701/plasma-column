@@ -281,6 +281,14 @@ class SimulationCaseConfig:
         canonical_method = _normalise_method(d.get("method", "vacuum"))
         d["method"] = canonical_method
 
+        # Propagate top-level gas and pressure_torr into plasma sub-config if provided
+        plasma_dict = dict(d.get("plasma") or {})
+        if "gas" in d and "gas" not in plasma_dict:
+            plasma_dict["gas"] = d["gas"]
+        if "pressure_torr" in d and "pressure_torr" not in plasma_dict:
+            plasma_dict["pressure_torr"] = d["pressure_torr"]
+        d["plasma"] = plasma_dict
+
         # Default numerics (max_steps and checkpoint_period) tailored to method if omitted
         rec_steps, rec_chk = get_default_numerics_for_method(canonical_method)
         raw_numerics = dict(d.get("numerics") or {})
@@ -307,3 +315,87 @@ class SimulationCaseConfig:
     def to_dict(self) -> dict[str, Any]:
         """Converts dataclass back to dictionary representation."""
         return asdict(self)
+
+
+def merge_dicts(default: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge two dictionaries, giving priority to values in override."""
+    merged = default.copy()
+    for key, val in override.items():
+        if isinstance(val, dict) and key in merged and isinstance(merged[key], dict):
+            merged[key] = merge_dicts(merged[key], val)
+        else:
+            merged[key] = val
+    return merged
+
+
+# ── Matrix scan configuration ──────────────────────────────────────────────────
+
+@dataclass
+class ScanMatrixConfig:
+    """Strongly-typed schema and validator for multi-case simulation scan matrices.
+
+    Merges global matrix 'defaults' into each case specification, validates
+    physical parameters and grid settings, and provides access to typed
+    SimulationCaseConfig instances.
+    """
+    matrix_name: str
+    description: str = ""
+    defaults: dict[str, Any] = field(default_factory=dict)
+    cases: list[SimulationCaseConfig] = field(default_factory=list)
+    raw_cases: list[dict[str, Any]] = field(default_factory=list)
+
+    def validate(self) -> None:
+        """Validates all cases within the matrix."""
+        if not self.matrix_name:
+            raise ValueError("matrix_name cannot be empty")
+        if not self.cases:
+            raise ValueError(f"Scan matrix '{self.matrix_name}' contains no cases")
+        for case in self.cases:
+            case.validate()
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ScanMatrixConfig:
+        """Parses a dictionary into a validated ScanMatrixConfig instance."""
+        d = dict(data or {})
+        matrix_name = d.get("matrix_name", "unnamed_matrix")
+        description = d.get("description", "")
+        defaults = dict(d.get("defaults") or {})
+        raw_case_list = list(d.get("cases") or [])
+
+        parsed_cases: list[SimulationCaseConfig] = []
+        raw_cases_merged: list[dict[str, Any]] = []
+
+        for case_item in raw_case_list:
+            merged = merge_dicts(defaults, case_item)
+            case_config = SimulationCaseConfig.from_dict(merged)
+            parsed_cases.append(case_config)
+            raw_cases_merged.append(merged)
+
+        instance = cls(
+            matrix_name=matrix_name,
+            description=description,
+            defaults=defaults,
+            cases=parsed_cases,
+            raw_cases=raw_cases_merged,
+        )
+        instance.validate()
+        return instance
+
+    @classmethod
+    def from_yaml(cls, yaml_path: str | Path) -> ScanMatrixConfig:
+        """Loads and validates a ScanMatrixConfig from a YAML file."""
+        path = Path(yaml_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Matrix YAML file not found: {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        return cls.from_dict(data)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts matrix config back to dictionary representation."""
+        return {
+            "matrix_name": self.matrix_name,
+            "description": self.description,
+            "defaults": self.defaults,
+            "cases": [case.to_dict() for case in self.cases],
+        }
