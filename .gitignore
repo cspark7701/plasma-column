@@ -42,8 +42,10 @@ data
 logs
 logs_tmp
 /runs
-tests/Backtrace*
-tests/inputs_*
+Backtrace*
+**/Backtrace*
+inputs_*
+**/inputs_*
 tests/warpx
 
 warpx_ion_impact_ionization_patch
