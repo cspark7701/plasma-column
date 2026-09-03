@@ -23,6 +23,9 @@ from plasma_column.plotting import (
     plot_neutralization_evolution,
     plot_keff_over_k0,
     plot_beam_envelope_transport,
+    plot_multi_case_beam_envelopes,
+    plot_inflector_phase_space_comparison,
+    plot_transmission_comparison_bar,
     generate_fig01_axial_injection_concept,
     generate_fig02_plasma_neutralizer_module,
     generate_fig03_cross_sections,
@@ -179,6 +182,39 @@ def test_scan_plotting_module():
         })
         cases = [("case_1", ts_df), ("case_2", ts_df)]
         p1, p2 = plot_scan_neutralization_timeseries_grid(cases, tmp_dir)
+        assert p1.exists() and p2.exists()
+        plt.close("all")
+
+
+def test_transport_multi_case_and_phase_space_plots():
+    """Verify plot_multi_case_beam_envelopes, plot_inflector_phase_space_comparison, and plot_transmission_comparison_bar."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        z = np.linspace(0.0, 1.12, 50)
+        rx = 0.002 + 0.003 * z**2
+        ry = 0.002 + 0.002 * z**2
+        envelopes = {
+            "vacuum": (z, rx, ry, "tab:blue"),
+            "neutralized": (z, rx * 0.5, ry * 0.5, "tab:green"),
+        }
+        p1, p2 = plot_multi_case_beam_envelopes(envelopes, tmp_dir)
+        assert p1.exists() and p2.exists()
+
+        vac_df = pd.DataFrame({"x_mm": np.random.randn(20), "xp_mrad": np.random.randn(20),
+                               "y_mm": np.random.randn(20), "yp_mrad": np.random.randn(20)})
+        neut_df = pd.DataFrame({"x_mm": np.random.randn(20)*0.5, "xp_mrad": np.random.randn(20)*0.5,
+                                "y_mm": np.random.randn(20)*0.5, "yp_mrad": np.random.randn(20)*0.5})
+
+        p1, p2 = plot_inflector_phase_space_comparison(vac_df, neut_df, tmp_dir, plane="x")
+        assert p1.exists() and p2.exists()
+
+        p1, p2 = plot_inflector_phase_space_comparison(vac_df, neut_df, tmp_dir, plane="y")
+        assert p1.exists() and p2.exists()
+
+        summary_df = pd.DataFrame({
+            "case_name": ["vacuum", "seeded_h2"],
+            "transmission_percent": [45.2, 94.8],
+        })
+        p1, p2 = plot_transmission_comparison_bar(summary_df, tmp_dir)
         assert p1.exists() and p2.exists()
         plt.close("all")
 

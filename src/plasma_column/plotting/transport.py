@@ -179,3 +179,113 @@ def plot_beam_envelope_transport(
     stem = output_name or f"{case_name}_beam_envelope"
     out_basename = Path(output_dir) / stem
     return save_figure(fig, out_basename)
+
+
+def plot_multi_case_beam_envelopes(
+    case_envelopes: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray, str]],
+    output_dir: str | Path,
+    aperture_radius_mm: float = 5.0,
+    output_name: str = "envelope_buncher_to_inflector",
+    title: str = "Beam Envelope Transport: Buncher Exit to Inflector Entrance",
+) -> tuple[Path, Path]:
+    """Plots multi-case horizontal Rx(z) and vertical Ry(z) beam envelopes compared against aperture.
+
+    Args:
+        case_envelopes: dict of {case_name: (z_array, Rx_array, Ry_array, color_str)}
+        output_dir: directory to save output figures.
+        aperture_radius_mm: aperture limit to mark on the plot in mm.
+        output_name: file base name for figure.
+        title: plot title.
+    """
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for cname, (z_a, Rx_a, Ry_a, color) in case_envelopes.items():
+        z_cm = z_a * 100.0 if np.max(z_a) < 10.0 else z_a
+        rx_mm = Rx_a * 1000.0 if np.max(Rx_a) < 0.5 else Rx_a
+        ry_mm = Ry_a * 1000.0 if np.max(Ry_a) < 0.5 else Ry_a
+        ax.plot(z_cm, rx_mm, label=f"{cname} ($R_x$)", color=color, lw=2)
+        ax.plot(z_cm, ry_mm, color=color, lw=1.5, ls="--")
+
+    ax.axhline(aperture_radius_mm, color="black", ls=":", label=f"Inflector Aperture Limit ({aperture_radius_mm:.0f} mm)")
+    ax.axhline(-aperture_radius_mm, color="black", ls=":")
+
+    ax.set_xlabel("Axial Distance $z$ [cm]", fontsize=12)
+    ax.set_ylabel("Beam Envelope Radius [mm]", fontsize=12)
+    ax.set_title(title, fontsize=13)
+    ax.legend(fontsize=9, loc="upper left")
+    ax.grid(True, ls="--", alpha=0.4)
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)
+
+
+def plot_inflector_phase_space_comparison(
+    vac_df: pd.DataFrame,
+    neut_df: pd.DataFrame,
+    output_dir: str | Path,
+    plane: str = "x",
+    output_name: Optional[str] = None,
+    title: Optional[str] = None,
+) -> tuple[Path, Path]:
+    """Plots comparative transverse phase space (x, x') or (y, y') for vacuum vs neutralized cases."""
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    pos_col = f"{plane}_mm"
+    angle_col = f"{plane}p_mrad"
+    pos_label = rf"Transverse Position ${plane}$ [mm]"
+    angle_label = rf"Divergence ${plane}'$ [mrad]"
+
+    if pos_col in vac_df.columns and angle_col in vac_df.columns:
+        ax.scatter(vac_df[pos_col], vac_df[angle_col], alpha=0.4, label="Vacuum Reference", color="tab:blue", s=15)
+    if pos_col in neut_df.columns and angle_col in neut_df.columns:
+        ax.scatter(neut_df[pos_col], neut_df[angle_col], alpha=0.5, label=r"$\mathrm{H}_2$-Neutralized ($90\%$)", color="tab:green", s=15)
+
+    ax.set_xlabel(pos_label, fontsize=11)
+    ax.set_ylabel(angle_label, fontsize=11)
+    ax.set_title(title or f"Transverse Phase Space $({plane}, {plane}')$ at Inflector Entrance", fontsize=12)
+    ax.legend(fontsize=9)
+    ax.grid(True, ls="--", alpha=0.4)
+
+    stem = output_name or f"inflector_phase_space_{plane}{plane}p"
+    out_basename = Path(output_dir) / stem
+    return save_figure(fig, out_basename)
+
+
+def plot_transmission_comparison_bar(
+    df_summary: pd.DataFrame,
+    output_dir: str | Path,
+    output_name: str = "transmission_comparison",
+    title: str = "Inflector Transmission Efficiency Comparison",
+) -> tuple[Path, Path]:
+    """Plots transmission efficiency percentage bar chart across injection line cases."""
+    setup_publication_style()
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    colors = ["tab:blue", "tab:green", "tab:purple", "tab:orange", "tab:red"]
+    bar_colors = [colors[i % len(colors)] for i in range(len(df_summary))]
+
+    bars = ax.bar(
+        df_summary["case_name"],
+        df_summary["transmission_percent"],
+        color=bar_colors,
+        width=0.5,
+    )
+    ax.set_ylabel("Inflector Entrance Transmission [%]", fontsize=11)
+    ax.set_ylim(0, 115)
+    ax.set_title(title, fontsize=12)
+    ax.grid(True, axis="y", ls="--", alpha=0.4)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.annotate(
+            f"{height:.1f}%",
+            xy=(bar.get_x() + bar.get_width() / 2, height),
+            xytext=(0, 3),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    out_basename = Path(output_dir) / output_name
+    return save_figure(fig, out_basename)

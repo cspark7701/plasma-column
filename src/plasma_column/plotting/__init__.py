@@ -35,7 +35,13 @@ from .scan import (
     plot_scan_final_eta_bar_by_gas,
 )
 from .cross_sections import plot_cross_section_comparison
-from .transport import plot_phase_space, plot_beam_envelope_transport
+from .transport import (
+    plot_phase_space,
+    plot_beam_envelope_transport,
+    plot_multi_case_beam_envelopes,
+    plot_inflector_phase_space_comparison,
+    plot_transmission_comparison_bar,
+)
 from .paper_figures import (
     generate_fig01_axial_injection_concept,
     generate_fig02_plasma_neutralizer_module,
@@ -68,6 +74,9 @@ __all__ = [
     "plot_cross_section_comparison",
     "plot_phase_space",
     "plot_beam_envelope_transport",
+    "plot_multi_case_beam_envelopes",
+    "plot_inflector_phase_space_comparison",
+    "plot_transmission_comparison_bar",
     "generate_fig01_axial_injection_concept",
     "generate_fig02_plasma_neutralizer_module",
     "generate_fig03_cross_sections",

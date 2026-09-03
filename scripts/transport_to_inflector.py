@@ -8,10 +8,10 @@ buncher exit -> plasma neutralizer -> solenoid -> quadrupole Q1 -> quadrupole Q2
 Evaluates envelope trajectories R(z), transmission efficiency at inflector entrance, and phase-space distributions.
 
 Generated CSV Files:
-- inflector_entrance_summary.csv
-- beam_envelope_to_inflector.csv
-- phase_space_at_inflector.csv
-- transmission_vs_case.csv
+- data/inflector_entrance_summary.csv
+- data/beam_envelope_to_inflector.csv
+- data/phase_space_at_inflector.csv
+- data/transmission_vs_case.csv
 
 Generated Plots:
 - plots/envelope_buncher_to_inflector.png / .pdf
@@ -26,10 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 try:
@@ -39,8 +36,17 @@ except ImportError:
 
 from plasma_column.beam import ProtonBeam
 from plasma_column.injection_line import InjectionLine, compute_beam_envelope
-from plasma_column.acceptance import InflectorAcceptance, compute_inflector_transmission, generate_phase_space_particles
-from plasma_column.plotting import save_figure, setup_publication_style
+from plasma_column.acceptance import (
+    InflectorAcceptance,
+    compute_inflector_transmission,
+    generate_phase_space_particles,
+)
+from plasma_column.plotting import (
+    plot_multi_case_beam_envelopes,
+    plot_inflector_phase_space_comparison,
+    plot_transmission_comparison_bar,
+    setup_publication_style,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -113,23 +119,13 @@ def main() -> None:
     df_env.to_csv(out_env_csv, index=False)
 
     # 1. Plot Envelope Trajectories (Buncher -> Neutralizer -> Solenoid -> Q1 -> Q2 -> Inflector)
-    fig, ax = plt.subplots(figsize=(9, 5))
-    for cname, (z_a, Rx_a, Ry_a, color) in envelope_data_dict.items():
-        z_cm = z_a * 100.0
-        ax.plot(z_cm, Rx_a * 1000.0, label=f"{cname} ($R_x$)", color=color, lw=2)
-        ax.plot(z_cm, Ry_a * 1000.0, color=color, lw=1.5, ls="--")
-
-    ax.axhline(acceptance.aperture_radius_m * 1000.0, color="black", ls=":", label="Inflector Aperture Limit (5 mm)")
-    ax.axhline(-acceptance.aperture_radius_m * 1000.0, color="black", ls=":")
-
-    ax.set_xlabel("Axial Distance $z$ [cm]")
-    ax.set_ylabel("Beam Envelope Radius [mm]")
-    ax.set_title("Beam Envelope Transport: Buncher Exit to Inflector Entrance")
-    ax.legend(fontsize=9, loc="upper left")
-    out1 = plots_dir / "envelope_buncher_to_inflector"
-    save_figure(fig, out1)
-    plt.close(fig)
-    print(f"  Saved: {out1}.png / .pdf")
+    p1, p2 = plot_multi_case_beam_envelopes(
+        envelope_data_dict,
+        plots_dir,
+        aperture_radius_mm=acceptance.aperture_radius_m * 1000.0,
+        output_name="envelope_buncher_to_inflector",
+    )
+    print(f"  Saved: {p1} / {p2}")
 
     # 2. Plot Inflector Phase Space (x, x') and (y, y') for baseline vs neutralized
     vac_summary = df_summary[df_summary["case_name"] == "vacuum_reference"].iloc[0]
@@ -147,60 +143,21 @@ def main() -> None:
     out_phase_csv = PROJECT_ROOT / "data" / "phase_space_at_inflector.csv"
     df_h2_xxp.to_csv(out_phase_csv, index=False)
 
-    # Phase space (x, x')
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.scatter(df_vac_xxp["x_mm"], df_vac_xxp["xp_mrad"], alpha=0.4, label="Vacuum Reference", color="tab:blue", s=15)
-    ax.scatter(df_h2_xxp["x_mm"], df_h2_xxp["xp_mrad"], alpha=0.5, label=r"$\mathrm{H}_2$-Neutralized ($90\%$)", color="tab:green", s=15)
-    ax.set_xlabel("Transverse Position $x$ [mm]")
-    ax.set_ylabel("Divergence $x'$ [mrad]")
-    ax.set_title("Transverse Phase Space $(x, x')$ at Inflector Entrance")
-    ax.legend()
-    out2 = plots_dir / "inflector_phase_space_xxp"
-    save_figure(fig, out2)
-    plt.close(fig)
-    print(f"  Saved: {out2}.png / .pdf")
+    p1, p2 = plot_inflector_phase_space_comparison(
+        df_vac_xxp, df_h2_xxp, plots_dir, plane="x", output_name="inflector_phase_space_xxp"
+    )
+    print(f"  Saved: {p1} / {p2}")
 
-    # Phase space (y, y')
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.scatter(df_vac_yyp["y_mm"], df_vac_yyp["yp_mrad"], alpha=0.4, label="Vacuum Reference", color="tab:blue", s=15)
-    ax.scatter(df_h2_yyp["y_mm"], df_h2_yyp["yp_mrad"], alpha=0.5, label=r"$\mathrm{H}_2$-Neutralized ($90\%$)", color="tab:green", s=15)
-    ax.set_xlabel("Transverse Position $y$ [mm]")
-    ax.set_ylabel("Divergence $y'$ [mrad]")
-    ax.set_title("Transverse Phase Space $(y, y')$ at Inflector Entrance")
-    ax.legend()
-    out3 = plots_dir / "inflector_phase_space_yyp"
-    save_figure(fig, out3)
-    plt.close(fig)
-    print(f"  Saved: {out3}.png / .pdf")
+    p1, p2 = plot_inflector_phase_space_comparison(
+        df_vac_yyp, df_h2_yyp, plots_dir, plane="y", output_name="inflector_phase_space_yyp"
+    )
+    print(f"  Saved: {p1} / {p2}")
 
     # 3. Transmission Comparison Bar Chart
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    bars = ax.bar(
-        df_summary["case_name"],
-        df_summary["transmission_percent"],
-        color=["tab:blue", "tab:green", "tab:purple"],
-        width=0.5,
+    p1, p2 = plot_transmission_comparison_bar(
+        df_summary, plots_dir, output_name="transmission_comparison"
     )
-    ax.set_ylabel("Inflector Entrance Transmission [%]")
-    ax.set_ylim(0, 115)
-    ax.set_title("Inflector Transmission Efficiency Comparison")
-
-    for bar in bars:
-        height = bar.get_height()
-        ax.annotate(
-            f"{height:.1f}%",
-            xy=(bar.get_x() + bar.get_width() / 2, height),
-            xytext=(0, 3),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=10,
-        )
-
-    out4 = plots_dir / "transmission_comparison"
-    save_figure(fig, out4)
-    plt.close(fig)
-    print(f"  Saved: {out4}.png / .pdf")
+    print(f"  Saved: {p1} / {p2}")
 
 
 if __name__ == "__main__":
