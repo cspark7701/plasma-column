@@ -38,6 +38,9 @@ CORES=8  # Default: 8 cores
 GPU="auto"  # Default: auto-detect GPU; if available make it default
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
 LOG_DIR="$PROJECT_ROOT/logs"
+CHECKPOINT_PERIOD=0
+RESUME=false
+RESTART_FROM=""
 
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -62,16 +65,31 @@ while [[ $# -gt 0 ]]; do
       MATRIX_FILE="$2"
       shift 2
       ;;
+    --checkpoint_period)
+      CHECKPOINT_PERIOD="$2"
+      shift 2
+      ;;
+    --resume)
+      RESUME=true
+      shift
+      ;;
+    --restart_from)
+      RESTART_FROM="$2"
+      shift 2
+      ;;
     --help|-h)
       echo "Usage: bash scripts/run_full_production.sh [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --dry_run        Validate matrix & metadata without running heavy PIC steps."
-      echo "  --verbose, -v    Print full execution logs to screen (default: quiet mode)."
-      echo "  --cores, -c      Number of CPU worker cores / OpenMP threads (default: 8)."
-      echo "  --gpu [ID|auto]  GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
-      echo "  --matrix FILE    Matrix configuration file (default: cases/method_comparison.yaml)."
-      echo "  --help, -h       Display this help message."
+      echo "  --dry_run                 Validate matrix & metadata without running heavy PIC steps."
+      echo "  --verbose, -v             Print full execution logs to screen (default: quiet mode)."
+      echo "  --cores, -c               Number of CPU worker cores / OpenMP threads (default: 8)."
+      echo "  --gpu [ID|auto]           GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
+      echo "  --matrix FILE             Matrix configuration file (default: cases/method_comparison.yaml)."
+      echo "  --checkpoint_period <N>   Dump full AMReX checkpoint directory every N steps (chk<step>/)."
+      echo "  --resume                  Automatically detect existing checkpoints and resume interrupted scans."
+      echo "  --restart_from <path>     Path to specific checkpoint directory to resume from."
+      echo "  --help, -h                Display this help message."
       exit 0
       ;;
     *)
@@ -124,6 +142,8 @@ echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
 echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
 echo "  GPU Status    : $GPU_STATUS"
+echo "  Checkpoint Int: $( [ "$CHECKPOINT_PERIOD" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps" || echo "Disabled" )"
+echo "  Resume Mode   : $( [ "$RESUME" = true ] && echo "Auto-Resume Enabled" || ( [ -n "$RESTART_FROM" ] && echo "Restart from $RESTART_FROM" || echo "Fresh Run" ) )"
 echo "  Log File Path : $LOG_DIR/full_production.log"
 echo "======================================================================"
 
@@ -182,27 +202,48 @@ run_step "1/8" "Environment Audit & Repository Validation" \
 # STEP 2: Simulation Case & Matrix Setup
 # ==============================================================================
 # Validates case configs, creates case directories in runs/, and logs metadata.json
+SCAN_EXTRA_ARGS=()
+if [ "$CHECKPOINT_PERIOD" -gt 0 ]; then
+  SCAN_EXTRA_ARGS+=(--checkpoint_period "$CHECKPOINT_PERIOD")
+fi
+if [ "$RESUME" = true ]; then
+  SCAN_EXTRA_ARGS+=(--resume)
+fi
+
 if [ "$DRY_RUN" = true ]; then
   run_step "2/8" "Matrix Scan Setup & Parameter Validation (Dry Run)" \
-    python3 scripts/run_scan.py --matrix "$MATRIX_FILE" --dry_run
+    python3 scripts/run_scan.py --matrix "$MATRIX_FILE" --cores "$TARGET_CORES" --gpu "$GPU" --dry_run "${SCAN_EXTRA_ARGS[@]}"
 else
   run_step "2/8" "Matrix Scan Setup & Parameter Validation" \
-    python3 scripts/run_scan.py --matrix "$MATRIX_FILE" --run
+    python3 scripts/run_scan.py --matrix "$MATRIX_FILE" --cores "$TARGET_CORES" --gpu "$GPU" --run "${SCAN_EXTRA_ARGS[@]}"
 fi
 
 # ==============================================================================
 # STEP 3: Individual Case Execution Verification
 # ==============================================================================
 # Runs baseline H2 case dry-run/execution validation to ensure single-case runner works
+CASE_EXTRA_ARGS=()
+if [ "$CHECKPOINT_PERIOD" -gt 0 ]; then
+  CASE_EXTRA_ARGS+=(--checkpoint_period "$CHECKPOINT_PERIOD")
+fi
+if [ -n "$RESTART_FROM" ]; then
+  CASE_EXTRA_ARGS+=(--restart_from "$RESTART_FROM")
+fi
+
 run_step "3/8" "Baseline Simulation Case Verification (cases/baseline_h2.yaml)" \
-  python3 scripts/run_case.py --case cases/baseline_h2.yaml $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+  python3 scripts/run_case.py --case cases/baseline_h2.yaml --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
 
 # ==============================================================================
 # STEP 4: Post-Processing & Core Diagnostics Extraction
 # ==============================================================================
 # Evaluates particle-number metrics, volume-averaged core density, and spatial masks
+POSTPROC_CASE="results/seeded_H2_baseline"
+if [ ! -d "$POSTPROC_CASE" ] && [ -d "runs/seeded_H2_baseline" ]; then
+  POSTPROC_CASE="runs/seeded_H2_baseline"
+fi
+
 run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics" \
-  python3 scripts/postprocess_case.py --case-dir runs/seeded_H2_baseline $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+  python3 scripts/postprocess_case.py --case-dir "$POSTPROC_CASE" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
 
 # ==============================================================================
 # STEP 5: Publication Plotting & Cross-Section Figures

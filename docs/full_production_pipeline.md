@@ -60,9 +60,9 @@ export HIP_VISIBLE_DEVICES=0
 CLI options available across all scripts (`run_full_production.sh`, `run_case.py`, `run_scan.py`, and simulation scripts):
 - `--cores, -c`: Number of CPU threads/cores (default: **8**).
 - `--gpu`: GPU device index (e.g. `0`) or `'auto'` (checks GPU availability and defaults to GPU 0 if available; default: **`auto`**).
-- `OMP_NUM_THREADS=$TARGET_CORES`
-- `OPENMP_NUM_THREADS=$TARGET_CORES`
-- `MKL_NUM_THREADS=$TARGET_CORES`
+- `--checkpoint_period <N>`: Period in steps for dumping full AMReX checkpoints (`chk<step>/`).
+- `--resume`: Automatically detects existing checkpoints under `results/<case_name>/` and resumes execution.
+- `--restart_from <path>`: Path to a specific checkpoint directory to restart from.
 - `NUMEXPR_NUM_THREADS=$TARGET_CORES`
 
 This maximizes multi-threaded efficiency across PIC grid solves and field diagnostics while preserving headroom for OS responsiveness.
