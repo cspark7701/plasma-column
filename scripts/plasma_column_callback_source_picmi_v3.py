@@ -58,7 +58,10 @@ except ImportError:
     from scripts import _path_setup  # noqa: F401
 
 from plasma_column.constants import estimate_cfl_timestep
-from pywarpx import picmi
+try:
+    from pywarpx import picmi
+except (ImportError, ModuleNotFoundError):
+    picmi = None
 
 try:
     from pywarpx.callbacks import installcallback
@@ -70,10 +73,16 @@ except Exception:
     fields = None
 
 
-C = picmi.constants.c
-QE = picmi.constants.q_e
-KB = picmi.constants.kb
-ME = picmi.constants.m_e
+if picmi is not None:
+    C = picmi.constants.c
+    QE = picmi.constants.q_e
+    KB = picmi.constants.kb
+    ME = picmi.constants.m_e
+else:
+    C = 299792458.0
+    QE = 1.602176634e-19
+    KB = 1.380649e-23
+    ME = 9.1093837015e-31
 MP = 1.67262192369e-27
 AMU = 1.66053906660e-27
 
