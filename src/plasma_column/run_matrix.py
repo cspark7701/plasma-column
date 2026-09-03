@@ -34,6 +34,7 @@ from plasma_column.diagnostics import (
     warn_global_count_limitation,
 )
 from plasma_column.hardware import configure_runtime
+from plasma_column.schema import get_runner_script, build_warpx_cmd_flags
 
 
 # ── Scan definition dataclasses ───────────────────────────────────────────────
@@ -52,7 +53,7 @@ class ScanMatrix:
 
     Attributes:
         scan_name:   Human-readable name used in filenames and titles.
-        script:      Path to the WarpX PICMI script to run.
+        script:      Optional path to the WarpX PICMI script to run. If None, dynamically resolved per method.
         parameters:  List of ScanParameter objects (Cartesian product is taken).
         fixed:       Fixed arguments passed to every case (dict of argname→value).
         gases:       Gas species to sweep over (separate from 'parameters').
@@ -61,7 +62,7 @@ class ScanMatrix:
         runs_root:   Root directory for case output directories.
     """
     scan_name:  str
-    script:     Path
+    script:     Optional[Path]      = None
     parameters: list[ScanParameter] = field(default_factory=list)
     fixed:      dict[str, Any]      = field(default_factory=dict)
     gases:      list[str]           = field(default_factory=lambda: ["H2", "Kr"])
@@ -135,16 +136,21 @@ def run_scan_matrix(
 
     results = []
     extra_args = extra_args or {}
+    project_root = Path(__file__).resolve().parent.parent.parent
 
     for _, row in scan_df.iterrows():
         case_name = row["case_name"]
         out_dir   = matrix.runs_root / case_name
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        cmd = [sys.executable, str(matrix.script), "--run"]
+        method = row.get("method", "seeded")
+        runner_script = matrix.script if matrix.script is not None else get_runner_script(method, project_root)
+        method_flags = build_warpx_cmd_flags(method)
+
+        cmd = [sys.executable, str(runner_script), "--run"]
+        cmd += method_flags
         cmd += ["--output_dir", str(out_dir)]
         cmd += ["--gas",        row.get("gas",    "H2")]
-        cmd += ["--method",     row.get("method", "seeded")]
         cmd += ["--cores",      str(cores)]
         cmd += ["--gpu",        str(gpu)]
 
@@ -281,8 +287,12 @@ def collect_scan_results(
 
 def _find_diag(out_dir: Path) -> Optional[Path]:
     for rel in [
+        "reducedfiles/particle_number.txt",
+        "particle_number.txt",
         "reducedfiles/ParticleNumber_red.txt",
+        "ParticleNumber_red.txt",
         "neutralization_from_particle_number.csv",
+        "global_particle_number.csv",
     ]:
         p = out_dir / rel
         if p.exists():
