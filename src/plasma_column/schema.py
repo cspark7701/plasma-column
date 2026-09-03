@@ -176,6 +176,8 @@ class NumericsConfig:
     nppc_beam: int = 4
     nppc_plasma: int = 4
     mcc: str = "electron_impact"
+    checkpoint_period: int = 0
+    restart_from: Optional[str] = None
 
 
 # ── Top-level case configuration ───────────────────────────────────────────────

@@ -50,3 +50,25 @@ def test_load_plotfile_densities_from_particles():
     assert data["np_3d"].any()
     assert data["ne_3d"].any()
     assert data["ni_3d"].any()
+
+
+def test_find_checkpoints():
+    import tempfile, shutil
+    from plasma_column.warpx_io import find_checkpoints
+
+    td = Path(tempfile.mkdtemp())
+    try:
+        # Create mock checkpoint directories
+        chk1 = td / "chk00100"
+        chk2 = td / "chk00200"
+        chk1.mkdir()
+        chk2.mkdir()
+        (chk1 / "WarpXHeader").write_text("mock")
+        (chk2 / "WarpXHeader").write_text("mock")
+
+        found = find_checkpoints(td)
+        assert len(found) == 2
+        assert found[0] == chk1
+        assert found[1] == chk2
+    finally:
+        shutil.rmtree(td)

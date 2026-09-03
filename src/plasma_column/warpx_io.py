@@ -55,6 +55,32 @@ def find_plotfiles(case_dir: str | Path) -> list[Path]:
     return sorted(list(set(candidates)), key=extract_index)
 
 
+def find_checkpoints(case_dir: str | Path) -> list[Path]:
+    """
+    Discovers WarpX checkpoint directories (e.g. chk000100/, chk000200/) within a case directory.
+    Searches in case_dir/checkpoints/, case_dir/diags/, and case_dir root.
+    Returns sorted list of checkpoint paths ordered by time-step number.
+    """
+    path = Path(case_dir)
+    if not path.is_dir():
+        return []
+
+    candidates: list[Path] = []
+    search_dirs = [path / "checkpoints", path / "diags", path]
+
+    for sdir in search_dirs:
+        if sdir.is_dir():
+            for p in sdir.glob("chk*"):
+                if p.is_dir() and (p / "WarpXHeader").exists():
+                    candidates.append(p)
+
+    def extract_index(p: Path) -> int:
+        digits = "".join(filter(str.isdigit, p.name))
+        return int(digits) if digits else 0
+
+    return sorted(list(set(candidates)), key=extract_index)
+
+
 def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
     """
     Attempts to read species grid densities and spatial coordinates from a WarpX plotfile.
@@ -237,6 +263,7 @@ def collect_metadata(
 __all__ = [
     "save_metadata",
     "find_plotfiles",
+    "find_checkpoints",
     "load_plotfile_densities",
     "get_git_info",
     "collect_metadata",

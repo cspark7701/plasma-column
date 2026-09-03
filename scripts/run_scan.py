@@ -32,7 +32,7 @@ from plasma_column.schema import (
     build_warpx_cmd_flags,
     get_runner_script,
 )
-from plasma_column.warpx_io import collect_metadata
+from plasma_column.warpx_io import collect_metadata, find_checkpoints
 from plasma_column.hardware import configure_runtime
 
 
@@ -66,6 +66,17 @@ def parse_args() -> argparse.Namespace:
         "--gpu",
         default="auto",
         help="GPU device ID (e.g. 0) or 'auto' (enables GPU 0 if available, default: auto).",
+    )
+    parser.add_argument(
+        "--checkpoint_period",
+        type=int,
+        default=None,
+        help="Checkpoint dumping period in steps (dumps chk<step>/) for all cases.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Automatically detect and resume from existing checkpoints under results/<case_name>/.",
     )
     return parser.parse_args()
 
@@ -152,6 +163,24 @@ def main() -> None:
                 "--gpu", str(args.gpu),
                 "--run",
             ]
+            # Checkpoint dumping configuration
+            chk_period = args.checkpoint_period if args.checkpoint_period is not None else config.numerics.checkpoint_period
+            if chk_period > 0:
+                cmd += ["--checkpoint_period", str(chk_period)]
+
+            # Checkpoint auto-resume if requested or configured
+            restart_chk = None
+            if args.resume or config.numerics.restart_from:
+                if config.numerics.restart_from and config.numerics.restart_from != "auto":
+                    restart_chk = config.numerics.restart_from
+                else:
+                    existing_chks = find_checkpoints(output_dir)
+                    if existing_chks:
+                        restart_chk = str(existing_chks[-1])
+                if restart_chk:
+                    print(f"      [RESUME] Found existing checkpoint: {restart_chk}")
+                    cmd += ["--restart_from", restart_chk]
+
             # Map physics method to WarpX CLI flags via the single canonical helper (RT-02)
             cmd += build_warpx_cmd_flags(config.method)
 

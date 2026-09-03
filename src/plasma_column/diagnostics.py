@@ -182,6 +182,12 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
             df["Ne"] = data[:, 3]
             df["Ni"] = data[:, 4]
 
+    # Sort and deduplicate by step to handle restarted runs cleanly
+    if "step" in df.columns:
+        df.drop_duplicates(subset=["step"], keep="last", inplace=True)
+        df.sort_values(by="step", inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
     return df
 
 

@@ -103,6 +103,8 @@ class Config:
     em_order: int = 3
     diagformat: str = "plotfile"
     diag_period: int = 600
+    checkpoint_period: int = 0
+    restart_from: Optional[str] = None
     reduced_diag_period: int = 100
     reduced_diag_dir: str = "reducedfiles/"
 
@@ -342,6 +344,15 @@ def make_sim(cfg: Config):
     sim.add_diagnostic(field_diag)
     sim.add_diagnostic(part_diag)
 
+    if cfg.checkpoint_period > 0:
+        chk_diag = picmi.Checkpoint(
+            name="chk",
+            period=cfg.checkpoint_period,
+            write_dir=".",
+            warpx_file_prefix="chk",
+        )
+        sim.add_diagnostic(chk_diag)
+
     # Reduced diagnostics.
     try:
         sim.add_diagnostic(
@@ -565,6 +576,9 @@ def postprocess_particle_number(output_dir: Path):
         return
     if data.ndim == 1:
         data = data.reshape(1, -1)
+    # On restarts, data lines may have overlapping or unordered steps; sort and deduplicate by step
+    _, unique_indices = np.unique(data[:, 0], return_index=True)
+    data = data[unique_indices]
 
     n_species = 3
     expected_min_cols = 2 + 2 * (1 + n_species)
@@ -661,6 +675,15 @@ def main():
         print(f"Wrote {output_dir / cfg.inputs_name}")
 
     if cfg.run:
+        if cfg.restart_from:
+            restart_path = Path(cfg.restart_from)
+            if not restart_path.is_absolute() and not restart_path.exists():
+                if (output_dir / restart_path).exists():
+                    restart_path = output_dir / restart_path
+            print(f"\n[RESTART] Restarting simulation from checkpoint: {restart_path}")
+            from pywarpx import amr
+            amr.restart = str(restart_path)
+
         sim.step()
         print("Run complete")
         postprocess_particle_number(output_dir)

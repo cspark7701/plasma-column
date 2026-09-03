@@ -109,3 +109,32 @@ def test_local_core_neutralization():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_load_particle_number_diagnostic_restart_deduplication():
+    import tempfile, shutil
+    from plasma_column.diagnostics import load_particle_number_diagnostic
+
+    td = Path(tempfile.mkdtemp())
+    try:
+        rdir = td / "reducedfiles"
+        rdir.mkdir()
+        pn_file = rdir / "particle_number.txt"
+        # Simulate an appended/restarted file with overlapping steps
+        content = (
+            "#[0]step() [1]time(s) [2]tot_macro [3]p_macro [4]e_macro [5]p_phys [6]e_phys [7]i_phys\n"
+            "0 0.0 10 10 0 1e8 0 0\n"
+            "1 1e-12 10 10 0 1e8 0 0\n"
+            "2 2e-12 10 10 0 1e8 0 0\n"
+            "# restart\n"
+            "2 2e-12 10 10 0 1e8 0 0\n"
+            "3 3e-12 10 10 0 1e8 0 0\n"
+            "4 4e-12 10 10 0 1e8 0 0\n"
+        )
+        pn_file.write_text(content)
+        df = load_particle_number_diagnostic(pn_file)
+        assert not df.empty
+        assert len(df) == 5  # steps 0, 1, 2, 3, 4 without duplicates
+        assert list(df["step"]) == [0, 1, 2, 3, 4]
+    finally:
+        shutil.rmtree(td)

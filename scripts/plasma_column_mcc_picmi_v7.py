@@ -97,6 +97,8 @@ class PlasmaColumnConfig:
     # Diagnostics
     diagformat: str = "plotfile"
     full_diag_every_step: bool = False
+    checkpoint_period: int = 0
+    restart_from: Optional[str] = None
 
     # Lightweight per-step text diagnostics
     record_particle_number: bool = True
@@ -188,6 +190,18 @@ def parse_args() -> PlasmaColumnConfig:
             "Write full field/particle diagnostics every time step. "
             "This can produce very large output; use only for small tests."
         ),
+    )
+    p.add_argument(
+        "--checkpoint_period",
+        type=int,
+        default=PlasmaColumnConfig.checkpoint_period,
+        help="Checkpoint dumping period in steps. If > 0, dumps full AMReX checkpoint directory (chk<step>/).",
+    )
+    p.add_argument(
+        "--restart_from",
+        type=str,
+        default=PlasmaColumnConfig.restart_from,
+        help="Path or directory name of checkpoint to restart simulation from.",
     )
     p.add_argument(
         "--no_record_particle_number",
@@ -617,6 +631,9 @@ def postprocess_particle_number(output_dir: Path, cfg: PlasmaColumnConfig, deriv
             return
         if data.ndim == 1:
             data = data.reshape(1, -1)
+        # On restarts, data lines may have overlapping or unordered steps; sort and deduplicate by step
+        _, unique_indices = np.unique(data[:, 0], return_index=True)
+        data = data[unique_indices]
     except Exception as exc:
         print(f"Could not read ParticleNumber file {pnum_path}: {exc}")
         return
@@ -975,6 +992,15 @@ def build_sim(cfg: PlasmaColumnConfig):
     sim.add_diagnostic(field_diag)
     sim.add_diagnostic(particle_diag)
 
+    if cfg.checkpoint_period > 0:
+        chk_diag = picmi.Checkpoint(
+            name="chk",
+            period=cfg.checkpoint_period,
+            write_dir=".",
+            warpx_file_prefix="chk",
+        )
+        sim.add_diagnostic(chk_diag)
+
     # Lightweight per-step reduced diagnostics.
     # Use the official PICMI wrapper rather than manually editing pywarpx buckets.
     # This writes, by default:
@@ -1053,6 +1079,16 @@ def main():
         print(f"\nWrote WarpX input file: {output_dir / cfg.inputs_name}")
 
     if cfg.run:
+        if cfg.restart_from:
+            restart_path = Path(cfg.restart_from)
+            # Resolve relative to output_dir or current dir
+            if not restart_path.is_absolute() and not restart_path.exists():
+                if (output_dir / restart_path).exists():
+                    restart_path = output_dir / restart_path
+            print(f"\n[RESTART] Restarting simulation from checkpoint: {restart_path}")
+            from pywarpx import amr
+            amr.restart = str(restart_path)
+
         print(f"\nRunning WarpX in: {output_dir}")
         sim.step()
         print("\nWarpX run complete.")

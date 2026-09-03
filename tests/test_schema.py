@@ -229,3 +229,18 @@ def test_vacuum_with_mcc_none_no_warn():
             numerics=NumericsConfig(mcc="none"),
         ).validate()
     assert not any("MCC" in str(w.message) for w in caught)
+
+
+def test_schema_checkpoint_options():
+    cfg = SimulationCaseConfig(case_name="test_chk")
+    assert hasattr(cfg.numerics, "checkpoint_period")
+    assert cfg.numerics.checkpoint_period == 0
+    assert hasattr(cfg.numerics, "restart_from")
+    assert cfg.numerics.restart_from is None
+
+    cfg2 = SimulationCaseConfig.from_dict({
+        "case_name": "test_chk2",
+        "numerics": {"checkpoint_period": 500, "restart_from": "auto"}
+    })
+    assert cfg2.numerics.checkpoint_period == 500
+    assert cfg2.numerics.restart_from == "auto"

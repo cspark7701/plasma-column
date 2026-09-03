@@ -33,7 +33,7 @@ from plasma_column.schema import (
     build_warpx_cmd_flags,
     get_runner_script,
 )
-from plasma_column.warpx_io import get_git_info, collect_metadata
+from plasma_column.warpx_io import get_git_info, collect_metadata, find_checkpoints
 from plasma_column.hardware import configure_runtime
 
 
@@ -74,6 +74,18 @@ def parse_args() -> argparse.Namespace:
         "--gpu",
         default="auto",
         help="GPU device ID (e.g. 0) or 'auto' (enables GPU 0 if available, default: auto).",
+    )
+    parser.add_argument(
+        "--checkpoint_period",
+        type=int,
+        default=None,
+        help="Checkpoint dumping period in steps (dumps chk<step>/).",
+    )
+    parser.add_argument(
+        "--restart_from",
+        type=str,
+        default=None,
+        help="Path to checkpoint directory to restart simulation from (or 'auto' to use latest).",
     )
     return parser.parse_args()
 
@@ -149,6 +161,23 @@ def main() -> None:
         "--gpu", str(args.gpu),
         "--run",
     ]
+
+    # Determine checkpoint period and restart path
+    chk_period = args.checkpoint_period if args.checkpoint_period is not None else config.numerics.checkpoint_period
+    restart_target = args.restart_from if args.restart_from is not None else config.numerics.restart_from
+
+    if restart_target == "auto":
+        existing_chks = find_checkpoints(output_dir)
+        if existing_chks:
+            restart_target = str(existing_chks[-1])
+            print(f"  [AUTO-RESUME] Found existing checkpoint: {restart_target}")
+        else:
+            restart_target = None
+
+    if chk_period > 0:
+        cmd += ["--checkpoint_period", str(chk_period)]
+    if restart_target:
+        cmd += ["--restart_from", str(restart_target)]
 
     # Map physics method to WarpX CLI flags via the single canonical helper (see RT-02)
     cmd += build_warpx_cmd_flags(config.method)
