@@ -144,5 +144,22 @@ def test_multiple_coulomb_scattering():
         multiple_scattering_rms_rad(30.0, "Argon", 1.0e-5, 0.20)
 
 
+def test_mcc_script_interp_sigma_matches_gas_db():
+    """Verify scripts/plasma_column_mcc_picmi_v7.py interp_sigma evaluates consistently with CrossSectionDatabase."""
+    from scripts.plasma_column_mcc_picmi_v7 import interp_sigma, get_cross_section_dir, PlasmaColumnConfig
+
+    cfg_h2 = PlasmaColumnConfig(gas="H2", beam_energy_keV=30.0)
+    xsec_dir = get_cross_section_dir(cfg_h2)
+    xsec_file = xsec_dir / "proton_impact_ionization.dat"
+
+    if xsec_file.exists():
+        e_cm_eV = 30000.0 * MH2 / (MP + MH2)
+        sigma_mcc = interp_sigma(xsec_file, e_cm_eV)
+        db = CrossSectionDatabase()
+        sigma_db = db.get_proton_impact_cross_section("H2", 30000.0)
+        assert math.isclose(sigma_mcc, sigma_db, rel_tol=1e-6)
+        assert 1.0e-21 < sigma_mcc < 1.0e-19
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

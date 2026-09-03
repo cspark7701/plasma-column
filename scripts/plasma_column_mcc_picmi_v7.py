@@ -64,6 +64,12 @@ except ImportError:
     from scripts import _path_setup  # noqa: F401
 
 from plasma_column.constants import estimate_cfl_timestep
+from plasma_column.gas import (
+    load_cross_section_table,
+    interpolate_cross_section,
+    gas_density_m3,
+    lab_to_cm_energy,
+)
 from pywarpx import picmi
 
 try:
@@ -357,53 +363,10 @@ def get_cross_section_dir(cfg: PlasmaColumnConfig) -> Path:
     return d
 
 
-def load_two_column_cross_section(path: Path):
-    """
-    Load a WarpX-style cross-section table.
-
-    Expected format:
-        column 1: collision/projectile energy [eV]
-        column 2: cross section [m^2]
-
-    Lines beginning with # are ignored. Extra columns are ignored.
-    """
-    if not path.exists():
-        raise FileNotFoundError(f"Cross-section file not found: {path}")
-
-    rows = []
-    with path.open("r") as f:
-        for line in f:
-            s = line.strip()
-            if not s or s.startswith("#"):
-                continue
-            parts = s.replace(",", " ").split()
-            if len(parts) < 2:
-                continue
-            try:
-                rows.append((float(parts[0]), float(parts[1])))
-            except ValueError:
-                continue
-
-    if not rows:
-        raise ValueError(f"No numeric two-column data found in {path}")
-
-    arr = np.array(rows, dtype=float)
-    order = np.argsort(arr[:, 0])
-    return arr[order, 0], arr[order, 1]
-
-
 def interp_sigma(path: Path, energy_eV: float) -> float:
-    e, sigma = load_two_column_cross_section(path)
-    if energy_eV <= e[0]:
-        return float(sigma[0])
-    if energy_eV >= e[-1]:
-        return float(sigma[-1])
-    return float(np.interp(energy_eV, e, sigma))
-
-
-def gas_density_m3(pressure_torr: float, temperature_K: float) -> float:
-    pressure_Pa = pressure_torr * 133.322368
-    return pressure_Pa / (KB * temperature_K)
+    """Interpolate cross section [m^2] at collision energy_eV using plasma_column.gas."""
+    energies, sigmas, _ = load_cross_section_table(path)
+    return interpolate_cross_section(energies, sigmas, energy_eV)
 
 
 def estimate_neutralization_from_proton_impact(cfg: PlasmaColumnConfig, v_beam: float):
