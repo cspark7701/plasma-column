@@ -1,14 +1,14 @@
-# Execution Plan Summary: Pre-Push GitHub Actions CI Check Script (`check_ci.sh`)
+# Execution Plan Summary: Pre-Push GitHub Actions CI Check Script (`check_github_actions.sh`)
 
 **Task Index**: 77  
 **Date**: 2026-09-04  
-**Subject**: Create a local validation script (`scripts/check_ci.sh`) to mirror and verify GitHub Actions CI workflow checks before pushing code to remote.
+**Subject**: Create a local validation script (`scripts/check_github_actions.sh`) to mirror and verify GitHub Actions CI workflow checks before pushing code to remote.
 
 ---
 
 ## 1. Overview of Work
 
-Implemented [`scripts/check_ci.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/check_ci.sh) in the `scripts/` directory to allow developers to verify all continuous integration gates locally prior to pushing commits.
+Implemented [`scripts/check_github_actions.sh`](file:///home/cspark/Work/projects/plasma-column/scripts/check_github_actions.sh) in the `scripts/` directory to allow developers to verify all continuous integration gates locally prior to pushing commits.
 
 ### Check Pipeline (Mirrors `.github/workflows/ci.yml`):
 1. **Workflow Syntax & Schema Verification**:
@@ -35,8 +35,8 @@ Implemented [`scripts/check_ci.sh`](file:///home/cspark/Work/projects/plasma-col
 ## 2. Verification
 
 1. **Dry-run validation**:
-   - Ran `bash scripts/check_ci.sh --dry_run` verifying all 6 stages are listed and skipped cleanly.
+   - Ran `bash scripts/check_github_actions.sh --dry_run` verifying all 6 stages are listed and skipped cleanly.
 2. **Full CI validation**:
-   - Ran `bash scripts/check_ci.sh` executing all 6 steps with a clean pass (`121 passed, 1 skipped`, all dry-runs and repo audit passing).
+   - Ran `bash scripts/check_github_actions.sh` executing all 6 steps with a clean pass (`121 passed, 1 skipped`, all dry-runs and repo audit passing).
 3. **Execution summary**:
    - All tests, YAML schema checks, and dry runs completed in ~35 seconds with return code 0.

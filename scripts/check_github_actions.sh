@@ -12,8 +12,8 @@
 #   7. Repository integrity check (scripts/audit_repo.py --root .)
 #
 # Usage:
-#   bash scripts/check_ci.sh [OPTIONS]
-#   ./scripts/check_ci.sh [OPTIONS]
+#   bash scripts/check_github_actions.sh [OPTIONS]
+#   ./scripts/check_github_actions.sh [OPTIONS]
 #
 # Options:
 #   --dry_run, -n       Preview check steps without running tests.
@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help|-h)
-      echo "Usage: bash scripts/check_ci.sh [OPTIONS]"
+      echo "Usage: bash scripts/check_github_actions.sh [OPTIONS]"
       echo ""
       echo "Validates GitHub Actions CI steps locally before pushing to remote."
       echo ""
