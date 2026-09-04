@@ -11,7 +11,7 @@
 #   ./scripts/cleanup.sh [OPTIONS]
 #
 # Options:
-#   --dry_run, -n       List files and directories that would be removed without deleting.
+#   --dry-run, -d       List files and directories that would be removed without deleting.
 #   --all, -a           Clean all generated outputs (runs, results, logs, data, plots, paper/figures, paper/data, caches).
 #   --runs              Clean runs/ and results/ output directories.
 #   --logs              Clean logs/ directory and root *.log files.
@@ -45,7 +45,7 @@ SPECIFIC_TARGET=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dry_run|-n)
+    --dry-run|-n)
       DRY_RUN=true
       shift
       ;;
@@ -103,7 +103,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --cache             Clean __pycache__, .pytest_cache, *.egg-info, and temporary files."
       echo ""
       echo "Control flags:"
-      echo "  --dry_run, -n       Preview files to delete without modifying anything."
+      echo "  --dry-run, -d       Preview files to delete without modifying anything."
       echo "  --force, -f         Do not prompt for confirmation."
       echo "  --help, -h          Show this help message."
       echo ""
