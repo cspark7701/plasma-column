@@ -42,6 +42,13 @@ CHECKPOINT_PERIOD=0
 RESUME=false
 RESTART_FROM=""
 
+# Color defaults (enabled unless NO_COLOR is set or TERM is dumb)
+if [ -n "${NO_COLOR:-}" ] || [ "${TERM:-}" = "dumb" ]; then
+  USE_COLOR=false
+else
+  USE_COLOR=true
+fi
+
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -77,6 +84,14 @@ while [[ $# -gt 0 ]]; do
       RESTART_FROM="$2"
       shift 2
       ;;
+    --color)
+      USE_COLOR=true
+      shift
+      ;;
+    --no-color)
+      USE_COLOR=false
+      shift
+      ;;
     --help|-h)
       echo "Usage: bash scripts/run_full_production.sh [OPTIONS]"
       echo ""
@@ -89,6 +104,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --checkpoint_period <N>   Dump full AMReX checkpoint directory every N steps (chk<step>/)."
       echo "  --resume                  Automatically detect existing checkpoints and resume interrupted scans."
       echo "  --restart_from <path>     Path to specific checkpoint directory to resume from."
+      echo "  --color                   Force colorized terminal output."
+      echo "  --no-color                Disable colorized output (monochrome mode)."
       echo "  --help, -h                Display this help message."
       exit 0
       ;;
@@ -102,6 +119,27 @@ done
 
 cd "$PROJECT_ROOT"
 mkdir -p "$LOG_DIR"
+
+# ANSI Color Codes
+if [ "$USE_COLOR" = true ]; then
+  C_RESET=$'\033[0m'
+  C_BOLD=$'\033[1m'
+  C_CYAN=$'\033[1;36m'
+  C_GREEN=$'\033[1;32m'
+  C_YELLOW=$'\033[1;33m'
+  C_BLUE=$'\033[1;34m'
+  C_MAGENTA=$'\033[1;35m'
+  C_RED=$'\033[1;31m'
+else
+  C_RESET=""
+  C_BOLD=""
+  C_CYAN=""
+  C_GREEN=""
+  C_YELLOW=""
+  C_BLUE=""
+  C_MAGENTA=""
+  C_RED=""
+fi
 
 # ------------------------------------------------------------------------------
 # CPU Core & GPU Hardware Configuration
@@ -133,9 +171,9 @@ elif [ -n "$GPU" ] && [ "$GPU" != "none" ] && [ "$GPU" != "cpu" ] && [ "$GPU" !=
   GPU_STATUS="GPU $GPU (user specified)"
 fi
 
-echo "======================================================================"
-echo " Plasma Column Simulation - Full Production & Analysis Pipeline"
-echo "======================================================================"
+echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
+echo "${C_CYAN}${C_BOLD} Plasma Column Simulation - Full Production & Analysis Pipeline${C_RESET}"
+echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
 echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
@@ -145,7 +183,7 @@ echo "  GPU Status    : $GPU_STATUS"
 echo "  Checkpoint Int: $( [ "$CHECKPOINT_PERIOD" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps (CLI override)" || echo "Per-case defaults (2k seeded/vacuum, 10k callback/MCC)" )"
 echo "  Resume Mode   : $( [ "$RESUME" = true ] && echo "Auto-Resume Enabled" || ( [ -n "$RESTART_FROM" ] && echo "Restart from $RESTART_FROM" || echo "Fresh Run" ) )"
 echo "  Log File Path : $LOG_DIR/full_production.log"
-echo "======================================================================"
+echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
 
 # Helper function to run commands with quiet/verbose option logging
 run_step() {
@@ -157,38 +195,40 @@ run_step() {
   local log_file="$LOG_DIR/step_${clean_step}.log"
 
   echo ""
-  echo "[$step_num] $title"
-  echo "    Command: $*"
-  echo "    [RUNNING] Executing step $step_num: $title..."
+  echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
+  echo "${C_CYAN}${C_BOLD} >>> STEP [${step_num}] : ${title}${C_RESET}"
+  echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
+  echo "    ${C_BLUE}${C_BOLD}Command:${C_RESET} $*"
+  echo "    ${C_YELLOW}${C_BOLD}[RUNNING]${C_RESET} Executing step $step_num: $title..."
 
   if [ "$VERBOSE" = true ]; then
     if ! "$@" 2>&1 | tee "$log_file"; then
       echo ""
-      echo "======================================================================"
-      echo " ERROR DETECTED IN STEP $step_num: $title"
-      echo "======================================================================"
-      echo " Command: $*"
-      echo " Detailed Log File: $log_file"
-      echo "======================================================================"
+      echo "${C_RED}${C_BOLD}======================================================================${C_RESET}"
+      echo "${C_RED}${C_BOLD} ERROR DETECTED IN STEP $step_num: $title${C_RESET}"
+      echo "${C_RED}${C_BOLD}======================================================================${C_RESET}"
+      echo " ${C_RED}Command:${C_RESET} $*"
+      echo " ${C_RED}Detailed Log File:${C_RESET} $log_file"
+      echo "${C_RED}======================================================================${C_RESET}"
       exit 1
     fi
   else
     if ! "$@" > "$log_file" 2>&1; then
       echo ""
-      echo "======================================================================"
-      echo " ERROR DETECTED IN STEP $step_num: $title"
-      echo "======================================================================"
-      echo " Command: $*"
-      echo " Log File: $log_file"
-      echo "----------------------------------------------------------------------"
+      echo "${C_RED}${C_BOLD}======================================================================${C_RESET}"
+      echo "${C_RED}${C_BOLD} ERROR DETECTED IN STEP $step_num: $title${C_RESET}"
+      echo "${C_RED}${C_BOLD}======================================================================${C_RESET}"
+      echo " ${C_RED}Command:${C_RESET} $*"
+      echo " ${C_RED}Log File:${C_RESET} $log_file"
+      echo "${C_RED}----------------------------------------------------------------------${C_RESET}"
       echo " Error Traceback Output (Tail of $log_file):"
-      echo "----------------------------------------------------------------------"
+      echo "${C_RED}----------------------------------------------------------------------${C_RESET}"
       tail -n 40 "$log_file"
-      echo "======================================================================"
+      echo "${C_RED}${C_BOLD}======================================================================${C_RESET}"
       exit 1
     fi
   fi
-  echo "    [SUCCESS] Finished step $step_num (Log: logs/step_${clean_step}.log)"
+  echo "    ${C_GREEN}${C_BOLD}[SUCCESS]${C_RESET} Finished step $step_num (Log: logs/step_${clean_step}.log)"
 }
 
 # ==============================================================================
@@ -283,6 +323,6 @@ run_step "8/8" "Repository Audit & Integrity Verification" \
   python3 scripts/audit_repo.py --root .
 
 echo ""
-echo "======================================================================"
-echo " [SUCCESS] Full Production Simulation & Analysis Pipeline Completed!"
-echo "======================================================================"
+echo "${C_GREEN}${C_BOLD}======================================================================${C_RESET}"
+echo "${C_GREEN}${C_BOLD} [SUCCESS] Full Production Simulation & Analysis Pipeline Completed!${C_RESET}"
+echo "${C_GREEN}${C_BOLD}======================================================================${C_RESET}"
