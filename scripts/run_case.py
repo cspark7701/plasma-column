@@ -94,6 +94,11 @@ def parse_args() -> argparse.Namespace:
         help="Checkpoint dumping period in steps (dumps chk<step>/).",
     )
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Auto-resume from latest existing checkpoint (chk<step>/) in case directory or skip if already finished.",
+    )
+    parser.add_argument(
         "--restart_from",
         type=str,
         default=None,
@@ -155,6 +160,28 @@ def main() -> None:
         print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
         return
 
+    # Check if case is already fully completed when resume is enabled
+    if args.resume:
+        from plasma_column.diagnostics import load_particle_number_diagnostic
+        diag_file = None
+        for rel in ["reducedfiles/particle_number.txt", "particle_number.txt", "reducedfiles/ParticleNumber_red.txt"]:
+            p = output_dir / rel
+            if p.exists():
+                diag_file = p
+                break
+        if diag_file:
+            try:
+                df_diag = load_particle_number_diagnostic(diag_file)
+                if len(df_diag) > 0 and int(df_diag["step"].iloc[-1]) >= steps:
+                    print(f"  [RESUME] Case {case_name} already completed {steps} steps. Skipping simulation.")
+                    postproc_script = Path(__file__).resolve().parent / "postprocess_case.py"
+                    if postproc_script.exists():
+                        subprocess.run([sys.executable, str(postproc_script), "--case-dir", str(output_dir)])
+                    print(f"[RUN COMPLETE] Finished production simulation and postprocessing for {case_name}.", flush=True)
+                    return
+            except Exception:
+                pass
+
     hw_info = configure_runtime(cores=args.cores, gpu=args.gpu)
 
     print(f"\n[RUNNING] Executing production simulation steps for {case_name} (max_steps={steps})...", flush=True)
@@ -177,6 +204,10 @@ def main() -> None:
     # Determine checkpoint period and restart path
     chk_period = args.checkpoint_period if args.checkpoint_period is not None else config.numerics.checkpoint_period
     restart_target = args.restart_from if args.restart_from is not None else config.numerics.restart_from
+
+    # Auto-resume from existing checkpoint if resume is requested
+    if args.resume and not restart_target:
+        restart_target = "auto"
 
     # Determine diagnostic dumping period
     if args.snapshots is not None:

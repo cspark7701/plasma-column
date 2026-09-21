@@ -95,6 +95,10 @@ while [[ $# -gt 0 ]]; do
       RESUME=true
       shift
       ;;
+    --fresh|--no-resume)
+      RESUME=false
+      shift
+      ;;
     --restart_from)
       RESTART_FROM="$2"
       shift 2
@@ -303,6 +307,9 @@ if [ -n "$DIAG_PERIOD" ]; then
 fi
 if [ "$CHECKPOINT_PERIOD" -gt 0 ]; then
   CASE_EXTRA_ARGS+=(--checkpoint_period "$CHECKPOINT_PERIOD")
+fi
+if [ "$RESUME" = true ]; then
+  CASE_EXTRA_ARGS+=(--resume)
 fi
 if [ -n "$RESTART_FROM" ]; then
   CASE_EXTRA_ARGS+=(--restart_from "$RESTART_FROM")

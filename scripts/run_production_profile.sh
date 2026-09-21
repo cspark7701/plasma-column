@@ -28,6 +28,8 @@ C_YELLOW=$'\033[1;33m'
 C_BLUE=$'\033[1;34m'
 
 PROFILE=""
+AUTO_RESUME=true
+USER_SPECIFIED_RESUME=false
 EXTRA_ARGS=()
 
 # Parse first positional argument or flags
@@ -41,6 +43,16 @@ while [[ $# -gt 0 ]]; do
       PROFILE="$2"
       shift 2
       ;;
+    --resume)
+      AUTO_RESUME=true
+      USER_SPECIFIED_RESUME=true
+      shift
+      ;;
+    --fresh|--no-resume)
+      AUTO_RESUME=false
+      USER_SPECIFIED_RESUME=true
+      shift
+      ;;
     --help|-h)
       echo "Usage: bash scripts/run_production_profile.sh [PROFILE] [OPTIONS]"
       echo ""
@@ -49,6 +61,10 @@ while [[ $# -gt 0 ]]; do
       echo "  medium      15 snapshots/case (~69 GB footprint, for >= 200 GB disks)"
       echo "  light       0 snapshots/case  (< 250 MB footprint, reduced diags only)"
       echo "  dry-run     Validation only   (0 MB footprint, dry run)"
+      echo ""
+      echo "Resume Options:"
+      echo "  --resume          Force resume from previous run output/checkpoints."
+      echo "  --fresh           Start fresh from step 0 (disables auto-resume)."
       echo ""
       echo "Any additional options (e.g. --cores 8, --gpu auto, --verbose) are"
       echo "forwarded directly to scripts/run_full_production.sh."
@@ -94,7 +110,29 @@ fi
 
 cd "$PROJECT_ROOT"
 
+# Check for existing simulation runs/checkpoints in results/ or runs/
+HAS_PREV_RUN=false
+if [ -d "$PROJECT_ROOT/results" ] && [ -n "$(find "$PROJECT_ROOT/results" -maxdepth 3 \( -name "particle_number.txt" -o -name "ParticleNumber_red.txt" -o -name "chk*" \) 2>/dev/null)" ]; then
+  HAS_PREV_RUN=true
+elif [ -d "$PROJECT_ROOT/runs" ] && [ -n "$(find "$PROJECT_ROOT/runs" -maxdepth 3 \( -name "particle_number.txt" -o -name "ParticleNumber_red.txt" -o -name "chk*" \) 2>/dev/null)" ]; then
+  HAS_PREV_RUN=true
+fi
+
 echo ""
+if [ "$PROFILE" != "dry-run" ] && [ "$AUTO_RESUME" = true ] && ( [ "$HAS_PREV_RUN" = true ] || [ "$USER_SPECIFIED_RESUME" = true ] ); then
+  echo "${C_GREEN}${C_BOLD}[AUTO-RESUME ACTIVE]${C_RESET} Previous simulation runs/checkpoints detected in output directory."
+  echo "                     Skipping already completed cases and resuming partially finished cases."
+  # Avoid duplicate --resume flag
+  if [[ ! " ${EXTRA_ARGS[*]} " =~ " --resume " ]]; then
+    EXTRA_ARGS=(--resume "${EXTRA_ARGS[@]}")
+  fi
+elif [ "$AUTO_RESUME" = false ]; then
+  echo "${C_YELLOW}${C_BOLD}[FRESH RUN]${C_RESET} Auto-resume disabled. Simulation cases will run from step 0."
+  if [[ ! " ${EXTRA_ARGS[*]} " =~ " --fresh " ]] && [[ ! " ${EXTRA_ARGS[*]} " =~ " --no-resume " ]]; then
+    EXTRA_ARGS=(--fresh "${EXTRA_ARGS[@]}")
+  fi
+fi
+
 case "$PROFILE" in
   high)
     echo "${C_GREEN}${C_BOLD}[PROFILE: HIGH]${C_RESET} 80 snapshots/case, no checkpoints (~365 GB footprint)"

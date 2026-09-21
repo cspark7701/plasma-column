@@ -149,9 +149,31 @@ def main() -> None:
             json.dump(metadata, f, indent=2)
 
         if not args.dry_run:
+            steps = args.max_steps if args.max_steps is not None else config.numerics.max_steps
+
+            # Check if case is already fully completed when resume is enabled
+            if args.resume:
+                from plasma_column.diagnostics import load_particle_number_diagnostic
+                diag_file = None
+                for rel in ["reducedfiles/particle_number.txt", "particle_number.txt", "reducedfiles/ParticleNumber_red.txt"]:
+                    p = output_dir / rel
+                    if p.exists():
+                        diag_file = p
+                        break
+                if diag_file:
+                    try:
+                        df_diag = load_particle_number_diagnostic(diag_file)
+                        if len(df_diag) > 0 and int(df_diag["step"].iloc[-1]) >= steps:
+                            print(f"  --> [RESUME] Case {case_name} already completed {steps} steps. Skipping simulation.", flush=True)
+                            postproc_script = Path(__file__).resolve().parent / "postprocess_case.py"
+                            if postproc_script.exists():
+                                subprocess.run([sys.executable, str(postproc_script), "--case-dir", str(output_dir)])
+                            continue
+                    except Exception:
+                        pass
+
             print(f"  --> Launching PIC simulation for {case_name} (gas={gas}, p={pressure:.1e} Torr)...", flush=True)
             script_path = get_runner_script(config.method)
-            steps = args.max_steps if args.max_steps is not None else config.numerics.max_steps
 
             if args.snapshots is not None:
                 diag_period = 0 if args.snapshots <= 0 else max(1, steps // args.snapshots)
