@@ -38,6 +38,9 @@ CORES=8  # Default: 8 cores
 GPU="auto"  # Default: auto-detect GPU; if available make it default
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
 LOG_DIR="$PROJECT_ROOT/logs"
+MAX_STEPS=""
+SNAPSHOTS=""
+DIAG_PERIOD=""
 CHECKPOINT_PERIOD=0
 RESUME=false
 RESTART_FROM=""
@@ -68,6 +71,18 @@ while [[ $# -gt 0 ]]; do
       GPU="$2"
       shift 2
       ;;
+    --max_steps|--steps)
+      MAX_STEPS="$2"
+      shift 2
+      ;;
+    --snapshots|--total_snapshots|--plotfiles)
+      SNAPSHOTS="$2"
+      shift 2
+      ;;
+    --diag_period)
+      DIAG_PERIOD="$2"
+      shift 2
+      ;;
     --matrix)
       MATRIX_FILE="$2"
       shift 2
@@ -96,17 +111,20 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: bash scripts/run_full_production.sh [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --dry_run                 Validate matrix & metadata without running heavy PIC steps."
-      echo "  --verbose, -v             Print full execution logs to screen (default: quiet mode)."
-      echo "  --cores, -c               Number of CPU worker cores / OpenMP threads (default: 8)."
-      echo "  --gpu [ID|auto]           GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
-      echo "  --matrix FILE             Matrix configuration file (default: cases/method_comparison.yaml)."
-      echo "  --checkpoint_period <N>   Dump full AMReX checkpoint directory every N steps (chk<step>/)."
-      echo "  --resume                  Automatically detect existing checkpoints and resume interrupted scans."
-      echo "  --restart_from <path>     Path to specific checkpoint directory to resume from."
-      echo "  --color                   Force colorized terminal output."
-      echo "  --no-color                Disable colorized output (monochrome mode)."
-      echo "  --help, -h                Display this help message."
+      echo "  --dry_run                          Validate matrix & metadata without running heavy PIC steps."
+      echo "  --verbose, -v                      Print full execution logs to screen (default: quiet mode)."
+      echo "  --cores, -c                        Number of CPU worker cores / OpenMP threads (default: 8)."
+      echo "  --gpu [ID|auto]                    GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
+      echo "  --max_steps <N>, --steps <N>       Override total simulation steps across all cases."
+      echo "  --snapshots <N>, --plotfiles <N>   Target number of diagnostic snapshots/plotfiles across the run (0 disables full dumps)."
+      echo "  --diag_period <N>                  Diagnostic dumping period in steps (dumps diag1/ every N steps)."
+      echo "  --matrix FILE                      Matrix configuration file (default: cases/method_comparison.yaml)."
+      echo "  --checkpoint_period <N>            Dump full AMReX checkpoint directory every N steps (chk<step>/)."
+      echo "  --resume                           Automatically detect existing checkpoints and resume interrupted scans."
+      echo "  --restart_from <path>              Path to specific checkpoint directory to resume from."
+      echo "  --color                            Force colorized terminal output."
+      echo "  --no-color                         Disable colorized output (monochrome mode)."
+      echo "  --help, -h                         Display this help message."
       exit 0
       ;;
     *)
@@ -180,6 +198,8 @@ echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
 echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
 echo "  GPU Status    : $GPU_STATUS"
+echo "  Total Steps   : $( [ -n "$MAX_STEPS" ] && echo "$MAX_STEPS steps (CLI override)" || echo "Per-case defaults (20k seeded, 120k callback/MCC)" )"
+echo "  Plotfile Diags: $( [ -n "$SNAPSHOTS" ] && echo "$SNAPSHOTS target snapshots (CLI override)" || ( [ -n "$DIAG_PERIOD" ] && echo "Every $DIAG_PERIOD steps" || echo "Per-case defaults (~200 snapshots)" ) )"
 echo "  Checkpoint Int: $( [ "$CHECKPOINT_PERIOD" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps (CLI override)" || echo "Per-case defaults (2k seeded/vacuum, 10k callback/MCC)" )"
 echo "  Resume Mode   : $( [ "$RESUME" = true ] && echo "Auto-Resume Enabled" || ( [ -n "$RESTART_FROM" ] && echo "Restart from $RESTART_FROM" || echo "Fresh Run" ) )"
 echo "  Log File Path : $LOG_DIR/full_production.log"
@@ -243,6 +263,15 @@ run_step "1/8" "Environment Audit & Repository Validation" \
 # ==============================================================================
 # Validates case configs, creates case directories in runs/, and logs metadata.json
 SCAN_EXTRA_ARGS=()
+if [ -n "$MAX_STEPS" ]; then
+  SCAN_EXTRA_ARGS+=(--max_steps "$MAX_STEPS")
+fi
+if [ -n "$SNAPSHOTS" ]; then
+  SCAN_EXTRA_ARGS+=(--snapshots "$SNAPSHOTS")
+fi
+if [ -n "$DIAG_PERIOD" ]; then
+  SCAN_EXTRA_ARGS+=(--diag_period "$DIAG_PERIOD")
+fi
 if [ "$CHECKPOINT_PERIOD" -gt 0 ]; then
   SCAN_EXTRA_ARGS+=(--checkpoint_period "$CHECKPOINT_PERIOD")
 fi
@@ -263,6 +292,15 @@ fi
 # ==============================================================================
 # Runs baseline H2 case dry-run/execution validation to ensure single-case runner works
 CASE_EXTRA_ARGS=()
+if [ -n "$MAX_STEPS" ]; then
+  CASE_EXTRA_ARGS+=(--max_steps "$MAX_STEPS")
+fi
+if [ -n "$SNAPSHOTS" ]; then
+  CASE_EXTRA_ARGS+=(--snapshots "$SNAPSHOTS")
+fi
+if [ -n "$DIAG_PERIOD" ]; then
+  CASE_EXTRA_ARGS+=(--diag_period "$DIAG_PERIOD")
+fi
 if [ "$CHECKPOINT_PERIOD" -gt 0 ]; then
   CASE_EXTRA_ARGS+=(--checkpoint_period "$CHECKPOINT_PERIOD")
 fi

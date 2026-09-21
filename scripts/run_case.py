@@ -65,6 +65,18 @@ def parse_args() -> argparse.Namespace:
         help="Override maximum simulation steps.",
     )
     parser.add_argument(
+        "--snapshots",
+        type=int,
+        default=None,
+        help="Target number of full diagnostic snapshots/plotfiles across the run (computes diag_period = max_steps // snapshots).",
+    )
+    parser.add_argument(
+        "--diag_period",
+        type=int,
+        default=None,
+        help="Diagnostic dumping period in steps (dumps diag1/ every N steps, 0 disables full dumps).",
+    )
+    parser.add_argument(
         "--cores",
         type=int,
         default=8,
@@ -165,6 +177,17 @@ def main() -> None:
     # Determine checkpoint period and restart path
     chk_period = args.checkpoint_period if args.checkpoint_period is not None else config.numerics.checkpoint_period
     restart_target = args.restart_from if args.restart_from is not None else config.numerics.restart_from
+
+    # Determine diagnostic dumping period
+    if args.snapshots is not None:
+        diag_period = 0 if args.snapshots <= 0 else max(1, steps // args.snapshots)
+    elif args.diag_period is not None:
+        diag_period = args.diag_period
+    else:
+        diag_period = config.numerics.diag_period
+
+    if diag_period is not None:
+        cmd += ["--diag_period", str(diag_period)]
 
     if restart_target == "auto":
         existing_chks = find_checkpoints(output_dir)

@@ -303,22 +303,6 @@ def make_sim(cfg: Config):
         ),
     )
 
-    field_diag = picmi.FieldDiagnostic(
-        name="diag1",
-        grid=grid,
-        period=cfg.diag_period,
-        data_list=["E", "B", "J", "rho", "part_per_cell"],
-        warpx_format=cfg.diagformat,
-    )
-
-    part_diag = picmi.ParticleDiagnostic(
-        name="diag1",
-        period=cfg.diag_period,
-        species=[beam_protons, plasma_electrons, gas_ions],
-        data_list=["position", "weighting", "momentum"],
-        warpx_format=cfg.diagformat,
-    )
-
     sim = picmi.Simulation(
         solver=solver,
         max_steps=cfg.max_steps,
@@ -351,8 +335,24 @@ def make_sim(cfg: Config):
     )
 
     sim.add_applied_field(solenoid)
-    sim.add_diagnostic(field_diag)
-    sim.add_diagnostic(part_diag)
+
+    if cfg.diag_period > 0:
+        field_diag = picmi.FieldDiagnostic(
+            name="diag1",
+            grid=grid,
+            period=cfg.diag_period,
+            data_list=["E", "B", "J", "rho", "part_per_cell"],
+            warpx_format=cfg.diagformat,
+        )
+        part_diag = picmi.ParticleDiagnostic(
+            name="diag1",
+            period=cfg.diag_period,
+            species=[beam_protons, plasma_electrons, gas_ions],
+            data_list=["position", "weighting", "momentum"],
+            warpx_format=cfg.diagformat,
+        )
+        sim.add_diagnostic(field_diag)
+        sim.add_diagnostic(part_diag)
 
     if cfg.checkpoint_period > 0:
         chk_diag = picmi.Checkpoint(

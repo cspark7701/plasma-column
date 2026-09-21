@@ -917,22 +917,6 @@ def build_sim(cfg: PlasmaColumnConfig):
 
     full_diag_period = 1 if cfg.full_diag_every_step else cfg.diag_period
 
-    field_diag = picmi.FieldDiagnostic(
-        name="diag1",
-        grid=grid,
-        period=full_diag_period,
-        data_list=["E", "B", "J", "rho", "part_per_cell"],
-        warpx_format=cfg.diagformat,
-    )
-
-    particle_diag = picmi.ParticleDiagnostic(
-        name="diag1",
-        period=full_diag_period,
-        species=[beam_protons, plasma_electrons, gas_ions],
-        data_list=["position", "weighting", "momentum"],
-        warpx_format=cfg.diagformat,
-    )
-
     sim_kwargs = dict(
         solver=solver,
         max_steps=cfg.max_steps,
@@ -962,8 +946,24 @@ def build_sim(cfg: PlasmaColumnConfig):
     )
 
     sim.add_applied_field(solenoid_field)
-    sim.add_diagnostic(field_diag)
-    sim.add_diagnostic(particle_diag)
+
+    if full_diag_period > 0:
+        field_diag = picmi.FieldDiagnostic(
+            name="diag1",
+            grid=grid,
+            period=full_diag_period,
+            data_list=["E", "B", "J", "rho", "part_per_cell"],
+            warpx_format=cfg.diagformat,
+        )
+        particle_diag = picmi.ParticleDiagnostic(
+            name="diag1",
+            period=full_diag_period,
+            species=[beam_protons, plasma_electrons, gas_ions],
+            data_list=["position", "weighting", "momentum"],
+            warpx_format=cfg.diagformat,
+        )
+        sim.add_diagnostic(field_diag)
+        sim.add_diagnostic(particle_diag)
 
     if cfg.checkpoint_period > 0:
         chk_diag = picmi.Checkpoint(

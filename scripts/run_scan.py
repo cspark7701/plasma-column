@@ -70,6 +70,24 @@ def parse_args() -> argparse.Namespace:
         help="GPU device ID (e.g. 0) or 'auto' (enables GPU 0 if available, default: auto).",
     )
     parser.add_argument(
+        "--max_steps",
+        type=int,
+        default=None,
+        help="Override maximum simulation steps for all cases in matrix.",
+    )
+    parser.add_argument(
+        "--snapshots",
+        type=int,
+        default=None,
+        help="Target number of full diagnostic snapshots/plotfiles across the run (computes diag_period = max_steps // snapshots).",
+    )
+    parser.add_argument(
+        "--diag_period",
+        type=int,
+        default=None,
+        help="Diagnostic dumping period in steps (dumps diag1/ every N steps, 0 disables full dumps).",
+    )
+    parser.add_argument(
         "--checkpoint_period",
         type=int,
         default=None,
@@ -133,19 +151,31 @@ def main() -> None:
         if not args.dry_run:
             print(f"  --> Launching PIC simulation for {case_name} (gas={gas}, p={pressure:.1e} Torr)...", flush=True)
             script_path = get_runner_script(config.method)
+            steps = args.max_steps if args.max_steps is not None else config.numerics.max_steps
+
+            if args.snapshots is not None:
+                diag_period = 0 if args.snapshots <= 0 else max(1, steps // args.snapshots)
+            elif args.diag_period is not None:
+                diag_period = args.diag_period
+            else:
+                diag_period = config.numerics.diag_period
+
             cmd = [
                 sys.executable,
                 str(script_path),
                 "--output_dir", str(output_dir),
                 "--gas", gas if gas != "none" else "H2",
                 "--pressure_torr", str(pressure),
-                "--max_steps", str(config.numerics.max_steps),
+                "--max_steps", str(steps),
                 "--beam_energy_keV", str(config.beam.energy_keV),
                 "--beam_current_mA", str(config.beam.current_mA),
                 "--cores", str(args.cores),
                 "--gpu", str(args.gpu),
                 "--run",
             ]
+            if diag_period is not None:
+                cmd += ["--diag_period", str(diag_period)]
+
             # Checkpoint dumping configuration
             chk_period = args.checkpoint_period if args.checkpoint_period is not None else config.numerics.checkpoint_period
             if chk_period > 0:
