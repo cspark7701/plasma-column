@@ -28,12 +28,15 @@ def setup_publication_style() -> None:
         "axes.grid": True,
         "grid.linestyle": "--",
         "grid.alpha": 0.5,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
     })
 
 
 def save_figure(fig: plt.Figure, output_path_basename: str | Path) -> tuple[Path, Path]:
     """
     Saves matplotlib figure to both .png and .pdf formats as required by project guidelines.
+    PDF export uses deterministic metadata (CreationDate: None) to prevent non-reproducible git diffs.
     """
     base_path = Path(output_path_basename).with_suffix("")
     base_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +45,7 @@ def save_figure(fig: plt.Figure, output_path_basename: str | Path) -> tuple[Path
     pdf_path = base_path.with_suffix(".pdf")
 
     fig.savefig(png_path, dpi=300, bbox_inches="tight")
-    fig.savefig(pdf_path, bbox_inches="tight")
+    fig.savefig(pdf_path, bbox_inches="tight", metadata={"CreationDate": None, "ModDate": None, "Creator": "matplotlib"})
 
     return png_path, pdf_path
 
