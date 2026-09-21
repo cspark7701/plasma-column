@@ -148,17 +148,30 @@ def test_mcc_script_interp_sigma_matches_gas_db():
     """Verify scripts/plasma_column_mcc_picmi_v7.py interp_sigma evaluates consistently with CrossSectionDatabase."""
     from scripts.plasma_column_mcc_picmi_v7 import interp_sigma, get_cross_section_dir, PlasmaColumnConfig
 
-    cfg_h2 = PlasmaColumnConfig(gas="H2", beam_energy_keV=30.0)
-    xsec_dir = get_cross_section_dir(cfg_h2)
-    xsec_file = xsec_dir / "proton_impact_ionization.dat"
+    for gas, m_target in [("H2", MH2), ("Kr", MKR)]:
+        cfg = PlasmaColumnConfig(gas=gas, beam_energy_keV=30.0)
+        xsec_dir = get_cross_section_dir(cfg)
+        xsec_file = xsec_dir / "proton_impact_ionization.dat"
+        assert xsec_file.exists(), f"Cross-section file not found for {gas} at {xsec_file}"
 
-    if xsec_file.exists():
-        e_cm_eV = 30000.0 * MH2 / (MP + MH2)
+        e_cm_eV = 30000.0 * m_target / (MP + m_target)
         sigma_mcc = interp_sigma(xsec_file, e_cm_eV)
         db = CrossSectionDatabase()
-        sigma_db = db.get_proton_impact_cross_section("H2", 30000.0)
+        sigma_db = db.get_proton_impact_cross_section(gas, 30000.0)
         assert math.isclose(sigma_mcc, sigma_db, rel_tol=1e-6)
-        assert 1.0e-21 < sigma_mcc < 1.0e-19
+        assert 1.0e-21 < sigma_mcc < 1.0e-18
+
+
+def test_callback_script_load_cross_section():
+    """Verify scripts/plasma_column_callback_source_picmi_v3.py load_cross_section resolves bundled tables."""
+    from scripts.plasma_column_callback_source_picmi_v3 import load_cross_section, Config
+
+    for gas in ["H2", "Kr"]:
+        cfg = Config(gas=gas)
+        path, energies, sigmas = load_cross_section(cfg)
+        assert path.exists(), f"Path does not exist: {path}"
+        assert len(energies) > 0
+        assert len(sigmas) == len(energies)
 
 
 def test_compute_analytic_mcc_rates():

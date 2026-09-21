@@ -211,7 +211,33 @@ def load_cross_section(cfg: Config):
         / "proton_impact_ionization.dat"
     )
     if not path.exists():
-        raise FileNotFoundError(path)
+        try:
+            from plasma_column.gas import CrossSectionDatabase
+            db = CrossSectionDatabase()
+            for candidate in (cfg.gas, cfg.gas.capitalize(), cfg.gas.upper()):
+                bundled = db.base_dir / candidate / "proton_impact_ionization.dat"
+                if bundled.exists():
+                    path = bundled
+                    break
+        except Exception:
+            pass
+
+    if not path.exists():
+        project_root = Path(__file__).resolve().parent.parent
+        for candidate in (cfg.gas, cfg.gas.capitalize(), cfg.gas.upper()):
+            bundled = (
+                project_root
+                / "warpx_proton_impact_cross_sections_linear"
+                / "MCC_cross_sections"
+                / candidate
+                / "proton_impact_ionization.dat"
+            )
+            if bundled.exists():
+                path = bundled
+                break
+
+    if not path.exists():
+        raise FileNotFoundError(f"Cross-section data file not found: {path}")
     data = np.loadtxt(path, comments="#")
     if data.ndim != 2 or data.shape[1] < 2:
         raise ValueError(f"Bad cross-section table: {path}")

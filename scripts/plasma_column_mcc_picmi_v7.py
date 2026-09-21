@@ -365,11 +365,46 @@ def gas_ionization_energy_eV(cfg: PlasmaColumnConfig, cross_section_file: Option
 
 
 def get_cross_section_dir(cfg: PlasmaColumnConfig) -> Path:
+    """Resolve directory containing proton-impact cross section files for cfg.gas.
+
+    Checks in order:
+    1. Explicitly configured cfg.h2_cross_section_dir (if gas is H2)
+    2. <warpx_data_dir>/MCC_cross_sections/<gas>
+    3. Project-bundled cross sections in warpx_proton_impact_cross_sections_linear/MCC_cross_sections/<gas>
+    """
     if cfg.h2_cross_section_dir and cfg.gas == "H2":
         d = Path(cfg.h2_cross_section_dir).expanduser()
-    else:
-        d = Path(cfg.warpx_data_dir).expanduser() / "MCC_cross_sections" / cfg.gas
-    return d
+        if (d / "proton_impact_ionization.dat").exists():
+            return d
+
+    # Primary: check user/configured warpx_data_dir
+    primary = Path(cfg.warpx_data_dir).expanduser() / "MCC_cross_sections" / cfg.gas
+    if (primary / "proton_impact_ionization.dat").exists():
+        return primary
+
+    # Fallback: repository bundled cross sections via CrossSectionDatabase or relative path
+    try:
+        from plasma_column.gas import CrossSectionDatabase
+        db = CrossSectionDatabase()
+        for candidate in (cfg.gas, cfg.gas.capitalize(), cfg.gas.upper()):
+            bundled = db.base_dir / candidate
+            if (bundled / "proton_impact_ionization.dat").exists():
+                return bundled
+    except Exception:
+        pass
+
+    project_root = Path(__file__).resolve().parent.parent
+    for candidate in (cfg.gas, cfg.gas.capitalize(), cfg.gas.upper()):
+        bundled = (
+            project_root
+            / "warpx_proton_impact_cross_sections_linear"
+            / "MCC_cross_sections"
+            / candidate
+        )
+        if (bundled / "proton_impact_ionization.dat").exists():
+            return bundled
+
+    return primary
 
 
 def interp_sigma(path: Path, energy_eV: float) -> float:
@@ -443,7 +478,10 @@ def validate_cross_section_files(cfg: PlasmaColumnConfig):
         status["electron_impact_ionization.dat"] = (eion_dir / "electron_impact_ionization.dat").exists()
 
     if cfg.gas == "H2" and cfg.mcc in ("charge_exchange", "both"):
-        status["Hion_on_H2_charge_exchange.dat"] = (xsec_dir / "Hion_on_H2_charge_exchange.dat").exists()
+        cx_cand = xsec_dir / "Hion_on_H2_charge_exchange.dat"
+        if not cx_cand.exists():
+            cx_cand = Path(cfg.warpx_data_dir).expanduser() / "MCC_cross_sections" / "H" / "Hion_on_H2_charge_exchange.dat"
+        status["Hion_on_H2_charge_exchange.dat"] = cx_cand.exists()
 
     return xsec_dir, status
 
@@ -894,7 +932,11 @@ def build_sim(cfg: PlasmaColumnConfig):
             raise ValueError("charge_exchange mode is currently implemented only for H2 using Hion_on_H2_charge_exchange.dat")
         cx_file = xsec_dir / "Hion_on_H2_charge_exchange.dat"
         if not cx_file.exists():
-            raise FileNotFoundError(f"charge-exchange file not found: {cx_file}")
+            cx_fallback = Path(cfg.warpx_data_dir).expanduser() / "MCC_cross_sections" / "H" / "Hion_on_H2_charge_exchange.dat"
+            if cx_fallback.exists():
+                cx_file = cx_fallback
+            else:
+                raise FileNotFoundError(f"charge-exchange file not found: {cx_file}")
 
         proton_scattering_processes = {
             "charge_exchange": {
