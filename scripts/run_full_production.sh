@@ -290,7 +290,7 @@ fi
 # ==============================================================================
 # STEP 3: Individual Case Execution Verification
 # ==============================================================================
-# Runs baseline H2 case dry-run/execution validation to ensure single-case runner works
+# Runs baseline H2 and Kr case dry-run/execution validation to ensure single-case runner works
 CASE_EXTRA_ARGS=()
 if [ -n "$MAX_STEPS" ]; then
   CASE_EXTRA_ARGS+=(--max_steps "$MAX_STEPS")
@@ -308,20 +308,34 @@ if [ -n "$RESTART_FROM" ]; then
   CASE_EXTRA_ARGS+=(--restart_from "$RESTART_FROM")
 fi
 
-run_step "3/8" "Baseline Simulation Case Verification (cases/baseline_h2.yaml)" \
+run_step "3/8" "Baseline Simulation Case Verification (H2: cases/baseline_h2.yaml)" \
   python3 scripts/run_case.py --case cases/baseline_h2.yaml --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
+
+run_step "3b/8" "Baseline Simulation Case Verification (Kr: cases/baseline_kr.yaml)" \
+  python3 scripts/run_case.py --case cases/baseline_kr.yaml --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
 
 # ==============================================================================
 # STEP 4: Post-Processing & Core Diagnostics Extraction
 # ==============================================================================
 # Evaluates particle-number metrics, volume-averaged core density, and spatial masks
-POSTPROC_CASE="results/seeded_H2_baseline"
-if [ ! -d "$POSTPROC_CASE" ] && [ -d "runs/seeded_H2_baseline" ]; then
-  POSTPROC_CASE="runs/seeded_H2_baseline"
+POSTPROC_H2="results/seeded_H2_baseline"
+if [ ! -d "$POSTPROC_H2" ] && [ -d "runs/seeded_H2_baseline" ]; then
+  POSTPROC_H2="runs/seeded_H2_baseline"
 fi
 
-run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics" \
-  python3 scripts/postprocess_case.py --case-dir "$POSTPROC_CASE" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+POSTPROC_KR="results/seeded_Kr_baseline"
+if [ ! -d "$POSTPROC_KR" ] && [ -d "runs/seeded_Kr_baseline" ]; then
+  POSTPROC_KR="runs/seeded_Kr_baseline"
+fi
+if [ ! -d "$POSTPROC_KR" ] && [ -d "results/seeded_Kr_1e-6Torr" ]; then
+  POSTPROC_KR="results/seeded_Kr_1e-6Torr"
+fi
+
+run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics (H2 Baseline)" \
+  python3 scripts/postprocess_case.py --case-dir "$POSTPROC_H2" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+
+run_step "4b/8" "Postprocessing & Local Core Neutralization Diagnostics (Kr Baseline)" \
+  python3 scripts/postprocess_case.py --case-dir "$POSTPROC_KR" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
 
 # ==============================================================================
 # STEP 5: Publication Plotting & Cross-Section Figures
