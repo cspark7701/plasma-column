@@ -3,10 +3,10 @@
 ## 1. WarpX Source Tree Information
 
 - **Local Path**: `/home/cspark/Work/simulation_codes-working/warpx`
-- **Git Branch**: `development`
-- **Base Commit**: `6c04a74dc` ("Implement reflection from embedded boundaries (#6588)")
-- **Remote**: `origin/development`
+- **Git Branch**: `development` (commit `6b32fecc7`)
+- **Remote**: `origin/development` (`https://github.com/BLAST-WarpX/warpx.git`)
 - **Exported Patch Location**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch)
+- **Standalone Custom Header**: [`docs/warpx_patches/IonImpactIonization.H`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/IonImpactIonization.H)
 
 ---
 
@@ -22,30 +22,64 @@ $$p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$$
 
 ## 3. Detailed File Modification Audit
 
-### 3.1 `Source/Particles/Collision/ScatteringProcess.H` & `ScatteringProcess.cpp`
-- **Enum Additions**: Added `ION_IMPACT_IONIZATION` and `FORWARD` to `ScatteringProcessType` enum.
-- **Parsing**: Added parsing for `"ion_impact_ionization"` process strings in Python/inputs files.
+The self-contained patch modifies 4 C++ files and adds 1 new header file (5 files total):
+
+### 3.1 `Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H` (New Header)
+- Defines `IonImpactIonizationFilterFunc` for particle rejection sampling against neutral gas density $n_a(x,y,z,t)$ and interpolated center-of-mass cross section $\sigma_i(E_{\text{coll}})$.
+- Defines `IonImpactIonizationTransformFunc` to subtract ionization energy from the projectile ion, generate a secondary electron with isotropic kinetic energy ($E_{e,\text{sec}} \approx 1\text{ eV}$), and generate a thermal background gas ion sampled from the neutral gas temperature.
+
+### 3.2 `Source/Particles/Collision/ScatteringProcess.H` & `ScatteringProcess.cpp`
+- **Enum Additions**: Added `ION_IMPACT_IONIZATION` to `ScatteringProcessType` enum.
+- **Parsing**: Added parsing for `"ion_impact_ionization"` process strings in Python/PICMI scripts and inputs files.
 - **Robust Comment Handling**: Updated `readCrossSectionFile()` to strip comment lines starting with `#` and ignore blank lines when loading cross-section data files.
 
-### 3.2 `Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H` & `BackgroundMCCCollision.cpp`
-- **Ion-Impact Handler**: Implemented `doBackgroundIonImpactIonization()` method using AMReX particle filtering and transformation (`filterCopyTransformParticles`).
+### 3.3 `Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H` & `BackgroundMCCCollision.cpp`
+- **Ion-Impact Handler**: Implemented `doBackgroundIonImpactIonization()` method using AMReX particle filtering and transformation (`filterCopyTransformParticles<1>`).
 - **Collision Frequencies**: Updated `BackgroundMCCCollision::doCollisions()` to compute maximum ion-impact collision frequencies $\nu_{\text{max,ion\_impact}}$ and probability $P = 1 - \exp(-\nu_{\text{max}} \Delta t)$.
 - **Particle Copy Factories**: Configured smart copy factories to generate secondary electron species and secondary gas ion species at the projectile particle position with thermal gas energy + secondary energy partition.
 
 ---
 
-## 4. Building PyWarpX with Custom C++ Extensions
+## 4. How to Apply the Patch and Build WarpX
 
-To build PyWarpX with these C++ modifications enabled:
+### 4.1 Apply Patch to WarpX
+From the WarpX source directory:
 
 ```bash
 cd /home/cspark/Work/simulation_codes-working/warpx
+
+# 1. Ensure working tree is clean
+git checkout development
+
+# 2. Check patch applicability (dry run)
+git apply --check /home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch
+
+# 3. Apply the patch
+git apply /home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch
+
+# 4. Verify modified files
+git status --short
+# Expected output:
+#  M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
+#  M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
+#  M Source/Particles/Collision/ScatteringProcess.H
+#  M Source/Particles/Collision/ScatteringProcess.cpp
+# ?? Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H
+```
+
+### 4.2 Compile and Install WarpX / PyWarpX
+
+Activate the project conda environment and rebuild:
+
+```bash
 conda activate warpx-dev
+cd /home/cspark/Work/simulation_codes-working/warpx
 
-# Clean previous build artifacts
-rm -rf build
+# If using existing build tree:
+cmake --build build -j 8 --target install
+cmake --build build -j 8 --target pip_install
 
-# Configure and compile Python bindings
+# Or clean rebuild via pip:
 python -m pip install -e . --no-build-isolation
 ```
 

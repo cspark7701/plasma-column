@@ -1,42 +1,19 @@
-diff --git a/.gitignore b/.gitignore
-index 8e6963db0..7dc1fcaa2 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -77,3 +77,14 @@ WARP.md
- .DS_Store
- .AppleDouble
- .LSOverride
-+
-+
-+
-+INSTALL.md
-+Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H.orig
-+Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp.orig
-+Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H
-+Testing/
-+install/
-+patch/
-+upgrade.sh
-\ No newline at end of file
 diff --git a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
-index 089262299..7030f54b6 100644
+index 089262299..58c68fca9 100644
 --- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
 +++ b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H
-@@ -32,7 +32,12 @@ public:
+@@ -32,7 +32,9 @@ public:
      BackgroundMCCCollision ( BackgroundMCCCollision&& )                  = delete;
      BackgroundMCCCollision& operator= ( BackgroundMCCCollision&& )       = delete;
  
 -    [[nodiscard]] amrex::ParticleReal get_nu_max (amrex::Vector<ScatteringProcess> const& mcc_processes) const;
-+    //[[nodiscard]] amrex::ParticleReal get_nu_max (amrex::Vector<ScatteringProcess> const& mcc_processes) const;
-+
 +    [[nodiscard]] amrex::ParticleReal get_nu_max (
 +        amrex::Vector<ScatteringProcess> const& mcc_processes,
 +        amrex::ParticleReal mass_for_energy) const;
-+
  
      /** Perform the collisions
       *
-@@ -68,6 +73,15 @@ public:
+@@ -68,6 +70,15 @@ public:
                                   amrex::Real t
                                   );
  
@@ -52,7 +29,7 @@ index 089262299..7030f54b6 100644
  private:
  
      amrex::Vector<ScatteringProcess> m_scattering_processes;
-@@ -75,6 +89,15 @@ private:
+@@ -75,6 +86,15 @@ private:
      amrex::Gpu::DeviceVector<ScatteringProcess::Executor> m_scattering_processes_exe;
      amrex::Gpu::DeviceVector<ScatteringProcess::Executor> m_ionization_processes_exe;
  
@@ -69,19 +46,18 @@ index 089262299..7030f54b6 100644
      bool ionization_flag = false;
  
 diff --git a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
-index 1938291b3..05eb5c3e7 100644
+index 779276aca..dab95c598 100644
 --- a/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
 +++ b/Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp
-@@ -9,6 +9,8 @@
+@@ -7,6 +7,7 @@
+ #include "BackgroundMCCCollision.H"
+ 
  #include "ImpactIonization.H"
- #include "Particles/Collision/BinaryCollision/BinaryCollisionUtils.H"
- #include "Particles/Collision/BinaryCollision/TwoProductUtil.H"
 +#include "IonImpactIonization.H"
-+#include "Particles/Algorithms/KineticEnergy.H"
+ #include "Particles/Algorithms/KineticEnergy.H"
  #include "Particles/ParticleCreation/FilterCopyTransform.H"
  #include "Particles/ParticleCreation/SmartCopy.H"
- #include "Utils/Parser/ParserUtils.H"
-@@ -112,6 +114,31 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+@@ -136,6 +137,31 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
              m_species_names.push_back(secondary_species);
  
              m_ionization_processes.push_back(std::move(process));
@@ -113,7 +89,7 @@ index 1938291b3..05eb5c3e7 100644
          } else {
              m_scattering_processes.push_back(std::move(process));
          }
-@@ -120,18 +147,26 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+@@ -144,18 +170,26 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
  #ifdef AMREX_USE_GPU
      amrex::Gpu::HostVector<ScatteringProcess::Executor> h_scattering_processes_exe;
      amrex::Gpu::HostVector<ScatteringProcess::Executor> h_ionization_processes_exe;
@@ -140,7 +116,7 @@ index 1938291b3..05eb5c3e7 100644
      amrex::Gpu::streamSynchronize();
  #else
      for (auto const& p : m_scattering_processes) {
-@@ -140,14 +175,21 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
+@@ -164,6 +198,9 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
      for (auto const& p : m_ionization_processes) {
          m_ionization_processes_exe.push_back(p.executor());
      }
@@ -150,11 +126,9 @@ index 1938291b3..05eb5c3e7 100644
  #endif
  }
  
- /** Calculate the maximum collision frequency using a fixed energy grid that
+@@ -171,7 +208,9 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const& collision_nam
   *  ranges from 1e-4 to 5000 eV in 0.2 eV increments
   */
-+//amrex::ParticleReal
-+//BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_processes) const
  amrex::ParticleReal
 -BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_processes) const
 +BackgroundMCCCollision::get_nu_max (
@@ -163,35 +137,16 @@ index 1938291b3..05eb5c3e7 100644
  {
      using namespace amrex::literals;
      amrex::ParticleReal nu, nu_max = 0.0;
-@@ -179,7 +221,8 @@ BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_p
+@@ -203,7 +242,7 @@ BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_p
          // calculate collision frequency
          nu = (
                m_max_background_density
 -              * std::sqrt(2.0_prt / m_mass1 * PhysConst::q_e)
 +              * std::sqrt(2.0_prt / mass_for_energy * PhysConst::q_e)
-+              //* std::sqrt(2.0_prt / m_mass1 * PhysConst::q_e)
                * sigma_E * std::sqrt(E)
                );
-         nu_max = std::max(nu_max, nu);
-@@ -188,6 +231,17 @@ BackgroundMCCCollision::get_nu_max(amrex::Vector<ScatteringProcess> const& mcc_p
-     return nu_max;
- }
- 
-+// Normal collisions call:
-+//   get_nu_max(m_scattering_processes, m_mass1)
-+//
-+// electron-impact ionization calls:
-+//   get_nu_max(m_ionization_processes, m_mass1)
-+//
-+// ion-impact ionization calls:
-+//   const auto mu = m_mass1*m_background_mass/(m_mass1 + m_background_mass);
-+//   get_nu_max(m_ion_impact_ionization_processes, mu)
-+
-+
- void
- BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleContainer* mypc)
- {
-@@ -195,6 +249,14 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+         if (nu > nu_max) {
+@@ -222,6 +261,14 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
      using namespace amrex::literals;
  
      auto& species1 = mypc->GetParticleContainerFromName(m_species_names[0]);
@@ -206,7 +161,7 @@ index 1938291b3..05eb5c3e7 100644
      // this is a very ugly hack to have species2 be a reference and be
      // defined in the scope of doCollisions
      auto& species2 = (
-@@ -206,8 +268,23 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+@@ -233,8 +280,23 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
      if (!init_flag) {
          m_mass1 = species1.getMass();
  
@@ -231,7 +186,7 @@ index 1938291b3..05eb5c3e7 100644
  
          // calculate total collision probability
          auto coll_n = m_nu_max * dt;
-@@ -225,7 +302,7 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+@@ -252,7 +314,7 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
  
          if (ionization_flag) {
              // calculate maximum collision frequency for ionization
@@ -240,7 +195,7 @@ index 1938291b3..05eb5c3e7 100644
  
              // calculate total ionization probability
              auto coll_n_ioniz = m_nu_max_ioniz * dt;
-@@ -292,6 +369,12 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
+@@ -319,6 +381,11 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, amrex::Real dt, Mult
          if (ionization_flag) {
              doBackgroundIonization(lev, cost, species1, species2, cur_time);
          }
@@ -249,11 +204,10 @@ index 1938291b3..05eb5c3e7 100644
 +            doBackgroundIonImpactIonization(
 +                lev, cost, species1, *ionimpact_electrons, *ionimpact_ions, cur_time);
 +        }
-+
      }
  }
  
-@@ -474,3 +557,82 @@ void BackgroundMCCCollision::doBackgroundIonization
+@@ -531,3 +598,82 @@ void BackgroundMCCCollision::doBackgroundIonization
          }
      }
  }
@@ -336,21 +290,258 @@ index 1938291b3..05eb5c3e7 100644
 +        }
 +    }
 +}
+diff --git a/Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H b/Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H
+new file mode 100644
+index 000000000..1412a7a11
+--- /dev/null
++++ b/Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H
+@@ -0,0 +1,232 @@
++/* Copyright 2026
++ *
++ * This file is an experimental extension for WarpX BackgroundMCC.
++ *
++ * Ion-impact ionization process:
++ *
++ *     ion_projectile + neutral_gas -> ion_projectile + gas_ion + electron
++ *
++ * Example:
++ *
++ *     p + H2 -> p + H2+ + e-
++ *     p + Kr -> p + Kr+ + e-
++ *
++ * The parent projectile remains in the source species.  One electron and one
++ * gas-ion macroparticle are created at the projectile position whenever the
++ * MCC event is accepted.
++ */
++
++#ifndef WARPX_PARTICLES_COLLISION_ION_IMPACT_IONIZATION_H_
++#define WARPX_PARTICLES_COLLISION_ION_IMPACT_IONIZATION_H_
++
++#include "Particles/Collision/ScatteringProcess.H"
++#include "Particles/Algorithms/KineticEnergy.H"
++#include "Utils/ParticleUtils.H"
++#include "Utils/WarpXConst.H"
++
++#include <AMReX_Random.H>
++#include <AMReX_REAL.H>
++
++/**
++ * \brief Filter functor for ion-impact ionization.
++ *
++ * The cross-section table is assumed to be tabulated against center-of-mass
++ * collision energy in eV.  The background neutral gas is treated as stationary
++ * in this first implementation; at 30 keV proton energy, thermal neutral
++ * velocities at 300 K are negligible for H2/Kr.
++ */
++class IonImpactIonizationFilterFunc
++{
++public:
++    IonImpactIonizationFilterFunc (
++        ScatteringProcess const& mcc_process,
++        double const projectile_mass,
++        double const background_mass,
++        amrex::ParticleReal const total_collision_prob,
++        amrex::ParticleReal const nu_max,
++        amrex::ParserExecutor<4> const& n_a_func,
++        amrex::Real const t )
++        : m_mcc_process(mcc_process.executor()),
++          m_projectile_mass(projectile_mass),
++          m_background_mass(background_mass),
++          m_total_collision_prob(total_collision_prob),
++          m_nu_max(nu_max),
++          m_n_a_func(n_a_func),
++          m_t(t)
++    {}
++
++    template <typename PData>
++    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
++    bool operator() (
++        PData& ptd,
++        int const i,
++        amrex::RandomEngine const& engine) const noexcept
++    {
++        using namespace amrex;
++
++        if (Random(engine) > m_total_collision_prob) {
++            return false;
++        }
++
++        const auto& p = ptd.getSuperParticle(i);
++
++        ParticleReal x, y, z;
++        get_particle_position(p, x, y, z);
++
++        const ParticleReal n_a = m_n_a_func(x, y, z, m_t);
++
++        const ParticleReal ux = ptd.m_rdata[PIdx::ux][i];
++        const ParticleReal uy = ptd.m_rdata[PIdx::uy][i];
++        const ParticleReal uz = ptd.m_rdata[PIdx::uz][i];
++
++        // PIdx::u is gamma*v.  For the present low-energy cyclotron-injection
++        // application gamma ~= 1, but use WarpX's collision-energy helper.
++        const ParticleReal u2 = ux*ux + uy*uy + uz*uz;
++        const ParticleReal u_coll = std::sqrt(u2);
++
++        double gamma, E_coll;
++        ParticleUtils::getCollisionEnergy(
++            u2, m_projectile_mass, m_background_mass, gamma, E_coll);
++
++        const ParticleReal sigma_E =
++            m_mcc_process.getCrossSection(static_cast<ParticleReal>(E_coll));
++
++        const ParticleReal nu_i = n_a * sigma_E * u_coll / m_nu_max;
++
++        return (Random(engine) <= nu_i);
++    }
++
++private:
++    ScatteringProcess::Executor m_mcc_process;
++    double m_projectile_mass;
++    double m_background_mass;
++    amrex::ParticleReal m_total_collision_prob = 0;
++    amrex::ParticleReal m_nu_max = 0;
++    amrex::ParserExecutor<4> m_n_a_func;
++    amrex::Real m_t;
++};
++
++
++/**
++ * \brief Transform functor for ion-impact ionization.
++ *
++ * For each accepted event, this transform:
++ *   1. subtracts the ionization energy from the parent ion projectile;
++ *   2. creates a secondary electron with an isotropic fixed kinetic energy;
++ *   3. creates a gas ion with a thermal velocity sampled from the neutral gas
++ *      temperature.
++ *
++ * The product macroparticle weights and positions are inherited through
++ * SmartCopy before this transform is called.
++ */
++class IonImpactIonizationTransformFunc
++{
++public:
++    IonImpactIonizationTransformFunc (
++        amrex::ParticleReal const energy_cost_eV,
++        double const projectile_mass,
++        amrex::ParticleReal const electron_energy_eV,
++        amrex::ParticleReal const sqrt_kb_m_gas,
++        amrex::ParserExecutor<4> const& T_a_func,
++        amrex::Real const t )
++        : m_energy_cost_eV(energy_cost_eV),
++          m_projectile_mass(projectile_mass),
++          m_electron_energy_eV(electron_energy_eV),
++          m_sqrt_kb_m_gas(sqrt_kb_m_gas),
++          m_T_a_func(T_a_func),
++          m_t(t)
++    {}
++
++    template <typename ElectronData, typename IonData, typename SrcData>
++    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
++    void operator() (
++        ElectronData& dst_e,
++        IonData& dst_i,
++        SrcData& src,
++        int const i_src,
++        int const i_dst_e,
++        int const i_dst_i,
++        amrex::RandomEngine const& engine) const noexcept
++    {
++        using namespace amrex;
++        using namespace amrex::literals;
++
++        const auto& p = src.getSuperParticle(i_src);
++
++        ParticleReal x, y, z;
++        get_particle_position(p, x, y, z);
++
++        // ------------------------------------------------------------------
++        // Parent projectile: subtract ionization energy, preserving direction.
++        // ------------------------------------------------------------------
++        auto& ux = src.m_rdata[PIdx::ux][i_src];
++        auto& uy = src.m_rdata[PIdx::uy][i_src];
++        auto& uz = src.m_rdata[PIdx::uz][i_src];
++
++        constexpr auto eV = PhysConst::q_e;
++        constexpr auto c2 = PhysConst::c2;
++
++        const ParticleReal u2 = ux*ux + uy*uy + uz*uz;
++        const auto E_old_J =
++            Algorithms::KineticEnergy(ux, uy, uz,
++                                      static_cast<ParticleReal>(m_projectile_mass));
++
++        const auto E_loss_J = m_energy_cost_eV * eV;
++
++        if ((u2 > 0._prt) && (E_old_J > E_loss_J)) {
++            const auto E_new_J = E_old_J - E_loss_J;
++            const auto mc2 = m_projectile_mass * c2;
++            const auto u_new =
++                std::sqrt(E_new_J * (E_new_J + 2._prt*mc2)
++                          * PhysConst::inv_c2)
++                / m_projectile_mass;
++            const auto scale = static_cast<ParticleReal>(u_new / std::sqrt(u2));
++            ux *= scale;
++            uy *= scale;
++            uz *= scale;
++        }
++
++        // ------------------------------------------------------------------
++        // Product electron: isotropic emission with fixed secondary energy.
++        // A later refinement can sample the Rudd differential spectrum.
++        // ------------------------------------------------------------------
++        auto& e_ux = dst_e.m_rdata[PIdx::ux][i_dst_e];
++        auto& e_uy = dst_e.m_rdata[PIdx::uy][i_dst_e];
++        auto& e_uz = dst_e.m_rdata[PIdx::uz][i_dst_e];
++
++        const auto Ee_J = m_electron_energy_eV * eV;
++        const auto me_c2 = PhysConst::m_e * c2;
++        const ParticleReal ue =
++            (Ee_J > 0._prt)
++            ? static_cast<ParticleReal>(
++                std::sqrt(Ee_J * (Ee_J + 2._prt*me_c2) * PhysConst::inv_c2)
++                / PhysConst::m_e )
++            : 0._prt;
++
++        ParticleUtils::RandomizeVelocity(e_ux, e_uy, e_uz, ue, engine);
++
++        // ------------------------------------------------------------------
++        // Product gas ion: sampled from neutral background temperature.
++        // ------------------------------------------------------------------
++        auto& i_ux = dst_i.m_rdata[PIdx::ux][i_dst_i];
++        auto& i_uy = dst_i.m_rdata[PIdx::uy][i_dst_i];
++        auto& i_uz = dst_i.m_rdata[PIdx::uz][i_dst_i];
++
++        const ParticleReal ion_vel_std =
++            m_sqrt_kb_m_gas * std::sqrt(m_T_a_func(x, y, z, m_t));
++
++        i_ux = ion_vel_std * RandomNormal(0._prt, 1._prt, engine);
++        i_uy = ion_vel_std * RandomNormal(0._prt, 1._prt, engine);
++        i_uz = ion_vel_std * RandomNormal(0._prt, 1._prt, engine);
++    }
++
++private:
++    amrex::ParticleReal m_energy_cost_eV = 0;
++    double m_projectile_mass = 0;
++    amrex::ParticleReal m_electron_energy_eV = 1;
++    amrex::ParticleReal m_sqrt_kb_m_gas = 0;
++    amrex::ParserExecutor<4> m_T_a_func;
++    amrex::Real m_t;
++};
++
++#endif // WARPX_PARTICLES_COLLISION_ION_IMPACT_IONIZATION_H_
 diff --git a/Source/Particles/Collision/ScatteringProcess.H b/Source/Particles/Collision/ScatteringProcess.H
-index c111a0123..cd77b1271 100644
+index 524a610ea..62086b6ec 100644
 --- a/Source/Particles/Collision/ScatteringProcess.H
 +++ b/Source/Particles/Collision/ScatteringProcess.H
-@@ -26,6 +26,8 @@ enum class ScatteringProcessType {
+@@ -25,6 +25,7 @@ enum class ScatteringProcessType {
      CHARGE_EXCHANGE,
      EXCITATION,
      IONIZATION,
 +    ION_IMPACT_IONIZATION,
-+    FORWARD,
+     FORWARD,
  };
  
- class ScatteringProcess
 diff --git a/Source/Particles/Collision/ScatteringProcess.cpp b/Source/Particles/Collision/ScatteringProcess.cpp
-index 15771da35..c8de1bc56 100644
+index 57d37065e..ba0e1dc2c 100644
 --- a/Source/Particles/Collision/ScatteringProcess.cpp
 +++ b/Source/Particles/Collision/ScatteringProcess.cpp
 @@ -10,6 +10,9 @@
@@ -363,7 +554,7 @@ index 15771da35..c8de1bc56 100644
  ScatteringProcess::ScatteringProcess (
                          const std::string& scattering_process,
                          const std::string& cross_section_file,
-@@ -95,6 +98,8 @@ ScatteringProcess::parseProcessType(const std::string& scattering_process)
+@@ -86,6 +89,8 @@ ScatteringProcess::parseProcessType(const std::string& scattering_process)
          return ScatteringProcessType::TWOPRODUCT_REACTION;
      } else if (scattering_process == "ionization") {
          return ScatteringProcessType::IONIZATION;
@@ -371,8 +562,8 @@ index 15771da35..c8de1bc56 100644
 +        return ScatteringProcessType::ION_IMPACT_IONIZATION;
      } else if (scattering_process.find("excitation") != std::string::npos) {
          return ScatteringProcessType::EXCITATION;
-     } else {
-@@ -109,14 +114,29 @@ ScatteringProcess::readCrossSectionFile (
+     } else if (scattering_process.find("forward") != std::string::npos) {
+@@ -102,14 +107,29 @@ ScatteringProcess::readCrossSectionFile (
                                    amrex::Gpu::HostVector<amrex::ParticleReal>& sigmas )
  {
      std::ifstream infile(cross_section_file);
@@ -408,81 +599,3 @@ index 15771da35..c8de1bc56 100644
      infile.close();
  }
  
-diff --git a/upgrade.sh b/upgrade.sh
-new file mode 100644
-index 0000000..8f4c28755c400e573f939756a1c28f01949e93a0
---- /dev/null
-+++ b/upgrade.sh
-@@ -0,0 +1,28 @@
-+cd build && make clean
-+cd ..
-+rm -fr build install
-+
-+cmake -S . -B build \
-+    -DWarpX_DIMS="1;2;3;RZ;RCYLINDER;RSPHERE" \
-+    -DWarpX_FFT=ON \
-+    -DWarpX_PYTHON=ON \
-+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-+    -DHDF5_ROOT=$CONDA_PREFIX \
-+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-+    -DCMAKE_INSTALL_PREFIX=/home/cspark/Work/simulation_codes-working/warpx/install \
-+    2>&1 |tee warpx.cmake.out
-+
-+cmake --build build -j 4 2>&1 |tee warpx.build.out
-+
-+cmake --build build -j 4 --target install 2>&1 |tee warpx.install.out
-+
-+cmake --build build -j 4 --target pip_install 2>&1 |tee warpx.pip_install.out
-+
-+cd install/bin
-+ln -s warpx.2d.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.2d
-+ln -s warpx.1d.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.1d
-+ln -s warpx.rcylinder.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rcylinder
-+ln -s warpx.rz.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rz
-+ln -s warpx.rsphere.MPI.OMP.DP.PDP.OPMD.FFT.EB.QED warpx.rsphere
-+
-+rm warp.*.out
-diff --git a/INSTALL.md b/INSTALL.md
-new file mode 100644
-index 0000000..5d32aaf3a1a1c2310ef9d2d25a4be0b0c71e7763
---- /dev/null
-+++ b/INSTALL.md
-@@ -0,0 +1,38 @@
-+rm -fr build install
-+mkdir install
-+
-+cmake -S . -B build \
-+    -DWarpX_DIMS="1;2;3;RZ;RCYLINDER;RSPHERE" \
-+    -DWarpX_FFT=ON \
-+    -DWarpX_PYTHON=ON \
-+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-+    -DHDF5_ROOT=$CONDA_PREFIX \
-+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-+    -DCMAKE_INSTALL_PREFIX=/home/cspark/Work/simulation_codes-working/warpx/install \
-+    2>&1 |tee warpx.cmake.out
-+
-+cmake --build build -j 4 2>&1 |tee warpx.build.out
-+
-+cmake --build build -j 4 --target install 2>&1 |tee warpx.install.out
-+
-+cmake --build build -j 4 --target pip_install 2>&1 |tee warpx.pip_install.out
-+
-+ctest --test-dir build -j 4 --output-on-failure
-+
-+
-+ctest --test-dir build -R ionization_dsmc -V
-+
-+# conda install -c conda-forge setuptools wheel fftw=*=mpi_openmpi* adios2=*=mpi_openmpi* blaspp lapackpp pybind11 lasy matplotlib yt hdf5=*=mpi_openmpi* h5py=*=mpi_openmpi
-+
-+#mkdir -p $CONDA_PREFIX/etc/conda/activate.d
-+#echo 'export LD_LIBRARY_PATH="/home/cspark/Work/simulation_codes-working/warpx/install/lib:$LD_LIBRARY_PATH"' > $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-+
-+
-+#conda install amrex=*=mpi_openmpi* fftw=*=mpi_openmpi* h5py=*=mpi_openmpi* pyamrex=*=mpi_openmpi*
-+
-+
-+
-+ctest --test-dir build -R "MCC|mcc|collision|capacitive|dsmc" \
-+      --output-on-failure
-+
-+rm warpx.*.out
