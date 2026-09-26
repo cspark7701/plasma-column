@@ -94,6 +94,13 @@ def parse_args() -> argparse.Namespace:
         help="Checkpoint dumping period in steps (dumps chk<step>/) for all cases.",
     )
     parser.add_argument(
+        "--output_dir",
+        "--output-dir",
+        type=Path,
+        default=Path("results"),
+        help="Root directory for case outputs (default: results/).",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="Auto-resume from latest existing checkpoint (chk<step>/) in case directory if available.",
@@ -135,7 +142,7 @@ def main() -> None:
         print(f"{case_name:<25} | {gas:<5} | {pressure:<15.1e} | {cat:<30}")
 
         # Output directory
-        output_dir = Path("results") / case_name
+        output_dir = Path(args.output_dir) / case_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate metadata
@@ -231,7 +238,7 @@ def main() -> None:
 
     print("-" * 85)
     if args.dry_run:
-        print(f"[DRY RUN SUCCESS] All {len(matrix_cfg.cases)} cases validated and metadata generated under results/", flush=True)
+        print(f"[DRY RUN SUCCESS] All {len(matrix_cfg.cases)} cases validated and metadata generated under {args.output_dir}/", flush=True)
     else:
         print(f"[RUN COMPLETE] Full PIC matrix production execution finished for {len(matrix_cfg.cases)} cases.", flush=True)
 

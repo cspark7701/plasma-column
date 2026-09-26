@@ -37,6 +37,7 @@ VERBOSE=false
 CORES=8  # Default: 8 cores
 GPU="auto"  # Default: auto-detect GPU; if available make it default
 MATRIX_FILE="$PROJECT_ROOT/cases/method_comparison.yaml"
+OUTPUT_DIR="$PROJECT_ROOT/results"
 LOG_DIR="$PROJECT_ROOT/logs"
 MAX_STEPS=""
 SNAPSHOTS=""
@@ -70,6 +71,14 @@ while [[ $# -gt 0 ]]; do
     --gpu)
       GPU="$2"
       shift 2
+      ;;
+    --output_dir|--output-dir)
+      OUTPUT_DIR="$2"
+      shift 2
+      ;;
+    --output_dir=*|--output-dir=*)
+      OUTPUT_DIR="${1#*=}"
+      shift
       ;;
     --max_steps|--steps)
       MAX_STEPS="$2"
@@ -119,6 +128,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --verbose, -v                      Print full execution logs to screen (default: quiet mode)."
       echo "  --cores, -c                        Number of CPU worker cores / OpenMP threads (default: 8)."
       echo "  --gpu [ID|auto]                    GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
+      echo "  --output_dir <path>                Root directory to store case outputs (default: results/)."
       echo "  --max_steps <N>, --steps <N>       Override total simulation steps across all cases."
       echo "  --snapshots <N>, --plotfiles <N>   Target number of diagnostic snapshots/plotfiles across the run (0 disables full dumps)."
       echo "  --diag_period <N>                  Diagnostic dumping period in steps (dumps diag1/ every N steps)."
@@ -139,6 +149,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+OUTPUT_DIR="${OUTPUT_DIR%/}"
 cd "$PROJECT_ROOT"
 mkdir -p "$LOG_DIR"
 
@@ -198,6 +209,7 @@ echo "${C_CYAN}${C_BOLD} Plasma Column Simulation - Full Production & Analysis P
 echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
 echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
+echo "  Output Root   : $OUTPUT_DIR"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
 echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
@@ -270,7 +282,7 @@ run_step "1/8" "Environment Audit & Repository Validation" \
 # STEP 2: Simulation Case & Matrix Setup
 # ==============================================================================
 # Validates case configs, creates case directories in runs/, and logs metadata.json
-SCAN_EXTRA_ARGS=()
+SCAN_EXTRA_ARGS=(--output_dir "$OUTPUT_DIR")
 if [ -n "$MAX_STEPS" ]; then
   SCAN_EXTRA_ARGS+=(--max_steps "$MAX_STEPS")
 fi
@@ -320,25 +332,31 @@ if [ -n "$RESTART_FROM" ]; then
 fi
 
 run_step "3/8" "Baseline Simulation Case Verification (H2: cases/baseline_h2.yaml)" \
-  python3 scripts/run_case.py --case cases/baseline_h2.yaml --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
+  python3 scripts/run_case.py --case cases/baseline_h2.yaml --output_dir "$OUTPUT_DIR/seeded_H2_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
 
 run_step "3b/8" "Baseline Simulation Case Verification (Kr: cases/baseline_kr.yaml)" \
-  python3 scripts/run_case.py --case cases/baseline_kr.yaml --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
+  python3 scripts/run_case.py --case cases/baseline_kr.yaml --output_dir "$OUTPUT_DIR/seeded_Kr_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${CASE_EXTRA_ARGS[@]}"
 
 # ==============================================================================
 # STEP 4: Post-Processing & Core Diagnostics Extraction
 # ==============================================================================
 # Evaluates particle-number metrics, volume-averaged core density, and spatial masks
-POSTPROC_H2="results/seeded_H2_baseline"
-if [ ! -d "$POSTPROC_H2" ] && [ -d "runs/seeded_H2_baseline" ]; then
+POSTPROC_H2="$OUTPUT_DIR/seeded_H2_baseline"
+if [ ! -d "$POSTPROC_H2" ] && [ -d "results/seeded_H2_baseline" ]; then
+  POSTPROC_H2="results/seeded_H2_baseline"
+elif [ ! -d "$POSTPROC_H2" ] && [ -d "runs/seeded_H2_baseline" ]; then
   POSTPROC_H2="runs/seeded_H2_baseline"
 fi
 
-POSTPROC_KR="results/seeded_Kr_baseline"
-if [ ! -d "$POSTPROC_KR" ] && [ -d "runs/seeded_Kr_baseline" ]; then
+POSTPROC_KR="$OUTPUT_DIR/seeded_Kr_baseline"
+if [ ! -d "$POSTPROC_KR" ] && [ -d "results/seeded_Kr_baseline" ]; then
+  POSTPROC_KR="results/seeded_Kr_baseline"
+elif [ ! -d "$POSTPROC_KR" ] && [ -d "runs/seeded_Kr_baseline" ]; then
   POSTPROC_KR="runs/seeded_Kr_baseline"
 fi
-if [ ! -d "$POSTPROC_KR" ] && [ -d "results/seeded_Kr_1e-6Torr" ]; then
+if [ ! -d "$POSTPROC_KR" ] && [ -d "$OUTPUT_DIR/seeded_Kr_1e-6Torr" ]; then
+  POSTPROC_KR="$OUTPUT_DIR/seeded_Kr_1e-6Torr"
+elif [ ! -d "$POSTPROC_KR" ] && [ -d "results/seeded_Kr_1e-6Torr" ]; then
   POSTPROC_KR="results/seeded_Kr_1e-6Torr"
 fi
 

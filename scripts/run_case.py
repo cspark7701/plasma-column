@@ -54,6 +54,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output_dir",
+        "--output-dir",
         type=Path,
         default=None,
         help="Override output directory path.",

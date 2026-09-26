@@ -30,6 +30,7 @@ C_BLUE=$'\033[1;34m'
 PROFILE=""
 AUTO_RESUME=true
 USER_SPECIFIED_RESUME=false
+USER_OUTPUT_DIR=""
 EXTRA_ARGS=()
 
 # Parse first positional argument or flags
@@ -42,6 +43,16 @@ while [[ $# -gt 0 ]]; do
     --profile|-p)
       PROFILE="$2"
       shift 2
+      ;;
+    --output_dir|--output-dir)
+      USER_OUTPUT_DIR="$2"
+      EXTRA_ARGS+=("$1" "$2")
+      shift 2
+      ;;
+    --output_dir=*|--output-dir=*)
+      USER_OUTPUT_DIR="${1#*=}"
+      EXTRA_ARGS+=("$1")
+      shift
       ;;
     --resume)
       AUTO_RESUME=true
@@ -62,12 +73,13 @@ while [[ $# -gt 0 ]]; do
       echo "  light       0 snapshots/case  (< 250 MB footprint, reduced diags only)"
       echo "  dry-run     Validation only   (0 MB footprint, dry run)"
       echo ""
-      echo "Resume Options:"
+      echo "Options:"
+      echo "  --output_dir <path> Root directory to store case outputs (default: results/)."
       echo "  --resume          Force resume from previous run output/checkpoints."
       echo "  --fresh           Start fresh from step 0 (disables auto-resume)."
       echo ""
-      echo "Any additional options (e.g. --cores 8, --gpu auto, --verbose) are"
-      echo "forwarded directly to scripts/run_full_production.sh."
+      echo "Any additional options (e.g. --cores 8, --gpu auto, --matrix <file>, --verbose)"
+      echo "are forwarded directly to scripts/run_full_production.sh."
       exit 0
       ;;
     *)
@@ -76,6 +88,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+USER_OUTPUT_DIR="${USER_OUTPUT_DIR%/}"
 
 # If no profile provided via CLI, prompt interactively
 if [ -z "$PROFILE" ]; then
@@ -110,9 +124,10 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# Check for existing simulation runs/checkpoints in results/ or runs/
+# Check for existing simulation runs/checkpoints in target output directory or fallback
 HAS_PREV_RUN=false
-if [ -d "$PROJECT_ROOT/results" ] && [ -n "$(find "$PROJECT_ROOT/results" -maxdepth 3 \( -name "particle_number.txt" -o -name "ParticleNumber_red.txt" -o -name "chk*" \) 2>/dev/null)" ]; then
+TARGET_CHECK_DIR="${USER_OUTPUT_DIR:-$PROJECT_ROOT/results}"
+if [ -d "$TARGET_CHECK_DIR" ] && [ -n "$(find "$TARGET_CHECK_DIR" -maxdepth 3 \( -name "particle_number.txt" -o -name "ParticleNumber_red.txt" -o -name "chk*" \) 2>/dev/null)" ]; then
   HAS_PREV_RUN=true
 elif [ -d "$PROJECT_ROOT/runs" ] && [ -n "$(find "$PROJECT_ROOT/runs" -maxdepth 3 \( -name "particle_number.txt" -o -name "ParticleNumber_red.txt" -o -name "chk*" \) 2>/dev/null)" ]; then
   HAS_PREV_RUN=true
