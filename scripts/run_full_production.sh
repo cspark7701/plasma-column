@@ -80,6 +80,14 @@ while [[ $# -gt 0 ]]; do
       OUTPUT_DIR="${1#*=}"
       shift
       ;;
+    --log_dir|--log-dir)
+      LOG_DIR="$2"
+      shift 2
+      ;;
+    --log_dir=*|--log-dir=*)
+      LOG_DIR="${1#*=}"
+      shift
+      ;;
     --max_steps|--steps)
       MAX_STEPS="$2"
       shift 2
@@ -129,6 +137,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --cores, -c                        Number of CPU worker cores / OpenMP threads (default: 8)."
       echo "  --gpu [ID|auto]                    GPU device ID (e.g. 0) or 'auto' (checks GPU and makes default if available, default: auto)."
       echo "  --output_dir <path>                Root directory to store case outputs (default: results/)."
+      echo "  --log_dir <path>                   Directory to store step execution logs (default: logs/)."
       echo "  --max_steps <N>, --steps <N>       Override total simulation steps across all cases."
       echo "  --snapshots <N>, --plotfiles <N>   Target number of diagnostic snapshots/plotfiles across the run (0 disables full dumps)."
       echo "  --diag_period <N>                  Diagnostic dumping period in steps (dumps diag1/ every N steps)."
@@ -150,6 +159,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 OUTPUT_DIR="${OUTPUT_DIR%/}"
+LOG_DIR="${LOG_DIR%/}"
 cd "$PROJECT_ROOT"
 mkdir -p "$LOG_DIR"
 
@@ -210,6 +220,7 @@ echo "${C_CYAN}${C_BOLD}========================================================
 echo "  Project Root  : $PROJECT_ROOT"
 echo "  Matrix File   : $MATRIX_FILE"
 echo "  Output Root   : $OUTPUT_DIR"
+echo "  Log Directory : $LOG_DIR"
 echo "  Execution Mode: $( [ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "FULL PRODUCTION" )"
 echo "  Verbose Output: $( [ "$VERBOSE" = true ] && echo "ON" || echo "OFF (Quiet Token-Conservation Mode)" )"
 echo "  CPU Cores Used: $TARGET_CORES (default: 8)"
@@ -268,7 +279,11 @@ run_step() {
       exit 1
     fi
   fi
-  echo "    ${C_GREEN}${C_BOLD}[SUCCESS]${C_RESET} Finished step $step_num (Log: logs/${log_prefix}_${clean_step}.log)"
+  local display_log="$log_file"
+  if [[ "$display_log" == "$PROJECT_ROOT/"* ]]; then
+    display_log="${display_log#"$PROJECT_ROOT/"}"
+  fi
+  echo "    ${C_GREEN}${C_BOLD}[SUCCESS]${C_RESET} Finished step $step_num (Log: $display_log)"
 }
 
 # ==============================================================================

@@ -54,6 +54,14 @@ while [[ $# -gt 0 ]]; do
       EXTRA_ARGS+=("$1")
       shift
       ;;
+    --log_dir|--log-dir)
+      EXTRA_ARGS+=("$1" "$2")
+      shift 2
+      ;;
+    --log_dir=*|--log-dir=*)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
     --resume)
       AUTO_RESUME=true
       USER_SPECIFIED_RESUME=true
@@ -75,6 +83,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --output_dir <path> Root directory to store case outputs (default: results/)."
+      echo "  --log_dir <path>    Directory to store step execution logs (default: logs/)."
       echo "  --resume          Force resume from previous run output/checkpoints."
       echo "  --fresh           Start fresh from step 0 (disables auto-resume)."
       echo ""
