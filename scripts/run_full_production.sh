@@ -216,7 +216,11 @@ run_step() {
   shift 2
 
   local clean_step=$(echo "$step_num" | tr '/ ' '__')
-  local log_file="$LOG_DIR/step_${clean_step}.log"
+  local log_prefix="step"
+  if [ "$DRY_RUN" = true ]; then
+    log_prefix="dry_run_step"
+  fi
+  local log_file="$LOG_DIR/${log_prefix}_${clean_step}.log"
 
   echo ""
   echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
@@ -252,7 +256,7 @@ run_step() {
       exit 1
     fi
   fi
-  echo "    ${C_GREEN}${C_BOLD}[SUCCESS]${C_RESET} Finished step $step_num (Log: logs/step_${clean_step}.log)"
+  echo "    ${C_GREEN}${C_BOLD}[SUCCESS]${C_RESET} Finished step $step_num (Log: logs/${log_prefix}_${clean_step}.log)"
 }
 
 # ==============================================================================
