@@ -51,6 +51,14 @@ DIAG_PERIOD=""
 CHECKPOINT_PERIOD=""
 RESTART_FROM=""
 
+CURRENT_MASTER_LOG=""
+cleanup_log_on_exit() {
+  if [ -n "$CURRENT_MASTER_LOG" ] && [ -f "$CURRENT_MASTER_LOG" ]; then
+    sed -i -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$CURRENT_MASTER_LOG" 2>/dev/null || true
+  fi
+}
+trap cleanup_log_on_exit EXIT
+
 # ------------------------------------------------------------------------------
 # Argument Parsing Helper
 # ------------------------------------------------------------------------------
@@ -486,6 +494,8 @@ run_matrix_pipeline() {
       fi
     fi
 
+    sed -i -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$step_log" 2>/dev/null || true
+
     local display_log="$step_log"
     if [[ "$display_log" == "$PROJECT_ROOT/"* ]]; then
       display_log="${display_log#"$PROJECT_ROOT/"}"
@@ -624,8 +634,11 @@ if [ "$MATRIX_TARGET" = "all" ]; then
       master_log="${USER_LOG_DIR%/}/${m_key}.log"
     fi
 
+    CURRENT_MASTER_LOG="$master_log"
     # Run matrix pipeline and tee to its dedicated master log
     run_matrix_pipeline "$m_file" "$m_key" "$m_label" 2>&1 | tee "$master_log"
+    sed -i -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$master_log" 2>/dev/null || true
+    CURRENT_MASTER_LOG=""
   done
 
   echo ""
@@ -652,6 +665,9 @@ else
     master_log="${USER_LOG_DIR%/}/${m_key}.log"
   fi
 
+  CURRENT_MASTER_LOG="$master_log"
   # Run matrix pipeline and tee to its master log
   run_matrix_pipeline "$m_file" "$m_key" "$m_label" 2>&1 | tee "$master_log"
+  sed -i -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$master_log" 2>/dev/null || true
+  CURRENT_MASTER_LOG=""
 fi
