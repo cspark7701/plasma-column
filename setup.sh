@@ -43,10 +43,41 @@ if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX/lib" ]; then
     export LD_LIBRARY_PATH="$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 
+# ==============================================================================
+# Hardware Auto-Detection & Threading / Accelerator Configuration
+# ==============================================================================
+# Auto-detect maximum available logical CPU threads
+MAX_CPUS=$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$MAX_CPUS}"
+export OPENMP_NUM_THREADS="$OMP_NUM_THREADS"
+export MKL_NUM_THREADS="$OMP_NUM_THREADS"
+export NUMEXPR_NUM_THREADS="$OMP_NUM_THREADS"
+
+# Thread binding and placement (pin threads to cores to prevent migration)
+export OMP_PROC_BIND="${OMP_PROC_BIND:-true}"
+export OMP_PLACES="${OMP_PLACES:-threads}"
+
+# Auto-detect GPU accelerator
+if command -v nvidia-smi &>/dev/null && nvidia-smi -L &>/dev/null; then
+    export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
+    export WARPX_ACCELERATOR="${WARPX_ACCELERATOR:-CUDA}"
+    GPU_INFO="NVIDIA GPU (CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES)"
+elif [ -e /dev/nvidia0 ]; then
+    export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
+    export WARPX_ACCELERATOR="${WARPX_ACCELERATOR:-CUDA}"
+    GPU_INFO="NVIDIA GPU via /dev/nvidia0 (CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES)"
+else
+    export WARPX_ACCELERATOR="${WARPX_ACCELERATOR:-CPU}"
+    unset CUDA_VISIBLE_DEVICES
+    GPU_INFO="CPU-only execution (No NVIDIA GPU detected)"
+fi
+
 echo "Plasma column simulation environment configured:"
 echo "  Conda env     : ${CONDA_DEFAULT_ENV:-none}"
 echo "  WARPX_DATA_DIR: ${WARPX_DATA_DIR:-not set}"
 if [ -d "$WARPX_INSTALL_DIR" ]; then
     echo "  WarpX install : $WARPX_INSTALL_DIR"
 fi
+echo "  CPU threads   : $OMP_NUM_THREADS (max available: $MAX_CPUS, OMP_PROC_BIND=$OMP_PROC_BIND)"
+echo "  Accelerator   : $WARPX_ACCELERATOR ($GPU_INFO)"
 

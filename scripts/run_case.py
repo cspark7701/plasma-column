@@ -216,7 +216,7 @@ def main() -> None:
     elif args.diag_period is not None:
         diag_period = args.diag_period
     else:
-        diag_period = config.numerics.diag_period
+        diag_period = getattr(config.numerics, "diag_period", None)
 
     if diag_period is not None:
         cmd += ["--diag_period", str(diag_period)]

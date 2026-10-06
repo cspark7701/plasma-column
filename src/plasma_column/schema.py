@@ -206,6 +206,8 @@ class NumericsConfig:
     mcc: str = "none"
     checkpoint_period: int = 0
     restart_from: Optional[str] = None
+    diag_period: Optional[int] = None
+    reduced_diag_period: Optional[int] = None
 
     def estimate_dt(self) -> float:
         """Computes the 3D FDTD Courant-Friedrichs-Lewy (CFL) stable electromagnetic timestep [s]."""
