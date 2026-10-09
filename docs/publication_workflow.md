@@ -175,3 +175,36 @@ paper/
 - [`docs/publication/publication_result_set.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/publication_result_set.md): Summary of frozen case result set.
 - [`docs/publication/results_interpretation.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/results_interpretation.md): Physics interpretation of neutralization, bunched-beam scaling, and optics transport.
 - [`docs/publication/limitations.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication/limitations.md): Scientific limitations (local vs global metrics, RF peak compensation limits, gas load, MCC validation).
+
+---
+
+## 7. Step 6 — Journal Manuscript Draft (`paper/manuscript/`)
+
+The PRAB manuscript draft (REVTeX 4.2) is `paper/manuscript/plasma_column_prab.tex`.
+Every number in its text comes from `plasma_column.design_estimates` through the generated
+macro file `numbers.tex`; do not type physics numbers into the `.tex` file.
+
+```bash
+# 1. Regenerate figures, numbers.tex and manuscript_numbers.json (analytical only)
+python scripts/make_manuscript_figures.py --dry_run
+python scripts/make_manuscript_figures.py
+
+# 2. Build the PDF
+cd paper/manuscript && pdflatex plasma_column_prab && bibtex plasma_column_prab \
+  && pdflatex plasma_column_prab && pdflatex plasma_column_prab
+```
+
+Notebook usage:
+
+```python
+from plasma_column.design_estimates import DesignPoint, compute_design_numbers
+d = compute_design_numbers(DesignPoint(pressure_kr_torr=1.8e-6))
+d["tau_h2_s"], d["tau_kr_s"], d["eta_free_escape_h2"]
+```
+
+**Status and limitations.** The draft contains only analytical results. Red `[PENDING: ...]`
+markers identify the results that need production PIC runs (local neutralization, confinement
+time, bunched-beam runs, transport to the inflector) and the custom proton-impact MCC
+verification. The tables in `paper/tables/` and figures 4, 5 and 7–10 in `paper/figures/` are
+hard-coded or synthetic; do not cite them as results. See
+`docs/exec-plans/completed/88_journal_manuscript_draft.md`.
