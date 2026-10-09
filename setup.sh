@@ -21,15 +21,6 @@ if [ -d "$WARPX_INSTALL_DIR/bin" ]; then
     export PATH="$WARPX_INSTALL_DIR/bin:$PATH"
 fi
 
-# Add WarpX libraries to LD_LIBRARY_PATH
-if [ -d "$WARPX_INSTALL_DIR/lib" ]; then
-    if [ -z "$LD_LIBRARY_PATH" ]; then
-        export LD_LIBRARY_PATH="$WARPX_INSTALL_DIR/lib"
-    else
-        export LD_LIBRARY_PATH="$WARPX_INSTALL_DIR/lib:$LD_LIBRARY_PATH"
-    fi
-fi
-
 # Activate Conda environment if available and not already active
 ENV_NAME="${CONDA_ENV_NAME:-warpx-dev}"
 if command -v conda &> /dev/null; then
@@ -38,9 +29,26 @@ if command -v conda &> /dev/null; then
     fi
 fi
 
-# Include Conda environment library directory in LD_LIBRARY_PATH if active
-if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX/lib" ]; then
-    export LD_LIBRARY_PATH="$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Do NOT add $CONDA_PREFIX/lib to LD_LIBRARY_PATH: conda binaries locate their
+# libraries through RPATH, and exporting the conda lib directory makes system
+# programs (evince, gedit, eog, ...) load conda's GLib/GObject and fail with
+# "libgobject-2.0.so.0: failed to map segment from shared object".
+# Remove an entry left over from an earlier version of this script, plus
+# duplicate and empty entries (an empty entry means "current directory").
+if [ -n "$LD_LIBRARY_PATH" ]; then
+    LD_LIBRARY_PATH=$(printf '%s' "$LD_LIBRARY_PATH" | tr ':' '\n' \
+        | awk -v drop="${CONDA_PREFIX:+$CONDA_PREFIX/lib}" 'NF && $0 != drop && !seen[$0]++' \
+        | paste -sd ':' -)
+    if [ -n "$LD_LIBRARY_PATH" ]; then export LD_LIBRARY_PATH; else unset LD_LIBRARY_PATH; fi
+fi
+
+# Add WarpX libraries to LD_LIBRARY_PATH (once). Done after conda activation because the
+# warpx-dev activation hook (etc/conda/activate.d/env_vars.sh) may already add it.
+if [ -d "$WARPX_INSTALL_DIR/lib" ]; then
+    case ":${LD_LIBRARY_PATH}:" in
+        *":$WARPX_INSTALL_DIR/lib:"*) ;;
+        *) export LD_LIBRARY_PATH="$WARPX_INSTALL_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ;;
+    esac
 fi
 
 # ==============================================================================
