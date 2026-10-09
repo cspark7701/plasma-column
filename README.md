@@ -31,7 +31,7 @@ buncher -> plasma neutralizer -> solenoid -> quadrupole Q1 -> quadrupole Q2 -> s
 
 ## 4. Quickstart & Installation
 
-For a full step-by-step installation guide, see [`docs/installation.md`](file:///home/cspark/Work/projects/plasma-column/docs/installation.md) or [`INSTALL.md`](file:///home/cspark/Work/projects/plasma-column/INSTALL.md).
+For a full step-by-step installation guide, see [`docs/installation.md`](docs/installation.md) or [`INSTALL.md`](INSTALL.md).
 
 ```bash
 # 1. Clone the repository
@@ -46,19 +46,19 @@ bash scripts/install.sh
 
 ## 5. Step-by-Step Publication Workflow
 
-For detailed instructions on running simulations for publication-quality figures, papers, and presentations, see [`docs/publication_workflow.md`](file:///home/cspark/Work/projects/plasma-column/docs/publication_workflow.md).
+For detailed instructions on running simulations for publication-quality figures, papers, and presentations, see [`docs/publication_workflow.md`](docs/publication_workflow.md).
 
 ### Quick Summary:
 1. **Environment Check**: `python scripts/print_environment.py`
 2. **Run Standard Cases**: `python scripts/run_case.py --case cases/baseline_h2.yaml` (calls `plasma_column_mcc_picmi_v7.py` under the hood)
 3. **Run Parameter Scans**: `python scripts/run_scan.py --matrix cases/method_comparison.yaml`
 4. **Postprocess Case Diagnostics**: `python scripts/postprocess_case.py --case-dir results/seeded_H2_baseline`
-5. **Notebook Analysis**: Use the modular notebooks in [`notebooks/runs/`](file:///home/cspark/Work/projects/plasma-column/notebooks/runs) and [`notebooks/analysis/`](file:///home/cspark/Work/projects/plasma-column/notebooks/analysis)
+5. **Notebook Analysis**: Use the modular notebooks in [`notebooks/runs/`](notebooks/runs) and [`notebooks/analysis/`](notebooks/analysis)
 6. **Generate Figures & Manifest**: `python scripts/make_plots.py`
 
 ---
 
-## 5. Primary Notebooks
+## 6. Primary Notebooks
 
 *(Note: All notebooks use the `warpx-dev` Jupyter kernel.)*
 
@@ -77,12 +77,16 @@ For detailed instructions on running simulations for publication-quality figures
 
 ---
 
-## 6. Repository Structure
+## 7. Repository Structure
 
 ```text
 plasma_column/
   AGENTS.md
   README.md
+  INSTALL.md
+  setup.sh               # Environment activation & hardware auto-detection
+  pyproject.toml / environment.yml / requirements-dev.txt
+  .github/workflows/ci.yml
   cases/                 # YAML simulation case configurations
     vacuum.yaml
     baseline_h2.yaml
@@ -90,20 +94,28 @@ plasma_column/
     bunched_h2.yaml
     bunched_kr.yaml
     method_comparison.yaml
+    method_scan_baseline.yaml
+    pressure_scan_h2_kr.yaml
+    verification/        # Custom ion-impact MCC verification cases
   docs/                  # Documentation, physics notes, patches, & task logs
+    installation.md
     environment.md
     publication_workflow.md
-    refactor_plan.md
+    full_production_pipeline.md
     warpx_customization.md
     method_comparison.md
-    antigravity_tasks/
+    consolidated_report/ # LaTeX consolidated report (+ PDF)
+    development/         # Repo hardening, testing & CI notes
     exec-plans/
-      completed/
+      completed/         # Numbered task summaries
     literature/
     physics_notes/
     proceedings/
+    publication/         # Figure/table lists, limitations, interpretation
+    site/                # Read-the-Docs-style project web page template
     slides/
-    warpx_patches/
+    verification/        # Custom MCC validation report
+    warpx_patches/       # WarpX C++ patch + IonImpactIonization.H
   notebooks/             # Jupyter notebooks for runs and analysis
     nb_full_production_pipeline.ipynb
     analysis/
@@ -116,19 +128,27 @@ plasma_column/
     runs/
       nb_callback_h2.ipynb
       nb_callback_kr.ipynb
+      nb_parameter_scan.ipynb
       nb_seeded_h2.ipynb
       nb_seeded_kr.ipynb
       nb_vacuum_reference.ipynb
+  paper/                 # Journal outline, figure manifest & CSV tables
   plots/                 # Generated PNG & PDF figures + manifest.csv
   results/               # Isolated simulation run outputs & results (ignored by git)
   scripts/               # CLI wrappers and utilities
     print_environment.py
     run_case.py
     run_scan.py
+    run_full_production.sh
     postprocess_case.py
-    plot_cross_sections.py
-    plot_bunched_beam_perveance.py
     make_plots.py
+    make_paper_figures.py
+    make_paper_tables.py
+    run_mcc_verification.py
+    analyze_mcc_verification.py
+    plasma_column_mcc_picmi_v7.py              # PICMI/WarpX MCC & seeded driver
+    plasma_column_callback_source_picmi_v3.py  # PICMI/WarpX Python-callback source driver
+    _gen_notebooks.py    # Regenerates notebooks (overwrites hand edits)
     audit_repo.py
   src/
     plasma_column/       # Core Python package modules
@@ -141,15 +161,18 @@ plasma_column/
       neutralization.py  # Neutralization kinetics & perveance scaling
       diagnostics.py     # ParticleNumber & vectorized 2D masked core diagnostics
       schema.py          # Validated dataclass schemas & YAML case parsing
+      run_matrix.py      # Scan-matrix expansion for run_scan.py
+      hardware.py        # CPU/GPU resource detection
       warpx_io.py        # Machine-readable metadata & plotfile loader
       notebook_utils.py  # Shared notebook styling & path configuration
       plotting/          # Modular publication figure generator package
   tests/                 # Pytest unit test suite
+  warpx_proton_impact_cross_sections_linear/  # H2 & Kr MCC cross-section tables
 ```
 
 ---
 
-## 7. Environment Setup
+## 8. Environment Setup
 
 Activate the pre-configured `warpx-dev` conda environment:
 
@@ -167,7 +190,7 @@ python scripts/print_environment.py
 
 ---
 
-## 8. Quick Dry-Run Verification
+## 9. Quick Dry-Run Verification
 
 Validate parameters and write `metadata.json` without performing long PIC steps:
 
@@ -182,7 +205,7 @@ python scripts/run_scan.py --matrix cases/method_comparison.yaml --dry_run
 
 ---
 
-## 9. Interpreting $K_{\text{eff}}/K_0$
+## 10. Interpreting $K_{\text{eff}}/K_0$
 
 - **$K_{\text{eff}}/K_0 = 1.0$**: Uncompensated space charge (vacuum beam).
 - **$0.0 < K_{\text{eff}}/K_0 < 1.0$**: Partial space-charge compensation.
@@ -191,7 +214,7 @@ python scripts/run_scan.py --matrix cases/method_comparison.yaml --dry_run
 
 ---
 
-## 10. Bunched-Beam Caveat
+## 11. Bunched-Beam Caveat
 
 Because the RF buncher is located upstream of the plasma cell, the proton beam enters as periodic micro-bunches ($B_f \approx 5$).
 
@@ -203,16 +226,21 @@ For $B_f = 5$ and $\eta_{\text{avg}} = 90\%$, $K_{\text{eff,peak}}/K_{0,\text{pe
 
 ---
 
-## 11. WarpX Source Customization
+## 12. WarpX Source Customization
 
-Self-consistent proton-impact ionization ($p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$) uses custom C++ extensions added to the local WarpX source tree (`/home/cspark/Work/simulation_codes-working/warpx`).
+Proton-impact ionization ($p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$) is not available in upstream WarpX: its built-in MCC impact ionization targets electron-impact workflows. This project therefore uses custom C++ extensions (`ION_IMPACT_IONIZATION` in `BackgroundMCC`) added to the local WarpX source tree (`/home/cspark/Work/simulation_codes-working/warpx`).
 
-- **Documentation**: [`docs/warpx_customization.md`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_customization.md)
-- **Patch File**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](file:///home/cspark/Work/projects/plasma-column/docs/warpx_patches/warpx_plasma_column_current.patch)
+> **Caution**:
+> - The custom extension is **not yet validated as a self-consistent PIC model**. [`docs/verification/custom_ion_impact_mcc_validation.md`](docs/verification/custom_ion_impact_mcc_validation.md) defines analytical rate targets (no-gas, zero/fixed cross-section, H2/Kr ratio, time-step convergence, weight and energy bookkeeping); the modified C++ kernel must still be run against these targets before claiming PIC benchmark validation.
+> - Seeded-compensation and Python-callback runs are **analytic/data-driven source estimates**, not self-consistent proton-impact MCC.
+> - Check that the WarpX build used for a run matches the tracked patch (see `docs/exec-plans/completed/87_repository_review.md`).
+
+- **Documentation**: [`docs/warpx_customization.md`](docs/warpx_customization.md)
+- **Patch File**: [`docs/warpx_patches/warpx_plasma_column_current.patch`](docs/warpx_patches/warpx_plasma_column_current.patch)
 
 ---
 
-## 12. Repository Audit & Testing
+## 13. Repository Audit & Testing
 
 To run the complete unit test suite and repository audit:
 
