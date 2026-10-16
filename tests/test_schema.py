@@ -56,7 +56,8 @@ def test_from_yaml_baseline_h2():
     assert config.numerics.nz == 512
     assert config.numerics.nx == 64
     assert config.numerics.cfl == 0.5
-    assert config.numerics.nppc_beam == 16
+    assert config.numerics.nppc_beam == 4
+    assert config.numerics.solver == "es"
 
 
 def test_validation_errors():
@@ -377,3 +378,25 @@ def test_scan_matrix_config_to_dict():
     assert d["description"] == "Matrix to dict conversion test"
     assert len(d["cases"]) == 1
     assert d["cases"][0]["case_name"] == "case_a"
+
+
+def test_build_numerics_cmd_flags_passes_solver_grid_and_nppc():
+    """run_case/run_scan must pass solver, grid and nppc from the case file (not mcc)."""
+    from plasma_column.schema import build_numerics_cmd_flags
+
+    num = NumericsConfig(nx=64, ny=64, nz=512, solver="es", nppc_beam=4, nppc_plasma=16,
+                         reduced_diag_period=50, mcc="electron_impact")
+    flags = build_numerics_cmd_flags(num, "seeded_compensation")
+    pairs = dict(zip(flags[::2], flags[1::2]))
+    assert pairs["--nz"] == "512" and pairs["--solver"] == "es" and pairs["--es_method"] == "FFT"
+    assert pairs["--nppc_beam"] == "4" and pairs["--nppc_plasma"] == "16"
+    assert "--mcc" not in pairs
+
+    # callback driver has no --nppc_plasma; vacuum (nppc_plasma=0) does not pass it either
+    assert "--nppc_plasma" not in build_numerics_cmd_flags(num, "python_callback")
+    assert "--nppc_plasma" not in build_numerics_cmd_flags(NumericsConfig(nppc_plasma=0), "vacuum")
+
+
+def test_invalid_solver_rejected():
+    with pytest.raises(ValueError, match="solver"):
+        SimulationCaseConfig(case_name="bad_solver", numerics=NumericsConfig(solver="pic")).validate()

@@ -11,10 +11,11 @@ defaults:
     rms_divergence: 0.0
   solenoid:
     Bz_T: 0.15
-  # Production settings: 64x64x512 grid.
-  # Seeded cases: 20000 steps (2.7 beam transits).
-  # Callback/MCC cases: 120000 steps (16.2 beam transits) to accumulate ionization events.
-  # nppc=16 throughout for low statistical noise. cfl=0.5 for temporal accuracy.
+  # Production settings (task 94): 64x64x512 grid, electrostatic FFT solver (open boundaries).
+  # dt = 9.48e-12 s (electron gyration limit at 0.15 T). The beam front reaches the column end
+  # after ~9700 steps; 23000 steps = 2 domain transits (218 ns), used for every method.
+  # nppc_beam=4 -> beam macroparticle weight ~1150 (~5.9e6 beam macroparticles when filled).
+  # Ionization build-up (tau ~80 us for H2 at 1e-5 Torr) is far longer than any run here.
   numerics:
     nx: 64
     ny: 64
@@ -23,12 +24,13 @@ defaults:
     ymax_m: 0.01
     zmin_m: -0.02
     zmax_m: 0.24
-    max_steps: 20000        # overridden per case for callback/MCC
-    checkpoint_period: 2000 # overridden per case for callback/MCC
+    max_steps: 23000
+    checkpoint_period: 11500
     cfl: 0.5
-    nppc_beam: 16
+    solver: es
+    nppc_beam: 4
     nppc_plasma: 16
-    diag_period: 100
+    diag_period: 2300
     reduced_diag_period: 50
 
 cases:
@@ -85,10 +87,10 @@ cases:
     gas: H2
     pressure_torr: 1.0e-5
     numerics:
-      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
-      checkpoint_period: 10000
-      diag_period: 600
-      reduced_diag_period: 100
+      max_steps: 23000
+      checkpoint_period: 11500
+      diag_period: 2300
+      reduced_diag_period: 50
 
   - case_name: callback_Kr_dynamic
     method: python_callback
@@ -97,10 +99,10 @@ cases:
     gas: Kr
     pressure_torr: 1.0e-6
     numerics:
-      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
-      checkpoint_period: 10000
-      diag_period: 600
-      reduced_diag_period: 100
+      max_steps: 23000
+      checkpoint_period: 11500
+      diag_period: 2300
+      reduced_diag_period: 50
 
   - case_name: cxx_H2_mcc_or_custom
     method: cxx_mcc_custom
@@ -109,10 +111,10 @@ cases:
     gas: H2
     pressure_torr: 1.0e-5
     numerics:
-      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
-      checkpoint_period: 10000
-      diag_period: 600
-      reduced_diag_period: 100
+      max_steps: 23000
+      checkpoint_period: 11500
+      diag_period: 2300
+      reduced_diag_period: 50
 
   - case_name: cxx_Kr_mcc_or_custom
     method: cxx_mcc_custom
@@ -121,7 +123,7 @@ cases:
     gas: Kr
     pressure_torr: 1.0e-6
     numerics:
-      max_steps: 120000     # 16.2 beam transits to accumulate ionization events
-      checkpoint_period: 10000
-      diag_period: 600
-      reduced_diag_period: 100
+      max_steps: 23000
+      checkpoint_period: 11500
+      diag_period: 2300
+      reduced_diag_period: 50

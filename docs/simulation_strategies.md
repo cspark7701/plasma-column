@@ -28,6 +28,9 @@ In WarpX PIC simulations, three diagnostics dictate almost 100% of the disk foot
 
 ## 2. Table 1: Current Default Simulation Parameters by Case
 
+> **Superseded (task 94):** Tables 1–3 describe the electromagnetic-solver settings, with which the
+> beam never reached the column. Current production settings are in section 6.
+
 | Case Configuration | Method | Grid ($N_x \times N_y \times N_z$) | $N_{\text{steps}}$ | `nppc` (Beam / Plasma) | `diag_period` (Field / Part) | `checkpoint_period` | `reduced_diag_period` | Est. Disk Usage (Per Case) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **`vacuum_reference`** | `vacuum` | $64 \times 64 \times 512$ | 20,000 | 16 / 0 | **100** (200 dumps) | **2,000** (10 dumps) | 50 | **~35 – 45 GB** |
@@ -109,5 +112,14 @@ Without `--dt`, the time step is the smallest of the electron limits
 | beam macroparticles in a filled domain, `nppc_beam=4` | ~1.6e8 | 5.9e6 |
 | wall time per step, 64x64x512, 8 cores | ~2 s | 1.1 s (measured, first 300 steps) |
 
-`run_scan.py` does not pass the solver, grid or `nppc` from the matrix files to the drivers yet; use
-the drivers directly until that is wired through.
+Since task 94, `run_case.py` and `run_scan.py` pass `numerics` (grid, `cfl`, `solver`, `es_method`, `dt`,
+`nppc_beam`, `nppc_plasma`, `reduced_diag_period`) to the drivers through
+`plasma_column.schema.build_numerics_cmd_flags`. `numerics.mcc` is not passed; the method flag decides MCC.
+The production case and matrix files use `solver: es`, 23 000 steps for every method, `nppc_beam: 4` and
+`diag_period: 2300` (10 snapshots).
+
+The seeded model now loads gas ions at the seed-electron density (`initial_ion_fraction = 1.0`), because an
+electron-only seed lost 70 % of its electrons before the beam arrived. With a neutral seed, `eta_net` starts
+near 0 and rises as the beam potential (~160 V) expels ions radially (tens of ns for H2+). In the full-grid
+check (task 94) the core reached local `eta_net = 0.96` by step 23 000 (0.22 us), with ions depleted from
+the beam core (n_i/n_e = 0.15) while global eta_net was only 0.17.

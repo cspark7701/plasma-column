@@ -30,6 +30,7 @@ except ImportError:
 
 from plasma_column.schema import (
     SimulationCaseConfig,
+    build_numerics_cmd_flags,
     build_warpx_cmd_flags,
     get_runner_script,
 )
@@ -235,6 +236,7 @@ def main() -> None:
         cmd += ["--restart_from", str(restart_target)]
 
     # Map physics method to WarpX CLI flags via the single canonical helper (see RT-02)
+    cmd += build_numerics_cmd_flags(config.numerics, config.method)
     cmd += build_warpx_cmd_flags(config.method)
 
     res = subprocess.run(cmd)

@@ -151,7 +151,10 @@ class PlasmaColumnConfig:
     steady_state_neutralization: float = 0.90
     plasma_age: float = 2.0e-4
     electron_temperature_eV: float = 1.0
-    initial_ion_fraction: float = 0.0
+    # Seed ions per seed electron. 1.0 = quasi-neutral seed: an electron-only seed has no
+    # confining charge before the beam arrives and loses ~70 % of its electrons (task 93).
+    # With ions, eta_net starts near 0 and rises as the beam expels ions (~0.1 us, task 94).
+    initial_ion_fraction: float = 1.0
 
     # Gas
     gas: str = "H2"  # H2 or Kr
@@ -898,8 +901,8 @@ def build_sim(cfg: PlasmaColumnConfig):
         initial_distribution=electron_dist,
     )
 
-    # H2+ ion species. This can be initially zero-ish, but for PICMI robustness
-    # we define a very small physical distribution if initial_ion_fraction = 0.
+    # Gas-ion species seeded at initial_ion_fraction * ne0 (default: equal to the electrons).
+    # If that is zero (e.g. vacuum), PICMI still needs a distribution, so a 1 m^-3 placeholder is used.
     if ni0 > 0.0:
         ion_density = ni0
     else:

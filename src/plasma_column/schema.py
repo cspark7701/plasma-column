@@ -111,6 +111,32 @@ def get_runner_script(method: str, root_dir: Path | None = None) -> Path:
         return root_dir / "scripts" / "plasma_column_mcc_picmi_v7.py"
 
 
+def build_numerics_cmd_flags(numerics: NumericsConfig, method: str) -> list[str]:
+    """Return driver CLI flags for the grid, solver and particle numerics of a case.
+
+    Shared by scripts/run_case.py and scripts/run_scan.py. Not passed here:
+    max_steps / diag_period / checkpoint_period (handled by the callers, which apply CLI
+    overrides) and mcc (the method flag from build_warpx_cmd_flags decides MCC).
+    nppc_plasma is passed only to the seeded/MCC driver and only when > 0; the callback
+    driver's seed species use its own nppc_seed, and nppc_plasma = 0 (vacuum) already means
+    zero plasma density in the driver.
+    """
+    n = numerics
+    flags = [
+        "--nx", str(n.nx), "--ny", str(n.ny), "--nz", str(n.nz),
+        "--xmax", repr(n.xmax_m), "--ymax", repr(n.ymax_m),
+        "--zmin", repr(n.zmin_m), "--zmax", repr(n.zmax_m),
+        "--cfl", repr(n.cfl),
+        "--nppc_beam", str(n.nppc_beam),
+        "--solver", n.solver, "--es_method", n.es_method, "--dt", repr(n.dt),
+    ]
+    if n.reduced_diag_period:
+        flags += ["--reduced_diag_period", str(n.reduced_diag_period)]
+    if _normalise_method(method) != "python_callback" and n.nppc_plasma > 0:
+        flags += ["--nppc_plasma", str(n.nppc_plasma)]
+    return flags
+
+
 def build_warpx_cmd_flags(method: str) -> list[str]:
     """Return the WarpX PICMI script CLI flags for the given simulation method.
 
@@ -203,6 +229,11 @@ class NumericsConfig:
     cfl: float = 0.7
     nppc_beam: int = 4
     nppc_plasma: int = 4
+    # Field solver passed to the WarpX driver: "em" (FDTD, CFL dt) or "es" (labframe
+    # electrostatic, dt from electron dynamics unless dt > 0); es_method FFT or Multigrid.
+    solver: str = "em"
+    es_method: str = "FFT"
+    dt: float = 0.0
     mcc: str = "none"
     checkpoint_period: int = 0
     restart_from: Optional[str] = None
@@ -251,6 +282,13 @@ class SimulationCaseConfig:
                 f"zmax_m ({self.numerics.zmax_m}) must be strictly greater "
                 f"than zmin_m ({self.numerics.zmin_m})"
             )
+
+        if self.numerics.solver not in ("em", "es"):
+            raise ValueError(f"numerics.solver must be 'em' or 'es', got '{self.numerics.solver}'")
+        if self.numerics.es_method not in ("FFT", "Multigrid"):
+            raise ValueError(f"numerics.es_method must be 'FFT' or 'Multigrid', got '{self.numerics.es_method}'")
+        if self.numerics.dt < 0.0:
+            raise ValueError(f"numerics.dt must be >= 0 (0 = estimate), got {self.numerics.dt}")
 
         # method must already be canonical at this point (from_dict resolves aliases)
         if self.method not in ALLOWED_METHODS:

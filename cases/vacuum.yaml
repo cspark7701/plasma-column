@@ -27,8 +27,11 @@ solenoid:
   Bz_T: 0.15
 
 # Numerical & diagnostic parameters
-# Production settings: 64x64x512 grid, 20000 steps (2.7 beam transits),
-# nppc=16 for low statistical noise, cfl=0.5 for temporal accuracy.
+# Production settings (task 94): 64x64x512 grid, electrostatic FFT solver (open boundaries).
+# dt = 9.48e-12 s (electron gyration limit at 0.15 T). The beam front reaches the column end
+# after ~9700 steps; 23000 steps = 2 domain transits (218 ns), used for every method.
+# nppc_beam=4 -> beam macroparticle weight ~1150 (~5.9e6 beam macroparticles when filled).
+# Ionization build-up (tau ~80 us for H2 at 1e-5 Torr) is far longer than any run here.
 numerics:
   nx: 64
   ny: 64
@@ -37,11 +40,12 @@ numerics:
   ymax_m: 0.01
   zmin_m: -0.02
   zmax_m: 0.24
-  max_steps: 20000
-  checkpoint_period: 2000
+  max_steps: 23000
+  checkpoint_period: 11500
   cfl: 0.5
-  nppc_beam: 16
+  solver: es
+  nppc_beam: 4
   nppc_plasma: 0
-  diag_period: 100
+  diag_period: 2300
   reduced_diag_period: 50
   mcc: none
