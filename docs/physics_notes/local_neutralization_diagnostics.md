@@ -57,11 +57,28 @@ the overlap integral with the beam core ($r \le r_{\text{core}}$) drops exponent
 When `scripts/postprocess_case.py` processes a simulation case directory (`runs/<case_name>/`), it outputs:
 
 1. **`global_particle_number.csv`**: Time series of total particle counts $N_p, N_e, N_i$ and global ratios.
-2. **`local_neutralization_vs_t.csv`**: Time series of volume-averaged core densities, $\eta_{\text{local}}$, and $K_{\text{eff,local}}/K_0$.
+2. **`local_neutralization_vs_t.csv`**: Time series built from the **global** `ParticleNumber` ratios (columns are named `*_local` but are not core averages; only one plotfile is analyzed, so no local time series exists yet).
 3. **`local_neutralization_vs_z.csv`**: Slice-by-slice $z$-profile of beam-core neutralization fractions along the beam axis.
 4. **`radial_density_profiles.csv`**: Radially-binned species densities $n_p(r), n_e(r), n_i(r)$ and net charge density $\rho_{\text{net}}(r)$.
 5. **`beam_core_charge_density.csv`**: Beam-core charge densities ($\text{C/m}^3$) for protons, electrons, ions, and net charge.
 6. **`diagnostics_summary.json`**: Machine-readable JSON recording diagnostic availability, core averages, and explicit warning flags if local fields are missing.
+
+### Beam-occupied core and undefined neutralization
+
+The core average uses only cells inside $r \le r_{\text{core}}$, $z_{\text{min}} \le z \le z_{\text{max}}$ that contain beam
+protons ($n_p > 0$). Cells the beam front has not reached would otherwise dilute $n_p$ while keeping the pre-loaded
+plasma, which inflates $\eta$. `diagnostics_summary.json` records `beam_in_core`, `core_beam_fill_fraction`
+(beam-occupied share of the core volume) and `beam_z_max_m` (beam front position).
+
+If no core cell contains beam, $\eta_{\text{local}}$ and $K_{\text{eff,local}}/K_0$ are undefined: they are written as
+`null` (JSON) / `NaN` (CSV), a warning is stored, and `beam_envelope.csv` is not written. In
+`local_neutralization_vs_z.csv`, slices without beam are `NaN`. Before this check, $\eta = n_e/(0 + 10^{-30})$ was
+reported as $\sim 10^{45}$.
+
+A 30 keV proton moves at $v = 2.40\times10^{6}$ m/s. With the production time step $\Delta t = 3.38\times10^{-13}$ s,
+10 000 steps (3.38 ns) move the beam front only 8.1 mm from the injection plane at $z = -0.02$ m, so it does not
+reach the column at $z = 0$. Reaching the column end ($z = 0.20$ m) takes $\approx 9.2\times10^{-8}$ s
+($\approx 2.7\times10^{5}$ steps).
 
 ---
 

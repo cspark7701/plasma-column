@@ -191,6 +191,11 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
     return df
 
 
+def _nan_to_none(values: dict[str, Any]) -> dict[str, Any]:
+    """Replace float NaN with None so JSON output stays valid (null instead of NaN)."""
+    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in values.items()}
+
+
 def safe_eta(
     ne: float | np.ndarray,
     ni: float | np.ndarray,
@@ -252,12 +257,20 @@ def compute_local_core_neutralization(
 ) -> dict[str, Any]:
     """
     Computes volume-averaged electron and ion densities inside the beam core within the plasma column.
+
+    The average is taken only over core cells inside the column that contain beam protons
+    (np > 0). Cells the beam has not reached yet would otherwise dilute np while keeping the
+    pre-existing plasma, inflating eta. If no core cell contains beam (e.g. the beam front has
+    not entered the column), eta and K_eff/K0 are NaN and ``beam_in_core`` is False.
     """
     X, Y, Z = np.meshgrid(x_coords, y_coords, z_coords, indexing="ij")
     R = np.sqrt(X**2 + Y**2)
 
-    mask = (R <= r_core) & (Z >= z_min_col) & (Z <= z_max_col)
-    if not np.any(mask):
+    beam_cells = np_3d > 0.0
+    beam_z_max = float(np.max(Z[beam_cells])) if np.any(beam_cells) else float("nan")
+
+    core_col_mask = (R <= r_core) & (Z >= z_min_col) & (Z <= z_max_col)
+    if not np.any(core_col_mask):
         return {
             "np_core_avg": 0.0,
             "ne_core_avg": 0.0,
@@ -267,6 +280,27 @@ def compute_local_core_neutralization(
             "keff_over_k0_electron_only_local": 1.0,
             "keff_over_k0_local": 1.0,
             "overcompensated": False,
+            "beam_in_core": False,
+            "core_beam_fill_fraction": 0.0,
+            "beam_z_max_m": beam_z_max,
+        }
+
+    mask = core_col_mask & beam_cells
+    fill_fraction = float(np.count_nonzero(mask)) / float(np.count_nonzero(core_col_mask))
+    if not np.any(mask):
+        nan = float("nan")
+        return {
+            "np_core_avg": 0.0,
+            "ne_core_avg": float(np.mean(ne_3d[core_col_mask])),
+            "ni_core_avg": float(np.mean(ni_3d[core_col_mask])),
+            "eta_electron_only_local": nan,
+            "eta_net_local": nan,
+            "keff_over_k0_electron_only_local": nan,
+            "keff_over_k0_local": nan,
+            "overcompensated": False,
+            "beam_in_core": False,
+            "core_beam_fill_fraction": 0.0,
+            "beam_z_max_m": beam_z_max,
         }
 
     np_avg = float(np.mean(np_3d[mask]))
@@ -286,6 +320,9 @@ def compute_local_core_neutralization(
         "keff_over_k0_electron_only_local": float(1.0 - float(eta_e)),
         "keff_over_k0_local": float(keff),
         "overcompensated": overcomp,
+        "beam_in_core": True,
+        "core_beam_fill_fraction": fill_fraction,
+        "beam_z_max_m": beam_z_max,
     }
 
 
@@ -360,6 +397,10 @@ def compute_local_neutralization_vs_z(
         ni_z_avg = np.mean(ni_3d[transverse_mask, :], axis=0)
 
         eta_e_z, eta_net_z = safe_eta(ne_z_avg, ni_z_avg, np_z_avg)
+        # Slices without beam protons have no defined neutralization
+        no_beam = np_z_avg <= 0.0
+        eta_e_z = np.where(no_beam, np.nan, eta_e_z)
+        eta_net_z = np.where(no_beam, np.nan, eta_net_z)
         keff_z = 1.0 - eta_net_z
     else:
         eta_e_z = np.zeros(nz)
@@ -556,16 +597,29 @@ def postprocess_case_directory(
     beam_obj = ProtonBeam()
     line_obj = InjectionLine()
     eta_val = core_info.get("eta_net_local", 0.90)
-    z_env, Rx_env, Ry_env = compute_beam_envelope(beam_obj, line_obj, eta_net=eta_val)
-    df_env = pd.DataFrame({"z_m": z_env, "Rx_mm": Rx_env * 1000.0, "Ry_mm": Ry_env * 1000.0})
-    df_env.to_csv(envelope_csv, index=False)
+    warning = None if has_local_data else GLOBAL_WARNING_MSG
+    if np.isfinite(eta_val):
+        z_env, Rx_env, Ry_env = compute_beam_envelope(beam_obj, line_obj, eta_net=eta_val)
+        df_env = pd.DataFrame({"z_m": z_env, "Rx_mm": Rx_env * 1000.0, "Ry_mm": Ry_env * 1000.0})
+        df_env.to_csv(envelope_csv, index=False)
+    else:
+        # No beam protons in the column core: local eta is undefined, so no envelope is written
+        envelope_csv.unlink(missing_ok=True)
+        warning = (
+            "No beam protons inside the plasma-column core in the latest plotfile "
+            f"(beam front z_max = {core_info.get('beam_z_max_m', float('nan')):.4f} m); "
+            "local neutralization is undefined. Run longer so the beam reaches the column."
+        )
+        warnings.warn(warning, UserWarning, stacklevel=2)
+        print(f"WARNING: {warning}")
 
     summary = {
         "case_name": case_dir.name,
         "has_particle_diag": has_particle_diag,
         "has_local_diagnostics": has_local_data,
-        "warning": None if has_local_data else GLOBAL_WARNING_MSG,
-        "core_averages": core_info,
+        "local_plotfile": str(latest_plt) if has_local_data else None,
+        "warning": warning,
+        "core_averages": _nan_to_none(core_info),
         "beam_core_charge_density_C_m3": charge_density,
     }
     summary_path = case_dir / "diagnostics_summary.json"

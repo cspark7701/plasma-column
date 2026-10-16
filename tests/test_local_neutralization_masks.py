@@ -122,3 +122,44 @@ def test_vectorized_neutralization_vs_z_equivalence():
     assert len(df_empty) == 128
     assert np.all(df_empty["eta_net_local_z"] == 0.0)
     assert np.all(df_empty["keff_over_k0_local_z"] == 1.0)
+
+
+def test_beam_not_in_column_gives_undefined_eta():
+    """Beam front upstream of the column: eta must be NaN and flagged, not ne/eps (~1e45)."""
+    ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid(z_min=-0.02, z_max=0.24, nz=105)
+    np_3d[:, :, z > -0.012] = 0.0  # beam front at z = -12 mm, column starts at z = 0
+
+    res = compute_local_core_neutralization(ne_3d, ni_3d, np_3d, x, y, z, r_core=0.002)
+
+    assert res["beam_in_core"] is False
+    assert np.isnan(res["eta_net_local"])
+    assert np.isnan(res["keff_over_k0_local"])
+    assert not res["overcompensated"]
+    assert res["beam_z_max_m"] < 0.0
+
+    df_z = compute_local_neutralization_vs_z(ne_3d, ni_3d, np_3d, x, y, z, r_core=0.002)
+    assert df_z.loc[df_z["z"] > -0.012, "eta_net_local_z"].isna().all()
+    assert df_z.loc[df_z["z"] < -0.013, "eta_net_local_z"].notna().all()
+
+
+def test_partial_beam_fill_averages_only_beam_cells():
+    """Beam halfway into the column: eta uses only cells the beam occupies."""
+    ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid(eta_target=0.8)
+    np_3d[:, :, z > 0.10] = 0.0
+
+    res = compute_local_core_neutralization(ne_3d, ni_3d, np_3d, x, y, z, r_core=0.002)
+
+    assert res["beam_in_core"] is True
+    assert 0.75 < res["eta_net_local"] < 0.85
+    assert 0.3 < res["core_beam_fill_fraction"] < 0.7
+
+
+def test_find_plotfiles_ignores_old_and_sorts_by_step(tmp_path):
+    """'diag1010000.old.6486587' (from a repeated run) must not be picked as the latest plotfile."""
+    from plasma_column.warpx_io import find_plotfiles
+
+    for name in ["diag1000000", "diag1009875", "diag1010000", "diag1010000.old.6486587"]:
+        (tmp_path / "diags" / name).mkdir(parents=True)
+
+    names = [p.name for p in find_plotfiles(tmp_path)]
+    assert names == ["diag1000000", "diag1009875", "diag1010000"]

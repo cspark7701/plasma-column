@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -50,9 +51,12 @@ def find_plotfiles(case_dir: str | Path) -> list[Path]:
                 if p.is_dir():
                     candidates.append(p)
 
+    # Keep only "<diag|plt><step>" directories. This drops the "diags" folder itself and the
+    # "<name>.old.<random>" copies WarpX leaves when a run is repeated in the same directory.
+    candidates = [p for p in candidates if re.fullmatch(r"(?:diag|plt)\d+", p.name)]
+
     def extract_index(p: Path) -> int:
-        digits = "".join(filter(str.isdigit, p.name))
-        return int(digits) if digits else 0
+        return int(re.match(r"(?:diag|plt)(\d+)", p.name).group(1))
 
     return sorted(list(set(candidates)), key=extract_index)
 
