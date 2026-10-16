@@ -81,3 +81,33 @@ To keep disk consumption under **15–25 GB for the entire matrix** while preser
    - Run `bash scripts/cleanup.sh --checkpoints` or `bash scripts/cleanup.sh --all` to recover hundreds of gigabytes before launching production.
 3. **Optional CLI Flag in Runner Scripts**:
    - Pass `--checkpoint_period 0` or higher values when running `scripts/run_full_production.sh` or `scripts/run_scan.py`.
+
+---
+
+## 6. Electrostatic Solver Option and Beam Transit Time (2026-10-16, task 93)
+
+The electromagnetic solver fixes `dt = 3.38e-13 s` (light-wave CFL). A 30 keV proton
+(`v = 2.40e6 m/s`) then needs about 3.2e5 steps to cross the 0.26 m domain, so the 10 000-step
+production runs ended with the beam front at z = -12 mm, before the column (task 92).
+
+Both drivers (`plasma_column_mcc_picmi_v7.py`, `plasma_column_callback_source_picmi_v3.py`) now accept
+`--solver es` (labframe electrostatic, `--es_method FFT` with open boundaries by default) and `--dt`.
+Without `--dt`, the time step is the smallest of the electron limits
+(`plasma_column.constants.estimate_electrostatic_timestep`):
+
+| Limit | Value (production grid, 0.15 T, 10 mA) |
+|---|---|
+| electron gyration, `omega_ce dt <= 0.25` | **9.48e-12 s** (sets dt) |
+| plasma oscillation, `omega_pe dt <= 0.2` at `n_e = n_b = 2.07e15 m^-3` | 7.79e-11 s |
+| fastest electron (158 V beam potential + 5 v_th) crosses <= 0.5 cell | 1.64e-11 s |
+
+| Quantity | EM (`cfl=0.5`) | ES (`dt=9.48e-12 s`) |
+|---|---|---|
+| steps to column end (z = 0.20 m) | ~2.7e5 | 9 700 |
+| steps per domain transit | ~3.2e5 | 11 400 |
+| beam macroparticle weight, `nppc_beam=16` / `4` | 10.2 / 41 | 287 / 1 150 |
+| beam macroparticles in a filled domain, `nppc_beam=4` | ~1.6e8 | 5.9e6 |
+| wall time per step, 64x64x512, 8 cores | ~2 s | 1.1 s (measured, first 300 steps) |
+
+`run_scan.py` does not pass the solver, grid or `nppc` from the matrix files to the drivers yet; use
+the drivers directly until that is wired through.

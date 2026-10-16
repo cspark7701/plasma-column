@@ -50,3 +50,46 @@ def estimate_cfl_timestep(dx: float, dy: float, dz: float, cfl: float = 0.5) -> 
         float: Estimated maximum stable timestep [s]
     """
     return float(cfl / (C * math.sqrt(dx**-2 + dy**-2 + dz**-2)))
+
+
+def estimate_electrostatic_timestep(
+    dx_min_m: float,
+    bz_T: float,
+    electron_density_m3: float,
+    electron_speed_max_m_per_s: float,
+    cyclotron_fraction: float = 0.25,
+    plasma_fraction: float = 0.2,
+    courant_fraction: float = 0.5,
+) -> dict[str, float]:
+    """
+    Explicit electrostatic PIC time step limited by electron dynamics (no light-wave CFL).
+
+    Limits:
+        omega_ce * dt <= cyclotron_fraction   (gyration resolved by the Boris push)
+        omega_pe * dt <= plasma_fraction      (plasma oscillation resolved; leapfrog needs < 2)
+        v_e,max  * dt <= courant_fraction * dx_min  (fastest electron crosses < 1 cell per step)
+
+    Returns:
+        dict with ``dt_s`` (the minimum) and each limit ``dt_cyclotron_s``, ``dt_plasma_s``,
+        ``dt_courant_s`` [s]. A limit that does not apply (zero field/density/speed) is inf.
+    """
+    omega_ce = QE * abs(bz_T) / ME
+    omega_pe = math.sqrt(max(electron_density_m3, 0.0) * QE**2 / (EPSILON_0 * ME))
+    dt_cyc = cyclotron_fraction / omega_ce if omega_ce > 0 else math.inf
+    dt_pe = plasma_fraction / omega_pe if omega_pe > 0 else math.inf
+    dt_cfl = courant_fraction * dx_min_m / electron_speed_max_m_per_s if electron_speed_max_m_per_s > 0 else math.inf
+    return {
+        "dt_s": float(min(dt_cyc, dt_pe, dt_cfl)),
+        "dt_cyclotron_s": float(dt_cyc),
+        "dt_plasma_s": float(dt_pe),
+        "dt_courant_s": float(dt_cfl),
+    }
+
+
+def beam_potential_depth_V(current_A: float, beam_speed_m_per_s: float, beam_radius_m: float, wall_radius_m: float) -> float:
+    """
+    On-axis potential depth of an uncompensated uniform round beam inside a grounded pipe [V]:
+        Delta_phi = I / (4 pi eps0 v) * (1 + 2 ln(b/a)).
+    Electrons trapped in the beam can gain up to e * Delta_phi of kinetic energy.
+    """
+    return float(current_A / (4.0 * math.pi * EPSILON_0 * beam_speed_m_per_s) * (1.0 + 2.0 * math.log(wall_radius_m / beam_radius_m)))

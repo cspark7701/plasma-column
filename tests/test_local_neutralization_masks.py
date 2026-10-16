@@ -163,3 +163,24 @@ def test_find_plotfiles_ignores_old_and_sorts_by_step(tmp_path):
 
     names = [p.name for p in find_plotfiles(tmp_path)]
     assert names == ["diag1000000", "diag1009875", "diag1010000"]
+
+
+def test_particle_number_uses_species_weight_columns(tmp_path):
+    """WarpX ParticleNumber with 3 species has 10 columns; Np/Ne/Ni must be the *_weight() columns."""
+    from plasma_column.diagnostics import load_particle_number_diagnostic, compute_particle_number_metrics
+
+    f = tmp_path / "particle_number.txt"
+    f.write_text(
+        "#[0]step(),[1]time(s),[2]total_macroparticles(),[3]beam_protons_macroparticles(),"
+        "[4]plasma_electrons_macroparticles(),[5]gas_ions_macroparticles(),[6]total_weight(),"
+        "[7]beam_protons_weight(),[8]plasma_electrons_weight(),[9]gas_ions_weight()\n"
+        "0,0.0,300,0,200,100,1.5e9,0.0,1.0e9,5.0e8\n"
+        "50,1e-9,400,100,200,100,3.5e9,2.0e9,1.0e9,5.0e8\n"
+    )
+    df = compute_particle_number_metrics(load_particle_number_diagnostic(f))
+
+    assert list(df["Np"]) == [0.0, 2.0e9]
+    assert list(df["Ne"]) == [1.0e9, 1.0e9]
+    assert list(df["Ni"]) == [5.0e8, 5.0e8]
+    assert np.isnan(df["eta_net"].iloc[0])  # no beam yet
+    assert df["eta_net"].iloc[1] == pytest.approx(0.25)

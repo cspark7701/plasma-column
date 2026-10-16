@@ -57,7 +57,11 @@ try:
 except ImportError:
     from scripts import _path_setup  # noqa: F401
 
-from plasma_column.constants import estimate_cfl_timestep
+from plasma_column.constants import (
+    beam_potential_depth_V,
+    estimate_cfl_timestep,
+    estimate_electrostatic_timestep,
+)
 try:
     from pywarpx import picmi
 except (ImportError, ModuleNotFoundError):
@@ -109,6 +113,11 @@ class Config:
     zmax: float = 2.4e-1
     max_grid_size: int = 64
     max_steps: int = 120000
+    # Field solver: "em" (electromagnetic FDTD, CFL dt) or "es" (labframe electrostatic,
+    # dt from electron dynamics; see estimate_pic_dt). es_method: FFT (open BC) or Multigrid.
+    solver: str = "em"
+    es_method: str = "FFT"
+    dt: float = 0.0  # explicit time step [s] for solver="es"; 0 = estimate
     cfl: float = 0.5
     em_order: int = 3
     diagformat: str = "plotfile"
@@ -196,7 +205,22 @@ def proton_beta_gamma_v(E_keV: float):
     return beta, gamma, v, u
 
 
+def electrostatic_dt_limits(cfg: Config) -> dict:
+    """Electron-dynamics dt limits (beam density, full beam-potential electron speed)."""
+    _, _, vb, _ = proton_beta_gamma_v(cfg.beam_energy_keV)
+    current_A = cfg.beam_current_mA * 1e-3
+    nb = current_A / (QE * vb * math.pi * cfg.beam_radius**2)
+    dphi = beam_potential_depth_V(current_A, vb, cfg.beam_radius, min(cfg.xmax, cfg.ymax))
+    ve_max = math.sqrt(2.0 * QE * dphi / ME) + 5.0 * math.sqrt(QE * cfg.secondary_electron_energy_eV / ME)
+    dx_min = min(2.0 * cfg.xmax / cfg.nx, 2.0 * cfg.ymax / cfg.ny, (cfg.zmax - cfg.zmin) / cfg.nz)
+    limits = estimate_electrostatic_timestep(dx_min, cfg.solenoid_Bz, nb, ve_max)
+    limits.update({"beam_potential_depth_V": dphi, "electron_speed_max_m_per_s": ve_max})
+    return limits
+
+
 def estimate_pic_dt(cfg: Config) -> float:
+    if cfg.solver == "es":
+        return cfg.dt if cfg.dt > 0.0 else electrostatic_dt_limits(cfg)["dt_s"]
     dx = 2.0 * cfg.xmax / cfg.nx
     dy = 2.0 * cfg.ymax / cfg.ny
     dz = (cfg.zmax - cfg.zmin) / cfg.nz
@@ -247,22 +271,27 @@ def load_cross_section(cfg: Config):
 def make_sim(cfg: Config):
     beta, gamma, vb, ub = proton_beta_gamma_v(cfg.beam_energy_keV)
 
+    # Multigrid has no open boundary; use grounded (Dirichlet) walls for it.
+    field_bc = "dirichlet" if (cfg.solver == "es" and cfg.es_method == "Multigrid") else "open"
     grid = picmi.Cartesian3DGrid(
         number_of_cells=[cfg.nx, cfg.ny, cfg.nz],
         lower_bound=[-cfg.xmax, -cfg.ymax, cfg.zmin],
         upper_bound=[ cfg.xmax,  cfg.ymax, cfg.zmax],
-        lower_boundary_conditions=["open", "open", "open"],
-        upper_boundary_conditions=["open", "open", "open"],
+        lower_boundary_conditions=[field_bc] * 3,
+        upper_boundary_conditions=[field_bc] * 3,
         lower_boundary_conditions_particles=["absorbing", "absorbing", "absorbing"],
         upper_boundary_conditions_particles=["absorbing", "absorbing", "absorbing"],
         warpx_max_grid_size=cfg.max_grid_size,
     )
 
-    solver = picmi.ElectromagneticSolver(
-        grid=grid,
-        cfl=cfg.cfl,
-        stencil_order=[cfg.em_order, cfg.em_order, cfg.em_order],
-    )
+    if cfg.solver == "es":
+        solver = picmi.ElectrostaticSolver(grid=grid, method=cfg.es_method, required_precision=1.0e-7)
+    else:
+        solver = picmi.ElectromagneticSolver(
+            grid=grid,
+            cfl=cfg.cfl,
+            stencil_order=[cfg.em_order, cfg.em_order, cfg.em_order],
+        )
 
     # Continuous square top-hat proton source with the same area as circular beam radius.
     source_half_width = math.sqrt(math.pi) * cfg.beam_radius / 2.0
@@ -329,14 +358,18 @@ def make_sim(cfg: Config):
         ),
     )
 
-    sim = picmi.Simulation(
+    sim_kwargs = dict(
         solver=solver,
         max_steps=cfg.max_steps,
         verbose=1,
         particle_shape=cfg.particle_shape,
-        warpx_current_deposition_algo="esirkepov",
         warpx_use_filter=1,
     )
+    if cfg.solver == "es":
+        sim_kwargs["time_step_size"] = estimate_pic_dt(cfg)
+    else:
+        sim_kwargs["warpx_current_deposition_algo"] = "esirkepov"
+    sim = picmi.Simulation(**sim_kwargs)
 
     sim.add_species(
         beam_protons,
@@ -420,6 +453,8 @@ def make_sim(cfg: Config):
         "beam_speed_m_per_s": vb,
         "beam_gamma_v_m_per_s": ub,
         "pic_dt_estimate_s": estimate_pic_dt(cfg),
+        "field_solver": cfg.solver if cfg.solver == "em" else f"es ({cfg.es_method})",
+        "beam_domain_transit_steps": (cfg.zmax - cfg.zmin) / (vb * estimate_pic_dt(cfg)),
         "neutral_gas_density_m3": gas_density(cfg.pressure_torr, cfg.gas_temperature_K),
     }
 

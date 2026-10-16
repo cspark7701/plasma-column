@@ -63,7 +63,11 @@ try:
 except ImportError:
     from scripts import _path_setup  # noqa: F401
 
-from plasma_column.constants import estimate_cfl_timestep
+from plasma_column.constants import (
+    beam_potential_depth_V,
+    estimate_cfl_timestep,
+    estimate_electrostatic_timestep,
+)
 from plasma_column.gas import (
     load_cross_section_table,
     interpolate_cross_section,
@@ -167,6 +171,11 @@ class PlasmaColumnConfig:
     # diag_period=100 → ~200 plotfile snapshots over 20000 steps
     # reduced_diag_period=50 → fine-grained particle-count time series
     max_steps: int = 20000
+    # Field solver: "em" (electromagnetic FDTD, dt set by the light-wave CFL) or
+    # "es" (labframe electrostatic, dt set by electron dynamics; see estimate_pic_dt)
+    solver: str = "em"
+    es_method: str = "FFT"  # FFT (integrated Green function, open boundaries) or Multigrid
+    dt: float = 0.0  # explicit time step [s] for solver="es"; 0 = estimate from electron limits
     cfl: float = 0.5
     em_order: int = 3
     nppc_beam: int = 16
@@ -290,6 +299,11 @@ def parse_args() -> PlasmaColumnConfig:
     p.add_argument("--field_margin", type=float, default=PlasmaColumnConfig.field_margin)
 
     p.add_argument("--max_steps", type=int, default=PlasmaColumnConfig.max_steps)
+    p.add_argument("--solver", choices=["em", "es"], default=PlasmaColumnConfig.solver,
+                   help="em: electromagnetic FDTD (CFL dt ~0.34 ps); es: electrostatic (dt from electron limits).")
+    p.add_argument("--es_method", choices=["FFT", "Multigrid"], default=PlasmaColumnConfig.es_method)
+    p.add_argument("--dt", type=float, default=PlasmaColumnConfig.dt,
+                   help="Explicit time step [s] for --solver es (0 = estimate).")
     p.add_argument("--cfl", type=float, default=PlasmaColumnConfig.cfl)
     p.add_argument("--em_order", type=int, default=PlasmaColumnConfig.em_order)
     p.add_argument("--nppc_beam", type=int, default=PlasmaColumnConfig.nppc_beam)
@@ -492,14 +506,37 @@ def make_background_density_expression(cfg: PlasmaColumnConfig, ng: float):
 
 
 
+def electrostatic_dt_limits(cfg: PlasmaColumnConfig) -> dict:
+    """
+    Electron-dynamics time-step limits for the electrostatic solver.
+
+    Electron density: the larger of the uncompensated round-beam density and the seed density
+    (trapped electrons accumulate up to about the beam density). Fastest electron: one that
+    falls through the full uncompensated beam potential plus 5 thermal speeds.
+    """
+    _, _, v_beam, _ = proton_beta_gamma_v(cfg.beam_energy_keV)
+    current_A = cfg.beam_current_mA * 1.0e-3
+    nb = current_A / (QE * v_beam * math.pi * cfg.beam_radius**2)
+    ne_max = max(nb, cfg.steady_state_neutralization * nb)
+    dphi = beam_potential_depth_V(current_A, v_beam, cfg.beam_radius, min(cfg.xmax, cfg.ymax))
+    ve_max = math.sqrt(2.0 * QE * dphi / ME) + 5.0 * math.sqrt(QE * cfg.electron_temperature_eV / ME)
+    dx_min = min(2.0 * cfg.xmax / cfg.nx, 2.0 * cfg.ymax / cfg.ny, (cfg.zmax - cfg.zmin) / cfg.nz)
+    limits = estimate_electrostatic_timestep(dx_min, cfg.solenoid_Bz, ne_max, ve_max)
+    limits.update({"beam_potential_depth_V": dphi, "electron_speed_max_m_per_s": ve_max,
+                   "electron_density_for_dt_m3": ne_max})
+    return limits
+
+
 def estimate_pic_dt(cfg: PlasmaColumnConfig) -> float:
     """
-    Estimate the electromagnetic PIC time step from the 3D CFL condition.
+    PIC time step [s].
 
-    WarpX may use implementation-specific details for the exact time step, so the
-    Timestep reduced diagnostic is still enabled by default. This estimate is only
-    used for the analytic neutralization_model.csv.
+    solver="em": 3D CFL estimate (WarpX computes the exact value; the Timestep reduced
+    diagnostic records it). solver="es": cfg.dt if set, otherwise the electron-dynamics
+    limit from electrostatic_dt_limits; this value is passed to WarpX as the time step.
     """
+    if cfg.solver == "es":
+        return cfg.dt if cfg.dt > 0.0 else electrostatic_dt_limits(cfg)["dt_s"]
     dx = 2.0 * cfg.xmax / cfg.nx
     dy = 2.0 * cfg.ymax / cfg.ny
     dz = (cfg.zmax - cfg.zmin) / cfg.nz
@@ -780,26 +817,40 @@ def build_sim(cfg: PlasmaColumnConfig):
         "source_half_width_m": source_half_width,
         "source_area_m2": source_area,
         "estimated_pic_dt_s": estimate_pic_dt(cfg),
+        "field_solver": cfg.solver if cfg.solver == "em" else f"es ({cfg.es_method})",
+        # Flux injection adds nppc_beam macroparticles per source cell per step
+        "beam_macroparticle_weight": (current_A * estimate_pic_dt(cfg) / QE)
+        / (cfg.nppc_beam * source_area / ((2.0 * cfg.xmax / cfg.nx) * (2.0 * cfg.ymax / cfg.ny))),
+        "beam_domain_transit_steps": (cfg.zmax - cfg.zmin) / (v_beam * estimate_pic_dt(cfg)),
+        "beam_reaches_column_end_step": (cfg.column_zmin + cfg.column_length - cfg.zmin) / (v_beam * estimate_pic_dt(cfg)),
         "reduced_diagnostic_period": cfg.reduced_diag_period,
         "species_order_for_particle_number": "beam_protons, plasma_electrons, gas_ions",
     }
 
+    if cfg.solver == "es":
+        derived["electrostatic_dt_limits"] = electrostatic_dt_limits(cfg)
+
+    # Multigrid has no open boundary; use grounded (Dirichlet) walls for it.
+    field_bc = "dirichlet" if (cfg.solver == "es" and cfg.es_method == "Multigrid") else "open"
     grid = picmi.Cartesian3DGrid(
         number_of_cells=[cfg.nx, cfg.ny, cfg.nz],
         lower_bound=[-cfg.xmax, -cfg.ymax, cfg.zmin],
         upper_bound=[+cfg.xmax, +cfg.ymax, cfg.zmax],
-        lower_boundary_conditions=["open", "open", "open"],
-        upper_boundary_conditions=["open", "open", "open"],
+        lower_boundary_conditions=[field_bc] * 3,
+        upper_boundary_conditions=[field_bc] * 3,
         lower_boundary_conditions_particles=["absorbing", "absorbing", "absorbing"],
         upper_boundary_conditions_particles=["absorbing", "absorbing", "absorbing"],
         warpx_max_grid_size=cfg.max_grid_size,
     )
 
-    solver = picmi.ElectromagneticSolver(
-        grid=grid,
-        cfl=cfg.cfl,
-        stencil_order=[cfg.em_order, cfg.em_order, cfg.em_order],
-    )
+    if cfg.solver == "es":
+        solver = picmi.ElectrostaticSolver(grid=grid, method=cfg.es_method, required_precision=1.0e-7)
+    else:
+        solver = picmi.ElectromagneticSolver(
+            grid=grid,
+            cfl=cfg.cfl,
+            stencil_order=[cfg.em_order, cfg.em_order, cfg.em_order],
+        )
 
     # Continuous proton source at zmin.
     vth_p = abs(cfg.beam_rms_divergence) * v_beam
@@ -964,9 +1015,12 @@ def build_sim(cfg: PlasmaColumnConfig):
         max_steps=cfg.max_steps,
         verbose=1,
         particle_shape=cfg.particle_shape,
-        warpx_current_deposition_algo="esirkepov",
         warpx_use_filter=1,
     )
+    if cfg.solver == "es":
+        sim_kwargs["time_step_size"] = estimate_pic_dt(cfg)
+    else:
+        sim_kwargs["warpx_current_deposition_algo"] = "esirkepov"
     if collisions:
         sim_kwargs["warpx_collisions"] = collisions
         sim_kwargs["warpx_collisions_split_momentum_push"] = 0  # split_position_push renamed in picmistandard>=0.34

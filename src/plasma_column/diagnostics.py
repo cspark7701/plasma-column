@@ -173,7 +173,30 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
         df.rename(columns={cols[1]: "time"}, inplace=True)
 
     if "Np" not in df.columns:
-        if ncols >= 8:
+        # Physical counts are the per-species "<species>_weight()" columns. WarpX writes
+        # step, time, total_macroparticles, <species>_macroparticles..., total_weight,
+        # <species>_weight..., so their positions depend on the number of species.
+        weight_cols = {}
+        for c in cols:
+            name = c.lower()
+            if not name.endswith("_weight()") or "total_weight" in name:
+                continue
+            if "proton" in name or "beam" in name:
+                weight_cols["Np"] = c
+            elif "electron" in name:
+                weight_cols["Ne"] = c
+            elif "ion" in name:
+                weight_cols["Ni"] = c
+        if {"Np", "Ne"} <= weight_cols.keys():
+            for key, c in weight_cols.items():
+                df[key] = df[c].values
+        elif ncols == 10:
+            # 3 species without a usable header: weights are columns 7, 8, 9
+            df["Np"] = data[:, 7]
+            df["Ne"] = data[:, 8]
+            df["Ni"] = data[:, 9]
+        elif ncols >= 8:
+            # Legacy layout: step, time, 3 macroparticle columns, then Np, Ne, Ni
             df["Np"] = data[:, 5]
             df["Ne"] = data[:, 6]
             df["Ni"] = data[:, 7]
@@ -235,6 +258,9 @@ def compute_particle_number_metrics(df: pd.DataFrame) -> pd.DataFrame:
     Ni = out["Ni"].values.astype(float) if "Ni" in out.columns else np.zeros_like(Np)
 
     eta_e, eta_net = safe_eta(Ne, Ni, Np)
+    # No beam protons in the domain yet (e.g. step 0): neutralization is undefined
+    eta_e = np.where(Np > 0.0, eta_e, np.nan)
+    eta_net = np.where(Np > 0.0, eta_net, np.nan)
 
     out["eta_electron_only"] = eta_e
     out["eta_net"] = eta_net
