@@ -67,6 +67,28 @@ CLI options available across all scripts (`run_full_production.sh`, `run_case.py
 
 This maximizes multi-threaded efficiency across PIC grid solves and field diagnostics while preserving headroom for OS responsiveness.
 
+### Step selection (`run_full_production.sh` only)
+
+Step labels, in order: `1 2 3 3b 4 4b 5 5b 6 6b 7 7b 8`. Skipped steps print `[SKIPPED]`; the
+header line `Steps Run` lists what will execute.
+
+- `--start_step <S>`: skip every step before `S` (e.g. `--start_step 4` reruns analysis only).
+- `--skip_sim`: skip all PIC simulation steps (`2`, `3`, `3b`) and analyze existing outputs.
+- `--skip_step <S[,S...]>`: skip the listed steps; may be repeated.
+
+```bash
+# Pressure scan without rerunning the H2/Kr baselines (identical to results/method_scan/)
+bash scripts/run_full_production.sh high pressure_scan --max_steps 10000 --snapshots 10 --skip_step 3,3b
+# Redo postprocessing, figures and tables for finished simulations
+bash scripts/run_full_production.sh high method_comparison --skip_sim
+```
+
+Steps 3/3b run `cases/baseline_{h2,kr}.yaml`, which is the same simulation for every matrix. When
+they are skipped, step 4/4b postprocesses the first existing directory among
+`<out_dir>/seeded_<gas>_baseline`, `results/method_scan/seeded_<gas>_baseline`,
+`results/seeded_<gas>_baseline`, `runs/seeded_<gas>_baseline`, then the matrix case at the
+baseline pressure (`seeded_H2_1e-5Torr` / `seeded_Kr_1e-6Torr`).
+
 ---
 
 ## 4. Token Conservation & Quiet Log Redirection

@@ -26,6 +26,13 @@
 #   bash scripts/run_full_production.sh light method_comparison --cores 8
 #   bash scripts/run_full_production.sh dry-run all
 #   bash scripts/run_full_production.sh  (interactive menu)
+#
+# Step selection (steps: 1 2 3 3b 4 4b 5 5b 6 6b 7 7b 8):
+#   --start_step 4          : skip steps before 4 (e.g. redo analysis only)
+#   --skip_sim              : skip all PIC simulation steps (2, 3, 3b)
+#   --skip_step 3,3b        : skip listed steps (e.g. the duplicate baseline reruns)
+#   bash scripts/run_full_production.sh high pressure_scan --skip_step 3,3b
+#   bash scripts/run_full_production.sh high method_comparison --skip_sim
 # ==============================================================================
 
 set -eo pipefail
@@ -50,6 +57,13 @@ SNAPSHOTS=""
 DIAG_PERIOD=""
 CHECKPOINT_PERIOD=""
 RESTART_FROM=""
+START_STEP=""
+SKIP_SIM=false
+SKIP_STEPS=""
+
+# Pipeline step labels in execution order (used by --start_step / --skip_step)
+ALL_STEPS=(1 2 3 3b 4 4b 5 5b 6 6b 7 7b 8)
+SIM_STEPS=(2 3 3b)
 
 CURRENT_MASTER_LOG=""
 cleanup_log_on_exit() {
@@ -157,6 +171,26 @@ while [[ $# -gt 0 ]]; do
       RESTART_FROM="$2"
       shift 2
       ;;
+    --start_step|--start-step)
+      START_STEP="$2"
+      shift 2
+      ;;
+    --start_step=*|--start-step=*)
+      START_STEP="${1#*=}"
+      shift
+      ;;
+    --skip_sim|--skip-sim)
+      SKIP_SIM=true
+      shift
+      ;;
+    --skip_step|--skip-step|--skip_steps|--skip-steps)
+      SKIP_STEPS="${SKIP_STEPS:+$SKIP_STEPS,}$2"
+      shift 2
+      ;;
+    --skip_step=*|--skip-step=*|--skip_steps=*|--skip-steps=*)
+      SKIP_STEPS="${SKIP_STEPS:+$SKIP_STEPS,}${1#*=}"
+      shift
+      ;;
     --color)
       USE_COLOR=true
       shift
@@ -198,6 +232,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --diag_period <N>                  Diagnostic dump interval in steps."
       echo "  --checkpoint_period <N>            AMReX checkpoint dump interval (chk<step>/)."
       echo "  --restart_from <path>              Restart specifically from this checkpoint directory."
+      echo "  --start_step <S>                   Skip steps before S (1 2 3 3b 4 4b 5 5b 6 6b 7 7b 8)."
+      echo "  --skip_sim                         Skip all PIC simulation steps (2, 3, 3b); analyze existing outputs."
+      echo "  --skip_step <S[,S...]>             Skip the listed steps (e.g. 3,3b to skip baseline reruns)."
       echo "  --color / --no-color               Enable/disable colorized terminal output."
       echo "  --help, -h                         Display this help message."
       exit 0
@@ -286,6 +323,61 @@ case "$PROFILE" in
     exit 1
     ;;
 esac
+
+# ------------------------------------------------------------------------------
+# Step Selection (--start_step / --skip_sim / --skip_step)
+# ------------------------------------------------------------------------------
+# Prints the 0-based position of a step label in ALL_STEPS, or nothing if unknown.
+step_index() {
+  local i
+  for i in "${!ALL_STEPS[@]}"; do
+    if [ "${ALL_STEPS[$i]}" = "$1" ]; then
+      echo "$i"
+      return 0
+    fi
+  done
+}
+
+if [ -n "$START_STEP" ] && [ -z "$(step_index "$START_STEP")" ]; then
+  echo "Error: Unknown --start_step '$START_STEP'. Allowed: ${ALL_STEPS[*]}."
+  exit 1
+fi
+
+SKIP_LIST=()
+if [ -n "$SKIP_STEPS" ]; then
+  IFS="," read -r -a SKIP_LIST <<< "$SKIP_STEPS"
+  for s in "${SKIP_LIST[@]}"; do
+    if [ -z "$(step_index "$s")" ]; then
+      echo "Error: Unknown --skip_step '$s'. Allowed: ${ALL_STEPS[*]}."
+      exit 1
+    fi
+  done
+fi
+if [ "$SKIP_SIM" = true ]; then
+  SKIP_LIST+=("${SIM_STEPS[@]}")
+fi
+
+# Returns 0 if the step should run, 1 if it was deselected.
+step_selected() {
+  local step="$1" s
+  if [ -n "$START_STEP" ] && [ "$(step_index "$step")" -lt "$(step_index "$START_STEP")" ]; then
+    return 1
+  fi
+  for s in "${SKIP_LIST[@]}"; do
+    [ "$s" = "$step" ] && return 1
+  done
+  return 0
+}
+
+STEP_SELECTION="All steps"
+if [ -n "$START_STEP" ] || [ "${#SKIP_LIST[@]}" -gt 0 ]; then
+  STEP_SELECTION=""
+  for s in "${ALL_STEPS[@]}"; do
+    step_selected "$s" && STEP_SELECTION+="$s "
+  done
+  STEP_SELECTION="${STEP_SELECTION% }"
+  [ -z "$STEP_SELECTION" ] && STEP_SELECTION="(none)"
+fi
 
 # ------------------------------------------------------------------------------
 # ANSI Color Codes
@@ -444,6 +536,7 @@ run_matrix_pipeline() {
   echo "  Plotfile Diags: $( [ -n "$SNAPSHOTS" ] && echo "$SNAPSHOTS target snapshots" || ( [ -n "$DIAG_PERIOD" ] && echo "Every $DIAG_PERIOD steps" || echo "Per-case defaults" ) )"
   echo "  Checkpoint Int: $( [ "${CHECKPOINT_PERIOD:-0}" -gt 0 ] && echo "$CHECKPOINT_PERIOD steps" || echo "Disabled (0)" )"
   echo "  Resume Mode   : $resume_mode_str"
+  echo "  Steps Run     : $STEP_SELECTION"
   echo "${C_CYAN}${C_BOLD}======================================================================${C_RESET}"
 
   # Step execution helper
@@ -451,6 +544,13 @@ run_matrix_pipeline() {
     local step_num="$1"
     local title="$2"
     shift 2
+
+    # step_num is "<label>/8"; the label selects it for --start_step / --skip_step
+    if ! step_selected "${step_num%%/*}"; then
+      echo ""
+      echo "    ${C_MAGENTA}${C_BOLD}[SKIPPED]${C_RESET} Step $step_num: $title"
+      return 0
+    fi
 
     local clean_step=$(echo "$step_num" | tr '/ ' '__')
     local log_prefix="step"
@@ -552,24 +652,36 @@ run_matrix_pipeline() {
     python3 scripts/run_case.py --case cases/baseline_kr.yaml --output_dir "$out_dir/seeded_Kr_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${case_args[@]}"
 
   # STEP 4: Postprocessing & Core Diagnostics Extraction
-  local postproc_h2="$out_dir/seeded_H2_baseline"
-  if [ ! -d "$postproc_h2" ] && [ -d "results/seeded_H2_baseline" ]; then
-    postproc_h2="results/seeded_H2_baseline"
-  elif [ ! -d "$postproc_h2" ] && [ -d "runs/seeded_H2_baseline" ]; then
-    postproc_h2="runs/seeded_H2_baseline"
-  fi
+  # Baseline case directory for postprocessing: first existing candidate wins.
+  # results/method_scan/seeded_*_baseline holds the same cases/baseline_*.yaml run,
+  # so it is used when step 3/3b was skipped for another matrix.
+  first_existing_dir() {
+    local d
+    for d in "$@"; do
+      if [ -d "$d" ]; then
+        echo "$d"
+        return 0
+      fi
+    done
+    echo "$1"
+  }
+  local postproc_h2
+  postproc_h2="$(first_existing_dir \
+    "$out_dir/seeded_H2_baseline" \
+    "results/method_scan/seeded_H2_baseline" \
+    "results/seeded_H2_baseline" \
+    "runs/seeded_H2_baseline" \
+    "$out_dir/seeded_H2_1e-5Torr" \
+    "results/seeded_H2_1e-5Torr")"
 
-  local postproc_kr="$out_dir/seeded_Kr_baseline"
-  if [ ! -d "$postproc_kr" ] && [ -d "results/seeded_Kr_baseline" ]; then
-    postproc_kr="results/seeded_Kr_baseline"
-  elif [ ! -d "$postproc_kr" ] && [ -d "runs/seeded_Kr_baseline" ]; then
-    postproc_kr="runs/seeded_Kr_baseline"
-  fi
-  if [ ! -d "$postproc_kr" ] && [ -d "$out_dir/seeded_Kr_1e-6Torr" ]; then
-    postproc_kr="$out_dir/seeded_Kr_1e-6Torr"
-  elif [ ! -d "$postproc_kr" ] && [ -d "results/seeded_Kr_1e-6Torr" ]; then
-    postproc_kr="results/seeded_Kr_1e-6Torr"
-  fi
+  local postproc_kr
+  postproc_kr="$(first_existing_dir \
+    "$out_dir/seeded_Kr_baseline" \
+    "results/method_scan/seeded_Kr_baseline" \
+    "results/seeded_Kr_baseline" \
+    "runs/seeded_Kr_baseline" \
+    "$out_dir/seeded_Kr_1e-6Torr" \
+    "results/seeded_Kr_1e-6Torr")"
 
   run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics (H2 Baseline)" \
     python3 scripts/postprocess_case.py --case-dir "$postproc_h2" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
