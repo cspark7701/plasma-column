@@ -40,6 +40,10 @@ min(1, w_proton * P_ion / source_weight_target) and weight max(w_proton * P_ion,
 (The old hard cut w_proton * P_ion > 1 discarded every pair: w * P_ion is 1e-7..1e-3 here.)
 Use --source_every_n_steps and --source_weight_target to control cost; 0 = deterministic
 fractional weights for every parent.
+
+--source_rate_factor F (default 1) multiplies the ionization rate (n_g sigma v -> F n_g sigma v), so
+build-up that takes tau ~ 80 us happens in tau / F. This is an ARTIFICIAL RESCALING: it also changes the
+ratio of ionization to loss and expulsion rates. Label any result with F != 1 as rescaled/illustrative.
 """
 
 from __future__ import annotations
@@ -150,6 +154,8 @@ class Config:
     source_every_n_steps: int = 1
     # Minimum weight of a created macro-pair (unbiased sampling, see module docstring).
     source_weight_target: float = 100.0
+    # Ionization-rate multiplier; != 1 is an artificial (rescaled) source, see module docstring.
+    source_rate_factor: float = 1.0
     secondary_electron_energy_eV: float = 1.0
     subtract_ionization_energy: int = 0
 
@@ -179,6 +185,8 @@ def parse_args() -> Config:
     args = p.parse_args()
     if args.gas not in ("H2", "Kr"):
         raise ValueError("--gas must be H2 or Kr")
+    if args.source_rate_factor <= 0.0:
+        raise ValueError("--source_rate_factor must be > 0")
     return Config(**vars(args))
 
 
@@ -494,6 +502,8 @@ class ProtonImpactSource:
         print("  ng0 [m^-3]           =", self.ng0)
         print("  estimated dt [s]     =", self.dt)
         print("  source every N steps =", cfg.source_every_n_steps)
+        if cfg.source_rate_factor != 1.0:
+            print(f"  RESCALED SOURCE: ionization rate x {cfg.source_rate_factor:g} (artificial, illustrative only)")
 
     def _sigma(self, Ecm_eV):
         return np.interp(Ecm_eV, self.Ecm, self.sigma, left=0.0, right=self.sigma[-1])
@@ -553,7 +563,8 @@ class ProtonImpactSource:
 
             P = np.zeros_like(vrel)
             idx = mask_gas & (vrel > 0.0)
-            P[idx] = 1.0 - np.exp(-self.ng0 * sig[idx] * vrel[idx] * self.dt * self.cfg.source_every_n_steps)
+            P[idx] = 1.0 - np.exp(-self.cfg.source_rate_factor * self.ng0 * sig[idx] * vrel[idx]
+                                  * self.dt * self.cfg.source_every_n_steps)
 
             self.expected_weight_total += float(np.sum(w * P))
             mask, w_new = sample_secondary_pairs(w, P, self.cfg.source_weight_target, self.rng)
@@ -622,15 +633,18 @@ def write_neutralization_model(cfg: Config, derived: dict, output_dir: Path):
     sig0 = np.interp(Ecm0, Ecm, sigma, left=0.0, right=sigma[-1])
     ng = gas_density(cfg.pressure_torr, cfg.gas_temperature_K)
     tau = 1.0 / (ng * sig0 * vb)
+    tau_eff = tau / cfg.source_rate_factor
     dt = estimate_pic_dt(cfg)
 
+    # tau_s is the physical build-up time; tau_eff_s = tau_s / source_rate_factor is what the run uses.
     path = output_dir / "neutralization_source_model.csv"
     with path.open("w") as f:
-        f.write("step,t_est_s,Ecm_eV,sigma_m2,tau_s,source_integral_fraction_1_minus_exp\n")
+        f.write("step,t_est_s,Ecm_eV,sigma_m2,tau_s,source_rate_factor,tau_eff_s,source_integral_fraction_1_minus_exp\n")
         for step in range(cfg.max_steps + 1):
             t = step * dt
-            fmodel = 1.0 - math.exp(-t / tau)
-            f.write(f"{step},{t:.16e},{Ecm0:.16e},{sig0:.16e},{tau:.16e},{fmodel:.16e}\n")
+            fmodel = 1.0 - math.exp(-t / tau_eff)
+            f.write(f"{step},{t:.16e},{Ecm0:.16e},{sig0:.16e},{tau:.16e},{cfg.source_rate_factor:.6g},"
+                    f"{tau_eff:.16e},{fmodel:.16e}\n")
 
 
 def find_reduced_diag_file(output_dir: Path, name: str):

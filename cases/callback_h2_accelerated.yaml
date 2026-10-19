@@ -1,0 +1,50 @@
+# Accelerated (RESCALED) proton-impact ionization source, H2 1e-5 Torr (task 96)
+#
+# ARTIFICIAL RESCALING (AGENTS rule 10): the ionization rate n_g sigma v is multiplied by
+# source_rate_factor = 1000, so the build-up time tau = 80 us becomes tau_eff = 80 ns, comparable to the
+# 218 ns run. This also speeds up ionization relative to electron loss and ion expulsion (tens of ns),
+# so the result illustrates the build-up shape; it is not a prediction of eta(t) or the steady state.
+# Label every plot and number from this case as rescaled.
+case_name: callback_H2_accel_x1000_rescaled
+description: >
+  RESCALED source (rate x1000). 30 keV 10 mA proton beam through a 20 cm H2 column at 1e-5 Torr with
+  the Python-callback proton-impact ionization source accelerated 1000x.
+method: python_callback
+
+beam:
+  species: proton
+  energy_keV: 30.0
+  current_mA: 10.0
+  radius_m: 0.002
+  rms_divergence: 0.0
+
+plasma:
+  gas: H2
+  pressure_torr: 1.0e-5
+  column_zmin_m: 0.0
+  column_length_m: 0.20
+  plasma_radius_m: 0.003
+  # Rate multiplier (artificial). Created macro-pairs carry >= 5000 physical pairs, about
+  # 1.7e6 macro-pairs over the run (beam macroparticle weight ~1150).
+  source_rate_factor: 1000.0
+  source_weight_target: 5000.0
+
+solenoid:
+  Bz_T: 0.15
+
+# Same production numerics as cases/baseline_h2.yaml (task 94).
+numerics:
+  nx: 64
+  ny: 64
+  nz: 512
+  xmax_m: 0.01
+  ymax_m: 0.01
+  zmin_m: -0.02
+  zmax_m: 0.24
+  max_steps: 23000
+  checkpoint_period: 11500
+  cfl: 0.5
+  solver: es
+  nppc_beam: 4
+  diag_period: 2300
+  reduced_diag_period: 50

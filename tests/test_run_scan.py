@@ -36,7 +36,7 @@ def test_matrix_yaml_structure_and_schema():
     # Test via ScanMatrixConfig
     matrix_cfg = ScanMatrixConfig.from_yaml(matrix_file)
     assert matrix_cfg.matrix_name == "plasma_column_method_comparison"
-    assert len(matrix_cfg.cases) >= 9
+    assert len(matrix_cfg.cases) >= 7  # callback cases removed in task 96
     assert matrix_cfg.cases[0].case_name == "vacuum_reference"
     assert matrix_cfg.cases[0].method == "vacuum"
 

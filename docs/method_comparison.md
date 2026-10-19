@@ -26,10 +26,14 @@ To model plasma-assisted space-charge neutralization for high-current cyclotron 
 | `seeded_H2_1e-5Torr` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `results/seeded_H2_1e-5Torr/` |
 | `seeded_Kr_1e-6Torr` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Static Analytical Seeded | `results/seeded_Kr_1e-6Torr/` |
 | `seeded_Kr_1e-5Torr` | $\text{Kr}$ | $1.0 \times 10^{-5}$ | Static Analytical Seeded | `results/seeded_Kr_1e-5Torr/` |
-| `callback_H2_dynamic` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Dynamic Source Approximation | `results/callback_H2_dynamic/` |
-| `callback_Kr_dynamic` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Dynamic Source Approximation | `results/callback_Kr_dynamic/` |
 | `cxx_H2_mcc_or_custom` | $\text{H}_2$ | $1.0 \times 10^{-5}$ | Full Self-Consistent C++ MCC | `results/cxx_H2_mcc_or_custom/` |
 | `cxx_Kr_mcc_or_custom` | $\text{Kr}$ | $1.0 \times 10^{-6}$ | Full Self-Consistent C++ MCC | `results/cxx_Kr_mcc_or_custom/` |
+
+The Python-callback cases (`callback_H2_dynamic`, `callback_Kr_dynamic`) were removed from the matrix in
+task 96. With the physical source rate, ionization neutralization grows as t/tau (tau = 80 us for H2 at
+1e-5 Torr, 145 us for Kr at 1e-6 Torr) and reaches only ~0.003 in the 0.22 us production run. The callback
+method is covered instead by the small-grid source check (task 95) and one accelerated, explicitly
+**rescaled** H2 run, `cases/callback_h2_accelerated.yaml` (ionization rate x1000).
 
 ---
 

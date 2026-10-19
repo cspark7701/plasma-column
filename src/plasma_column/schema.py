@@ -163,6 +163,18 @@ def build_warpx_cmd_flags(method: str) -> list[str]:
     return []  # pragma: no cover
 
 
+def build_plasma_cmd_flags(plasma: PlasmaConfig, method: str) -> list[str]:
+    """Return driver CLI flags for the callback ionization source (python_callback only).
+
+    Other plasma fields are not passed: the drivers take gas/pressure from separate flags and use their own
+    column geometry defaults.
+    """
+    if _normalise_method(method) != "python_callback":
+        return []
+    return ["--source_rate_factor", repr(plasma.source_rate_factor),
+            "--source_weight_target", repr(plasma.source_weight_target)]
+
+
 def get_default_numerics_for_method(method: str) -> tuple[int, int]:
     """Return recommended (max_steps, checkpoint_period) for a given simulation method.
 
@@ -209,6 +221,9 @@ class PlasmaConfig:
     steady_state_neutralization: float = 0.90
     plasma_age_s: float = 2.0e-4
     electron_temperature_eV: float = 1.0
+    # python_callback only. source_rate_factor != 1 multiplies the ionization rate (artificial, rescaled).
+    source_rate_factor: float = 1.0
+    source_weight_target: float = 100.0
 
 
 @dataclass
@@ -289,6 +304,8 @@ class SimulationCaseConfig:
             raise ValueError(f"numerics.es_method must be 'FFT' or 'Multigrid', got '{self.numerics.es_method}'")
         if self.numerics.dt < 0.0:
             raise ValueError(f"numerics.dt must be >= 0 (0 = estimate), got {self.numerics.dt}")
+        if self.plasma.source_rate_factor <= 0.0:
+            raise ValueError(f"plasma.source_rate_factor must be > 0, got {self.plasma.source_rate_factor}")
 
         # method must already be canonical at this point (from_dict resolves aliases)
         if self.method not in ALLOWED_METHODS:

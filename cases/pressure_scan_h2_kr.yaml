@@ -16,7 +16,9 @@ defaults:
     radius_m: 0.002
     rms_divergence: 0.0
   plasma:
-    neutralization: 0.5
+    # -1 = data-driven seed estimate. The runners always pass --neutralization -1 for seeded cases
+    # (schema.build_warpx_cmd_flags); this value was 0.5 until task 96, which the runs never used.
+    neutralization: -1.0
     plasma_age_s: 2.0e-4
     column_length_m: 0.20
     electron_temperature_eV: 1.0

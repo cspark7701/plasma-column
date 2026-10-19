@@ -184,3 +184,17 @@ def test_particle_number_uses_species_weight_columns(tmp_path):
     assert list(df["Ni"]) == [5.0e8, 5.0e8]
     assert np.isnan(df["eta_net"].iloc[0])  # no beam yet
     assert df["eta_net"].iloc[1] == pytest.approx(0.25)
+
+
+def test_source_rescaling_note_labels_accelerated_source(tmp_path):
+    import json
+    from plasma_column.diagnostics import source_rescaling_note
+
+    meta = {"case_config": {"plasma": {"source_rate_factor": 1000.0}}}
+    (tmp_path / "metadata.json").write_text(json.dumps(meta))
+    note = source_rescaling_note(tmp_path)
+    assert note is not None and "RESCALED" in note and "1000" in note
+
+    meta["case_config"]["plasma"]["source_rate_factor"] = 1.0
+    (tmp_path / "metadata.json").write_text(json.dumps(meta))
+    assert source_rescaling_note(tmp_path) is None

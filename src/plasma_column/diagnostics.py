@@ -480,6 +480,26 @@ def compute_charge_density(*args, **kwargs) -> dict[str, float]:
 compute_beam_core_charge_density = compute_charge_density
 
 
+def source_rescaling_note(case_dir: str | Path) -> str | None:
+    """Return a label if the case used an artificially rescaled ionization source, else None.
+
+    Reads ``case_config.plasma.source_rate_factor`` from the case ``metadata.json`` (AGENTS rule 10:
+    rescaled results must be labeled).
+    """
+    path = Path(case_dir) / "metadata.json"
+    if not path.exists():
+        return None
+    try:
+        plasma = (json.loads(path.read_text()).get("case_config") or {}).get("plasma") or {}
+        factor = float(plasma.get("source_rate_factor", 1.0))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    if factor == 1.0:
+        return None
+    return (f"RESCALED SOURCE: ionization rate multiplied by {factor:g} (source_rate_factor). "
+            "Build-up times are shortened by this factor; results are illustrative, not predictive.")
+
+
 def postprocess_case_directory(
     case_dir: str | Path,
     dry_run: bool = False,
@@ -648,6 +668,10 @@ def postprocess_case_directory(
         "core_averages": _nan_to_none(core_info),
         "beam_core_charge_density_C_m3": charge_density,
     }
+    rescaling = source_rescaling_note(case_dir)
+    if rescaling:
+        summary["rescaling"] = rescaling
+        print(f"WARNING: {rescaling}")
     summary_path = case_dir / "diagnostics_summary.json"
     save_metadata(summary, summary_path)
 

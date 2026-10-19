@@ -302,7 +302,7 @@ def test_scan_matrix_config_from_yaml():
     if mc_path.exists():
         matrix = ScanMatrixConfig.from_yaml(mc_path)
         assert matrix.matrix_name == "plasma_column_method_comparison"
-        assert len(matrix.cases) >= 9
+        assert len(matrix.cases) >= 7  # callback cases removed in task 96
         assert all(isinstance(c, SimulationCaseConfig) for c in matrix.cases)
         # Check first case
         assert matrix.cases[0].case_name == "vacuum_reference"
@@ -400,3 +400,19 @@ def test_build_numerics_cmd_flags_passes_solver_grid_and_nppc():
 def test_invalid_solver_rejected():
     with pytest.raises(ValueError, match="solver"):
         SimulationCaseConfig(case_name="bad_solver", numerics=NumericsConfig(solver="pic")).validate()
+
+
+def test_build_plasma_cmd_flags_only_for_callback():
+    from plasma_column.schema import build_plasma_cmd_flags
+
+    plasma = PlasmaConfig(source_rate_factor=1000.0, source_weight_target=5000.0)
+    flags = build_plasma_cmd_flags(plasma, "python_callback")
+    assert flags == ["--source_rate_factor", "1000.0", "--source_weight_target", "5000.0"]
+    assert build_plasma_cmd_flags(plasma, "seeded_compensation") == []
+
+
+def test_nonpositive_source_rate_factor_rejected():
+    with pytest.raises(ValueError, match="source_rate_factor"):
+        SimulationCaseConfig.from_dict(
+            {"case_name": "bad", "method": "python_callback", "plasma": {"source_rate_factor": 0.0}}
+        )

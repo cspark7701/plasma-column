@@ -4,7 +4,7 @@
 
 matrix_name: method_scan_baseline
 description: >
-  Method comparison (seeded / callback / cxx_mcc) at baseline gas pressures
+  Method comparison (seeded / cxx_mcc) at baseline gas pressures
   for H2 (1e-5 Torr) and Kr (1e-6 Torr).
 
 defaults:
@@ -54,27 +54,9 @@ cases:
     numerics:
       mcc: electron_impact
 
-  - case_name: callback_H2_baseline
-    method: python_callback
-    method_category: dynamic_source_approximation
-    gas: H2
-    pressure_torr: 1.0e-5
-    numerics:
-      max_steps: 23000
-      checkpoint_period: 11500
-      diag_period: 2300
-      reduced_diag_period: 50
-
-  - case_name: callback_Kr_baseline
-    method: python_callback
-    method_category: dynamic_source_approximation
-    gas: Kr
-    pressure_torr: 1.0e-6
-    numerics:
-      max_steps: 23000
-      checkpoint_period: 11500
-      diag_period: 2300
-      reduced_diag_period: 50
+  # Python-callback cases removed (task 96): with the physical source rate, ionization neutralization
+  # reaches only ~0.003 (H2) / ~0.0015 (Kr) in 23000 steps (tau = 80 / 145 us). See
+  # cases/callback_h2_accelerated.yaml (rescaled source) and docs/exec-plans/completed/95_*.md.
 
   - case_name: cxx_mcc_H2_baseline
     method: cxx_mcc_custom
