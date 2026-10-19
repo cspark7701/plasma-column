@@ -86,6 +86,33 @@ def neutralization_fraction(
     return eta_ss * (1.0 - math.exp(-t_s / tau_s))
 
 
+def sample_secondary_pairs(
+    parent_weight: np.ndarray,
+    probability: np.ndarray,
+    weight_target: float,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Unbiased Monte Carlo sampling of ionization pairs created by weighted parent macroparticles.
+
+    Each parent of weight w ionizes w * P physical pairs per step on average. A parent creates one
+    macro-pair with probability P_eff = min(1, w * P / weight_target), with weight w * P / P_eff
+    (= max(w * P, weight_target)), so the expected created weight equals w * P exactly and new
+    macro-pairs carry at least ``weight_target``. ``weight_target <= 0`` creates a pair for every
+    parent with P > 0 (deterministic fractional weights).
+
+    Returns:
+        (mask, weights): boolean mask of parents that create a pair, and the weights of those pairs.
+    """
+    expected = np.asarray(parent_weight, dtype=float) * np.asarray(probability, dtype=float)
+    if weight_target <= 0.0:
+        mask = expected > 0.0
+        return mask, expected[mask]
+    p_eff = np.minimum(1.0, expected / weight_target)
+    mask = (expected > 0.0) & (rng.random(expected.shape) < p_eff)
+    return mask, expected[mask] / p_eff[mask]
+
+
 def keff_over_k0_from_eta(eta: ArrayOrFloat) -> ArrayOrFloat:
     """
     Computes effective perveance ratio K_eff / K0 from net neutralization fraction eta_net.

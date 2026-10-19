@@ -123,3 +123,18 @@ electron-only seed lost 70 % of its electrons before the beam arrived. With a ne
 near 0 and rises as the beam potential (~160 V) expels ions radially (tens of ns for H2+). In the full-grid
 check (task 94) the core reached local `eta_net = 0.96` by step 23 000 (0.22 us), with ions depleted from
 the beam core (n_i/n_e = 0.15) while global eta_net was only 0.17.
+
+## 7. ES vs EM Check and Callback Source Fixes (2026-10-20, task 95)
+
+- ES vs EM, same case on a 32x32x256 grid over the same 28.4 ns (ES 3 000 steps, EM 42 063 steps):
+  global `N_p`, `N_e`, `N_i` agree within 0.6 %, 1.3 % and 0.07 %; local core `eta_net` is 0.45 (ES) vs
+  0.49 (EM). EM took 40x longer (3 h 32 min vs 5 min 20 s). Compare runs with `scripts/compare_solver_runs.py`.
+- Python-callback source: the old hard cut `w * P_ion > source_weight_min` (1.0) discarded every pair,
+  because `w * P_ion` is 1e-7..1e-3 per step for the beam weights used here. All earlier callback runs
+  therefore had no ionization. Pairs are now sampled without bias
+  (`plasma_column.neutralization.sample_secondary_pairs`, `--source_weight_target`, default 100).
+- The callback also evaluated the H2 cross section at the Kr reduced mass (E_cm 29.6 keV instead of
+  20 keV), which raised the H2 rate by 27 %. Fixed (`collision_energy_cm_eV`).
+- Even with a correct source, ionization neutralization grows as t/tau with tau = 80 us (H2, 1e-5 Torr) and
+  145 us (Kr, 1e-6 Torr), so a 0.22 us production run reaches eta ~ 0.003. Build-up to steady state needs
+  either a much longer run or an explicitly labeled accelerated (rescaled) source.

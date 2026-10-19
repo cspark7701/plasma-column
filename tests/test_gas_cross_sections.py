@@ -202,3 +202,12 @@ def test_compute_analytic_mcc_rates():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_callback_collision_energy_uses_configured_gas():
+    """Regression: the callback source once used the Kr mass for H2 (E_cm 29.6 keV instead of 20 keV)."""
+    from scripts.plasma_column_callback_source_picmi_v3 import collision_energy_cm_eV
+
+    v_30keV = 2.3970e6
+    assert collision_energy_cm_eV("H2", v_30keV) == pytest.approx(2.0e4, rel=2e-3)
+    assert collision_energy_cm_eV("Kr", v_30keV) == pytest.approx(2.964e4, rel=2e-3)

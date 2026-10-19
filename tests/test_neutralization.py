@@ -18,6 +18,7 @@ from plasma_column.neutralization import (
     proton_beta_gamma_speed,
     ionization_tau_s,
     neutralization_fraction,
+    sample_secondary_pairs,
     keff_over_k0_from_eta,
     bunch_length_s,
     bunch_length_m,
@@ -100,3 +101,34 @@ def test_neutralization_ratios_helper():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_sample_secondary_pairs_is_unbiased_for_tiny_weights():
+    # Production-like case: w * P ~ 1e-4, far below the target weight (the old hard cut dropped all).
+    rng = np.random.default_rng(1)
+    w = np.full(2_000_000, 1150.0)
+    P = np.full_like(w, 1.18e-7)
+    mask, weights = sample_secondary_pairs(w, P, 0.01, rng)
+    expected_total = float(np.sum(w * P))
+    assert mask.sum() > 0
+    assert np.all(weights >= 0.01)
+    # Relative error of a Poisson count with mean ~2.7e4 is ~0.6 %; allow 5 sigma.
+    assert abs(weights.sum() - expected_total) / expected_total < 0.03
+
+
+def test_sample_secondary_pairs_keeps_large_expected_weights():
+    rng = np.random.default_rng(2)
+    w = np.array([1.0e4, 50.0, 0.0])
+    P = np.array([0.1, 0.1, 0.5])
+    mask, weights = sample_secondary_pairs(w, P, 100.0, rng)
+    assert mask[0] and not mask[2]
+    assert weights[0] == pytest.approx(1.0e3)
+
+
+def test_sample_secondary_pairs_zero_target_is_deterministic():
+    rng = np.random.default_rng(3)
+    w = np.array([10.0, 20.0, 30.0])
+    P = np.array([0.0, 1e-6, 1e-3])
+    mask, weights = sample_secondary_pairs(w, P, 0.0, rng)
+    assert mask.tolist() == [False, True, True]
+    assert np.allclose(weights, [2e-5, 3e-2])

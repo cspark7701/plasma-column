@@ -33,13 +33,13 @@ Format:
     column 1: center-of-mass collision energy [eV]
     column 2: cross section [m^2]
 
-The source uses a deterministic fractional-weight source:
-    w_pair = w_proton * P_ion
-with
+Each beam macroparticle in the gas ionizes w_proton * P_ion physical pairs per step on average, with
     P_ion = 1 - exp[-n_g sigma(E_cm) v_rel dt].
-
-This avoids event-count noise but can increase particle number rapidly. Use
---source_every_n_steps and --source_weight_min to control cost.
+Pairs are sampled without bias: a macro-pair is created with probability
+min(1, w_proton * P_ion / source_weight_target) and weight max(w_proton * P_ion, source_weight_target).
+(The old hard cut w_proton * P_ion > 1 discarded every pair: w * P_ion is 1e-7..1e-3 here.)
+Use --source_every_n_steps and --source_weight_target to control cost; 0 = deterministic
+fractional weights for every parent.
 """
 
 from __future__ import annotations
@@ -62,6 +62,7 @@ from plasma_column.constants import (
     estimate_cfl_timestep,
     estimate_electrostatic_timestep,
 )
+from plasma_column.neutralization import sample_secondary_pairs
 try:
     from pywarpx import picmi
 except (ImportError, ModuleNotFoundError):
@@ -147,7 +148,8 @@ class Config:
     # Source controls
     enable_ionization_source: int = 1
     source_every_n_steps: int = 1
-    source_weight_min: float = 1.0
+    # Minimum weight of a created macro-pair (unbiased sampling, see module docstring).
+    source_weight_target: float = 100.0
     secondary_electron_energy_eV: float = 1.0
     subtract_ionization_energy: int = 0
 
@@ -182,6 +184,12 @@ def parse_args() -> Config:
 
 def gas_mass(gas: str) -> float:
     return 2.01588 * AMU if gas == "H2" else 83.798 * AMU
+
+
+def collision_energy_cm_eV(gas: str, proton_speed_m_per_s):
+    """Centre-of-mass energy [eV] of a proton hitting a gas target at rest (cross-section tables use E_cm)."""
+    mu = MP * gas_mass(gas) / (MP + gas_mass(gas))
+    return 0.5 * mu * np.square(proton_speed_m_per_s) / QE
 
 
 def gas_ionization_energy(gas: str) -> float:
@@ -473,9 +481,12 @@ class ProtonImpactSource:
 
         self.ng0 = gas_density(cfg.pressure_torr, cfg.gas_temperature_K)
         self.dt = estimate_pic_dt(cfg)
-        self.mt = gas_mass(cfg)
 
         self.rng = np.random.default_rng(12345)
+        # Running totals: exact expected pair weight (sum of w * P) and sampled weight actually added.
+        self.expected_weight_total = 0.0
+        self.sampled_weight_total = 0.0
+        self.sampled_pairs_total = 0
 
         print("Installed proton-impact ionization callback")
         print("  gas                  =", cfg.gas)
@@ -515,8 +526,6 @@ class ProtonImpactSource:
         uy_parent_all = []
         uz_parent_all = []
 
-        mu = MP * self.mt / (MP + self.mt)
-
         for x, y, z, ux, uy, uz, w in zip(
             x_tiles, y_tiles, z_tiles, ux_tiles, uy_tiles, uz_tiles, w_tiles
         ):
@@ -538,7 +547,7 @@ class ProtonImpactSource:
             vz = uz / gamma
             vrel = np.sqrt(vx*vx + vy*vy + vz*vz)
 
-            Ecm_eV = 0.5 * mu * vrel*vrel / QE
+            Ecm_eV = collision_energy_cm_eV(self.cfg.gas, vrel)
             sig = self._sigma(Ecm_eV)
             mask_gas = self._neutral_mask(x, y, z)
 
@@ -546,19 +555,25 @@ class ProtonImpactSource:
             idx = mask_gas & (vrel > 0.0)
             P[idx] = 1.0 - np.exp(-self.ng0 * sig[idx] * vrel[idx] * self.dt * self.cfg.source_every_n_steps)
 
-            w_new = w * P
-            mask = w_new > self.cfg.source_weight_min
+            self.expected_weight_total += float(np.sum(w * P))
+            mask, w_new = sample_secondary_pairs(w, P, self.cfg.source_weight_target, self.rng)
             if not np.any(mask):
                 continue
 
             x_new_all.append(x[mask])
             y_new_all.append(y[mask])
             z_new_all.append(z[mask])
-            w_new_all.append(w_new[mask])
+            w_new_all.append(w_new)
             ux_parent_all.append(ux[mask])
             uy_parent_all.append(uy[mask])
             uz_parent_all.append(uz[mask])
 
+        if x_new_all:
+            self.sampled_weight_total += float(sum(np.sum(wn) for wn in w_new_all))
+            self.sampled_pairs_total += int(sum(len(wn) for wn in w_new_all))
+        if self.step % 500 == 0:
+            print(f"[source] call {self.step}: expected pair weight {self.expected_weight_total:.4e}, "
+                  f"sampled {self.sampled_weight_total:.4e} in {self.sampled_pairs_total} macro-pairs", flush=True)
         if not x_new_all:
             return
 
@@ -603,7 +618,7 @@ class ProtonImpactSource:
 def write_neutralization_model(cfg: Config, derived: dict, output_dir: Path):
     beta, gamma, vb, ub = proton_beta_gamma_v(cfg.beam_energy_keV)
     xsec_path, Ecm, sigma = load_cross_section(cfg)
-    Ecm0 = 0.5 * (MP * gas_mass(cfg.gas) / (MP + gas_mass(cfg.gas))) * vb*vb / QE
+    Ecm0 = float(collision_energy_cm_eV(cfg.gas, vb))
     sig0 = np.interp(Ecm0, Ecm, sigma, left=0.0, right=sigma[-1])
     ng = gas_density(cfg.pressure_torr, cfg.gas_temperature_K)
     tau = 1.0 / (ng * sig0 * vb)
