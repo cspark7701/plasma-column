@@ -1,3 +1,6 @@
+# SUPERSEDED by cases/production.yaml (task 97), which runs each physical case once under one name.
+# Kept for reference and older results. Note: seeded cases here record numerics.mcc: electron_impact,
+# but the seeded runner does not pass MCC; production.yaml records what actually runs.
 # Simulation Method Comparison Matrix Configuration
 
 matrix_name: plasma_column_method_comparison

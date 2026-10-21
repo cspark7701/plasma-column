@@ -14,13 +14,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
 
 try:
     import _path_setup  # noqa: F401
@@ -36,7 +34,7 @@ from plasma_column.schema import (
     build_warpx_cmd_flags,
     get_runner_script,
 )
-from plasma_column.warpx_io import collect_metadata, find_checkpoints
+from plasma_column.warpx_io import collect_metadata, find_checkpoints, write_case_records
 from plasma_column.hardware import configure_runtime
 
 
@@ -150,12 +148,11 @@ def main() -> None:
         # Generate metadata
         metadata = collect_metadata(config, args.matrix)
 
-        # Write config.yaml and metadata.json
-        with open(output_dir / "config.yaml", "w", encoding="utf-8") as f:
-            yaml.dump(config.to_dict(), f, default_flow_style=False, sort_keys=False)
-
-        with open(output_dir / "metadata.json", "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+        # config.yaml/metadata.json of existing output describe the run that produced it: a dry run or a
+        # resume-skip keeps them; they are replaced only when a simulation is launched (write_case_records).
+        if args.dry_run:
+            if not write_case_records(output_dir, config.to_dict(), metadata, launching=False):
+                print(f"  ({case_name}: existing simulation output, records left unchanged)")
 
         if not args.dry_run:
             steps = args.max_steps if args.max_steps is not None else config.numerics.max_steps
@@ -182,6 +179,7 @@ def main() -> None:
                         pass
 
             print(f"  --> Launching PIC simulation for {case_name} (gas={gas}, p={pressure:.1e} Torr)...", flush=True)
+            write_case_records(output_dir, config.to_dict(), metadata, launching=True)
             script_path = get_runner_script(config.method)
 
             if args.snapshots is not None:

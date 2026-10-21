@@ -15,13 +15,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import subprocess
 from pathlib import Path
 from typing import Any
 
-import yaml
 
 try:
     import _path_setup  # noqa: F401
@@ -35,7 +33,7 @@ from plasma_column.schema import (
     build_warpx_cmd_flags,
     get_runner_script,
 )
-from plasma_column.warpx_io import get_git_info, collect_metadata, find_checkpoints
+from plasma_column.warpx_io import get_git_info, collect_metadata, find_checkpoints, write_case_records
 from plasma_column.hardware import configure_runtime
 
 
@@ -134,22 +132,8 @@ def main() -> None:
 
     # Generate metadata
     metadata = collect_metadata(config, args.case)
-
-    # Save machine-readable config and metadata
     config_dest = output_dir / "config.yaml"
     metadata_dest = output_dir / "metadata.json"
-
-    with open(config_dest, "w", encoding="utf-8") as f:
-        yaml.dump(config.to_dict(), f, default_flow_style=False, sort_keys=False)
-
-    with open(metadata_dest, "w", encoding="utf-8") as f:
-        json.dump(metadata, f, indent=2)
-
-    print(f"[{'DRY RUN' if args.dry_run else 'RUN'}] Case: {case_name}")
-    print(f"  Configuration file : {args.case}")
-    print(f"  Output directory   : {output_dir}")
-    print(f"  Config saved to    : {config_dest}")
-    print(f"  Metadata saved to  : {metadata_dest}")
 
     gas = config.plasma.gas
     p_torr = config.plasma.pressure_torr
@@ -157,10 +141,19 @@ def main() -> None:
     i_ma = config.beam.current_mA
     steps = config.numerics.max_steps
 
+    print(f"[{'DRY RUN' if args.dry_run else 'RUN'}] Case: {case_name}")
+    print(f"  Configuration file : {args.case}")
+    print(f"  Output directory   : {output_dir}")
     print(f"  Physics summary    : {e_kev} keV, {i_ma} mA proton beam in {gas} gas ({p_torr:.1e} Torr), steps={steps}")
 
     if args.dry_run:
-        print(f"\n[DRY RUN SUCCESS] Parameters validated and metadata written to {output_dir}.", flush=True)
+        # Records of existing output describe the run that produced it; a dry run does not replace them.
+        if write_case_records(output_dir, config.to_dict(), metadata, launching=False):
+            print(f"  Config saved to    : {config_dest}")
+            print(f"  Metadata saved to  : {metadata_dest}")
+        else:
+            print("  Existing simulation output found: config.yaml/metadata.json left unchanged.")
+        print(f"\n[DRY RUN SUCCESS] Parameters validated for {output_dir}.", flush=True)
         return
 
     # Check if case is already fully completed when resume is enabled
@@ -176,7 +169,8 @@ def main() -> None:
             try:
                 df_diag = load_particle_number_diagnostic(diag_file)
                 if len(df_diag) > 0 and int(df_diag["step"].iloc[-1]) >= steps:
-                    print(f"  [RESUME] Case {case_name} already completed {steps} steps. Skipping simulation.")
+                    print(f"  [RESUME] Case {case_name} already completed {steps} steps. Skipping simulation "
+                          "(config.yaml/metadata.json of that run kept).")
                     postproc_script = Path(__file__).resolve().parent / "postprocess_case.py"
                     if postproc_script.exists():
                         subprocess.run([sys.executable, str(postproc_script), "--case-dir", str(output_dir)])
@@ -184,6 +178,10 @@ def main() -> None:
                     return
             except Exception:
                 pass
+
+    write_case_records(output_dir, config.to_dict(), metadata, launching=True)
+    print(f"  Config saved to    : {config_dest}")
+    print(f"  Metadata saved to  : {metadata_dest}")
 
     hw_info = configure_runtime(cores=args.cores, gpu=args.gpu)
 

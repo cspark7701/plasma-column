@@ -405,6 +405,9 @@ class ScanMatrixConfig:
     defaults: dict[str, Any] = field(default_factory=dict)
     cases: list[SimulationCaseConfig] = field(default_factory=list)
     raw_cases: list[dict[str, Any]] = field(default_factory=list)
+    # Optional analysis groups: stage name -> case names. A case may belong to several stages; each case
+    # is still run once (task 97, cases/production.yaml).
+    stages: dict[str, list[str]] = field(default_factory=dict)
 
     def validate(self) -> None:
         """Validates all cases within the matrix."""
@@ -414,6 +417,23 @@ class ScanMatrixConfig:
             raise ValueError(f"Scan matrix '{self.matrix_name}' contains no cases")
         for case in self.cases:
             case.validate()
+        names = [c.case_name for c in self.cases]
+        duplicates = sorted({n for n in names if names.count(n) > 1})
+        if duplicates:
+            raise ValueError(f"Scan matrix '{self.matrix_name}' has duplicate case names: {duplicates}")
+        for stage, members in self.stages.items():
+            if not members:
+                raise ValueError(f"Stage '{stage}' lists no cases")
+            unknown = [m for m in members if m not in names]
+            if unknown:
+                raise ValueError(f"Stage '{stage}' lists unknown cases: {unknown}")
+
+    def stage_cases(self, stage: str) -> list[SimulationCaseConfig]:
+        """Return the cases of one stage, in the order the stage lists them."""
+        if stage not in self.stages:
+            raise KeyError(f"Unknown stage '{stage}'; available: {sorted(self.stages)}")
+        by_name = {c.case_name: c for c in self.cases}
+        return [by_name[n] for n in self.stages[stage]]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScanMatrixConfig:
@@ -423,6 +443,7 @@ class ScanMatrixConfig:
         description = d.get("description", "")
         defaults = dict(d.get("defaults") or {})
         raw_case_list = list(d.get("cases") or [])
+        stages = {str(k): [str(n) for n in (v or [])] for k, v in dict(d.get("stages") or {}).items()}
 
         parsed_cases: list[SimulationCaseConfig] = []
         raw_cases_merged: list[dict[str, Any]] = []
@@ -443,6 +464,7 @@ class ScanMatrixConfig:
             defaults=defaults,
             cases=parsed_cases,
             raw_cases=raw_cases_merged,
+            stages=stages,
         )
         instance.validate()
         return instance

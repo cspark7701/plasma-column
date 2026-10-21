@@ -87,6 +87,45 @@ def find_checkpoints(case_dir: str | Path) -> list[Path]:
     return sorted(list(set(candidates)), key=extract_index)
 
 
+def has_simulation_output(case_dir: str | Path) -> bool:
+    """True if the case directory already holds WarpX output (reduced diagnostics, plotfiles or checkpoints)."""
+    path = Path(case_dir)
+    return (path / "reducedfiles").is_dir() or bool(find_plotfiles(path)) or bool(find_checkpoints(path))
+
+
+def write_case_records(
+    output_dir: str | Path,
+    config_dict: dict[str, Any],
+    metadata: dict[str, Any],
+    launching: bool,
+) -> bool:
+    """
+    Write config.yaml and metadata.json for a case, protecting the provenance of existing output.
+
+    The records of a directory that already holds simulation output describe the run that produced it
+    (repository commit, command line). They are only replaced when a new simulation is launched in that
+    directory (``launching=True``, e.g. a checkpoint restart); the previous metadata is then kept as
+    ``metadata.prev.json``. Dry runs and resume-skips of finished cases leave them untouched.
+
+    Returns:
+        True if the records were written.
+    """
+    import yaml
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    meta_path = out / "metadata.json"
+    if has_simulation_output(out):
+        if not launching:
+            return False
+        if meta_path.exists():
+            meta_path.replace(out / "metadata.prev.json")
+    with open(out / "config.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+    save_metadata(metadata, meta_path)
+    return True
+
+
 def load_plotfile_densities(plotfile_path: str | Path) -> dict[str, Any] | None:
     """
     Attempts to read species grid densities and spatial coordinates from a WarpX plotfile.

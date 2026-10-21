@@ -88,6 +88,7 @@ is_matrix() {
     method_scan|method-scan|mathod_scan|mathod-scan|method|methods|method_scan_baseline) return 0 ;;
     pressure_scan|pressure-scan|pressure|pressures|pressure_scan_h2_kr) return 0 ;;
     method_comparison|method-comparison|comparison|compare) return 0 ;;
+    production|prod) return 0 ;;
     all|run_all|run-all|batch|matrices) return 0 ;;
     *.yaml|*.yml) return 0 ;;
     *) return 1 ;;
@@ -212,12 +213,14 @@ while [[ $# -gt 0 ]]; do
       echo "  method_scan        cases/method_scan_baseline.yaml -> results/method_scan/"
       echo "  pressure_scan      cases/pressure_scan_h2_kr.yaml  -> results/pressure_scan/"
       echo "  method_comparison  cases/method_comparison.yaml    -> results/method_comparison/ [default]"
+      echo "  production         cases/production.yaml           -> results/production/ (each run once;"
+      echo "                     step 4 writes stage A-C summaries; steps 3/3b are not used)"
       echo "  all                Run all three matrix pipelines in sequential order"
       echo "  <path/to/file>     Path to custom YAML matrix configuration file"
       echo ""
       echo "Options:"
       echo "  --profile, -p <P>                  Select storage profile (high, medium, light, dry-run)."
-      echo "  --matrix, -m <M>                   Select scan matrix (method_scan, pressure_scan, method_comparison, all)."
+      echo "  --matrix, -m <M>                   Select scan matrix (method_scan, pressure_scan, method_comparison, production, all)."
       echo "  --all                              Run all three matrix scans sequentially."
       echo "  --output_dir <path>                Override root output directory."
       echo "  --log_dir <path>                   Override directory for step execution logs."
@@ -286,9 +289,11 @@ if [ -z "$MATRIX_TARGET" ] && [ -t 0 ] && [ "$DRY_RUN" = false ]; then
   echo " [2] Pressure Scan H2/Kr  : cases/pressure_scan_h2_kr.yaml"
   echo " [3] Method Comparison    : cases/method_comparison.yaml [default]"
   echo " [4] All Matrices (Batch) : Sequentially run all three matrices"
+  echo " [5] Production (A-C)     : cases/production.yaml (each run once, stage summaries)"
   echo ""
-  read -r -p "Select scan matrix [1-4] (default: 3 - Method Comparison): " M_CHOICE
+  read -r -p "Select scan matrix [1-5] (default: 3 - Method Comparison): " M_CHOICE
   case "$M_CHOICE" in
+    5|production|prod) MATRIX_TARGET="production" ;;
     1|method_scan|method) MATRIX_TARGET="method_scan" ;;
     2|pressure_scan|pressure) MATRIX_TARGET="pressure_scan" ;;
     4|all|batch) MATRIX_TARGET="all" ;;
@@ -445,6 +450,9 @@ resolve_matrix() {
       ;;
     method_comparison|method-comparison|comparison|compare)
       echo "$PROJECT_ROOT/cases/method_comparison.yaml:method_comparison:Method Comparison"
+      ;;
+    production|prod)
+      echo "$PROJECT_ROOT/cases/production.yaml:production:Production (stages A-C)"
       ;;
     *)
       if [ -f "$target" ]; then
@@ -644,50 +652,62 @@ run_matrix_pipeline() {
       python3 scripts/run_scan.py --matrix "$matrix_file" --cores "$TARGET_CORES" --gpu "$GPU" --run "${scan_args[@]}"
   fi
 
-  # STEP 3: Baseline Single-Case Verification (H2 & Kr)
-  run_step "3/8" "Baseline Simulation Case Verification (H2: cases/baseline_h2.yaml)" \
-    python3 scripts/run_case.py --case cases/baseline_h2.yaml --output_dir "$out_dir/seeded_H2_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${case_args[@]}"
+  if [ "$matrix_key" = "production" ]; then
+    # The production matrix contains the baseline cases (seeded_H2_1e-5Torr, seeded_Kr_1e-6Torr) and
+    # run_scan.py postprocesses every case, so steps 3/3b/4b have nothing to do. Step 4 collects the
+    # per-case results into stage summaries (results/production/stage_<stage>/).
+    echo ""
+    echo "    ${C_MAGENTA}${C_BOLD}[SKIPPED]${C_RESET} Steps 3/3b: baselines are cases of the production matrix"
+    run_step "4/8" "Stage Summaries A-C (results/production/stage_*/)" \
+      python3 scripts/postprocess_stages.py --matrix "$matrix_file" --results_dir "$out_dir" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+    echo ""
+    echo "    ${C_MAGENTA}${C_BOLD}[SKIPPED]${C_RESET} Step 4b: every case was postprocessed by run_scan.py"
+  else
+    # STEP 3: Baseline Single-Case Verification (H2 & Kr)
+    run_step "3/8" "Baseline Simulation Case Verification (H2: cases/baseline_h2.yaml)" \
+      python3 scripts/run_case.py --case cases/baseline_h2.yaml --output_dir "$out_dir/seeded_H2_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${case_args[@]}"
 
-  run_step "3b/8" "Baseline Simulation Case Verification (Kr: cases/baseline_kr.yaml)" \
-    python3 scripts/run_case.py --case cases/baseline_kr.yaml --output_dir "$out_dir/seeded_Kr_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${case_args[@]}"
+    run_step "3b/8" "Baseline Simulation Case Verification (Kr: cases/baseline_kr.yaml)" \
+      python3 scripts/run_case.py --case cases/baseline_kr.yaml --output_dir "$out_dir/seeded_Kr_baseline" --cores "$TARGET_CORES" --gpu "$GPU" $( [ "$DRY_RUN" = true ] && echo "--dry_run" ) "${case_args[@]}"
 
-  # STEP 4: Postprocessing & Core Diagnostics Extraction
-  # Baseline case directory for postprocessing: first existing candidate wins.
-  # results/method_scan/seeded_*_baseline holds the same cases/baseline_*.yaml run,
-  # so it is used when step 3/3b was skipped for another matrix.
-  first_existing_dir() {
-    local d
-    for d in "$@"; do
-      if [ -d "$d" ]; then
-        echo "$d"
-        return 0
-      fi
-    done
-    echo "$1"
-  }
-  local postproc_h2
-  postproc_h2="$(first_existing_dir \
-    "$out_dir/seeded_H2_baseline" \
-    "results/method_scan/seeded_H2_baseline" \
-    "results/seeded_H2_baseline" \
-    "runs/seeded_H2_baseline" \
-    "$out_dir/seeded_H2_1e-5Torr" \
-    "results/seeded_H2_1e-5Torr")"
+    # STEP 4: Postprocessing & Core Diagnostics Extraction
+    # Baseline case directory for postprocessing: first existing candidate wins.
+    # results/method_scan/seeded_*_baseline holds the same cases/baseline_*.yaml run,
+    # so it is used when step 3/3b was skipped for another matrix.
+    first_existing_dir() {
+      local d
+      for d in "$@"; do
+        if [ -d "$d" ]; then
+          echo "$d"
+          return 0
+        fi
+      done
+      echo "$1"
+    }
+    local postproc_h2
+    postproc_h2="$(first_existing_dir \
+      "$out_dir/seeded_H2_baseline" \
+      "results/method_scan/seeded_H2_baseline" \
+      "results/seeded_H2_baseline" \
+      "runs/seeded_H2_baseline" \
+      "$out_dir/seeded_H2_1e-5Torr" \
+      "results/seeded_H2_1e-5Torr")"
 
-  local postproc_kr
-  postproc_kr="$(first_existing_dir \
-    "$out_dir/seeded_Kr_baseline" \
-    "results/method_scan/seeded_Kr_baseline" \
-    "results/seeded_Kr_baseline" \
-    "runs/seeded_Kr_baseline" \
-    "$out_dir/seeded_Kr_1e-6Torr" \
-    "results/seeded_Kr_1e-6Torr")"
+    local postproc_kr
+    postproc_kr="$(first_existing_dir \
+      "$out_dir/seeded_Kr_baseline" \
+      "results/method_scan/seeded_Kr_baseline" \
+      "results/seeded_Kr_baseline" \
+      "runs/seeded_Kr_baseline" \
+      "$out_dir/seeded_Kr_1e-6Torr" \
+      "results/seeded_Kr_1e-6Torr")"
 
-  run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics (H2 Baseline)" \
-    python3 scripts/postprocess_case.py --case-dir "$postproc_h2" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+    run_step "4/8" "Postprocessing & Local Core Neutralization Diagnostics (H2 Baseline)" \
+      python3 scripts/postprocess_case.py --case-dir "$postproc_h2" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
 
-  run_step "4b/8" "Postprocessing & Local Core Neutralization Diagnostics (Kr Baseline)" \
-    python3 scripts/postprocess_case.py --case-dir "$postproc_kr" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+    run_step "4b/8" "Postprocessing & Local Core Neutralization Diagnostics (Kr Baseline)" \
+      python3 scripts/postprocess_case.py --case-dir "$postproc_kr" $( [ "$DRY_RUN" = true ] && echo "--dry_run" )
+  fi
 
   # STEP 5: Publication Plotting & Cross-Section Figures
   run_step "5/8" "Generating Publication Figures & Cross-Section Plots" \
@@ -765,7 +785,7 @@ else
   res="$(resolve_matrix "$MATRIX_TARGET")"
   if [ "$res" = "ERROR" ]; then
     echo "Error: Matrix file or target '$MATRIX_TARGET' not found."
-    echo "Available named matrices: method_scan, pressure_scan, method_comparison, all"
+    echo "Available named matrices: method_scan, pressure_scan, method_comparison, production, all"
     exit 1
   fi
 

@@ -55,18 +55,56 @@ Repository state at start: `main` at `46446e1`, clean.
   - method_comparison and pressure_scan seeded cases at 1e-6/1e-5 Torr (differed only in the recorded
     `neutralization` before this fix).
 
-## 3. Full-grid accelerated run (in progress at commit time)
+## 3. Full-grid accelerated run (RESCALED source, F = 1000)
 
 ```bash
 python3 scripts/run_case.py --case cases/callback_h2_accelerated.yaml \
   --output_dir results/es_check/callback_H2_accel_x1000_rescaled --cores 8 --gpu auto
 ```
 
-- Started 2026-10-20 07:39 KST at about 1.0 s/step before the source acts.
-- Expected 9–12.5 h in total.
-- The run's `neutralization_source_model.csv` shows F = 1000 and tau_eff = 8.03e-8 s, so the factor
-  reaches the driver through `run_case.py`.
-- Results will be added to this summary when the run finishes.
+All numbers below come from an ionization rate multiplied by 1000 (tau_eff = 80.3 ns instead of
+80.3 us). They are illustrative of the build-up dynamics, not predictions for 1e-5 Torr H2.
+
+- Finished 2026-10-20 17:56 KST with exit 0.
+  - Wall time 10 h 17 min on 8 cores (seeded H2: 8.8 h). The cost rose from 1.0 to 1.85 s/step as
+    pairs accumulated.
+  - Peak RSS 2.6 GB. Output 7.3 GB (diags + 3 checkpoints).
+- Rescaling labels are present in `neutralization_source_model.csv` (F, tau_eff), in the postprocess
+  log and in `diagnostics_summary.json["rescaling"]`.
+- Source sampling is unbiased: 6.6444e9 pairs sampled against 6.6400e9 expected (+0.07 %), in
+  1.33e6 macro-pairs.
+- Retention (global ParticleNumber at step 23000):
+  - Np = 6.78e9, Ne = 6.64e9, Ni = 6.14e9;
+  - every created electron is still in the domain;
+  - 7.6 % of the ions have left it;
+  - global eta_net = 0.075 (a sanity check only).
+- Local beam-core values from each plotfile (r <= 2 mm, inside the column, beam-filled cells):
+
+  | t [ns] | 1-exp(-t/tau_eff) | core fill | ne/np | ni/np | eta_net local | seeded H2 eta_net local |
+  |---:|---:|---:|---:|---:|---:|---:|
+  | 21.8 | 0.24 | 0.16 | 0.07 | 0.09 | -0.02 | 0.37 |
+  | 43.6 | 0.42 | 0.43 | 0.27 | 0.24 | 0.03 | 0.64 |
+  | 87.2 | 0.66 | 0.97 | 0.71 | 0.47 | 0.25 | 0.88 |
+  | 130.8 | 0.80 | 1.00 | 1.11 | 0.62 | 0.49 | 0.99 |
+  | 174.4 | 0.89 | 1.00 | 1.41 | 0.75 | 0.67 | 0.96 |
+  | 218.0 | 0.93 | 1.00 | 1.71 | 0.90 | 0.81 | 0.96 |
+
+- Interpretation:
+  - Core neutralization builds up dynamically to eta_net = 0.81 (K_eff/K0 = 0.19) at 2.7 tau_eff and
+    is still rising. The seeded run starts with a full neutral plasma and settles at about 0.96.
+  - Electrons accumulate in the core well above the beam density (ne/np = 1.7), as in the seeded run
+    (1.1–1.7).
+  - The ions differ. In the seeded run, ions are expelled from the core (ni/np falls from 1.0 to 0.17).
+    In the accelerated run, they are still being created faster than they leave (ni/np rises to 0.90).
+    So the net value lags the electron-only value.
+  - At the physical rate (F = 1), the same build-up takes about 1000 times longer (~200 us). That is
+    beyond any feasible PIC run at this time step. This is why the production matrix keeps the seeded
+    model, with this run as a labeled dynamic reference.
+- Postprocessing note:
+  - `local_neutralization_vs_t.csv` (written by `postprocess_case`) contains the domain-wide
+    ParticleNumber ratios, despite the `_local` column names. The beam-core time series above was
+    computed from the plotfiles. The `core_averages` in `diagnostics_summary.json` (last snapshot) are
+    local.
 
 ## 4. Production plan
 

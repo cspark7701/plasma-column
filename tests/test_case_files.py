@@ -36,3 +36,22 @@ def test_seeded_matrix_cases_record_the_neutralization_the_runner_passes():
         for case in ScanMatrixConfig.from_yaml(cases_dir / name).cases:
             if case.method == "seeded_compensation":
                 assert case.plasma.neutralization == passed, f"{name}: {case.case_name}"
+
+
+def test_production_matrix_stages_and_records():
+    """cases/production.yaml: each run once, stages A-C, records match what the runners pass."""
+    from plasma_column.schema import ScanMatrixConfig, build_warpx_cmd_flags
+
+    m = ScanMatrixConfig.from_yaml(Path(__file__).resolve().parent.parent / "cases" / "production.yaml")
+    assert len(m.cases) == 15
+    assert {k: len(v) for k, v in m.stages.items()} == {
+        "A_method_scan": 4, "B_method_comparison": 7, "C_pressure_scan": 12}
+    staged = {n for members in m.stages.values() for n in members}
+    assert staged == {c.case_name for c in m.cases}
+    for case in m.cases:
+        flags = build_warpx_cmd_flags(case.method)
+        if case.method in ("seeded_compensation", "vacuum"):
+            assert case.plasma.neutralization == float(flags[1]), case.case_name
+            assert case.numerics.mcc == "none", case.case_name
+        elif case.method == "cxx_mcc_custom":
+            assert case.numerics.mcc == flags[1], case.case_name

@@ -1,3 +1,6 @@
+# SUPERSEDED by cases/production.yaml (task 97), which runs each physical case once under one name.
+# Kept for reference and older results. Note: seeded cases here record numerics.mcc: electron_impact,
+# but the seeded runner does not pass MCC; production.yaml records what actually runs.
 # Pressure scan matrix: H2 and Kr over 6 pressure decades
 # Usage:
 #   python scripts/run_scan.py --matrix cases/pressure_scan_h2_kr.yaml --dry_run

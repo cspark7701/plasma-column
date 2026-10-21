@@ -416,3 +416,28 @@ def test_nonpositive_source_rate_factor_rejected():
         SimulationCaseConfig.from_dict(
             {"case_name": "bad", "method": "python_callback", "plasma": {"source_rate_factor": 0.0}}
         )
+
+
+def _two_case_matrix(stages):
+    return {
+        "matrix_name": "m",
+        "cases": [{"case_name": "a", "method": "seeded"}, {"case_name": "b", "method": "vacuum"}],
+        "stages": stages,
+    }
+
+
+def test_matrix_stages_keep_listed_order():
+    m = ScanMatrixConfig.from_dict(_two_case_matrix({"S": ["b", "a"]}))
+    assert [c.case_name for c in m.stage_cases("S")] == ["b", "a"]
+
+
+def test_matrix_stage_with_unknown_case_rejected():
+    with pytest.raises(ValueError, match="unknown cases"):
+        ScanMatrixConfig.from_dict(_two_case_matrix({"S": ["a", "zzz"]}))
+
+
+def test_matrix_duplicate_case_names_rejected():
+    data = _two_case_matrix({})
+    data["cases"][1]["case_name"] = "a"
+    with pytest.raises(ValueError, match="duplicate case names"):
+        ScanMatrixConfig.from_dict(data)

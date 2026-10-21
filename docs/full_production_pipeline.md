@@ -91,6 +91,36 @@ baseline pressure (`seeded_H2_1e-5Torr` / `seeded_Kr_1e-6Torr`).
 
 ---
 
+### Production matrix (task 97)
+
+`cases/production.yaml` replaces the three matrices for production. The old matrices shared several
+physical runs under different names; here each of the 15 runs exists once, in
+`results/production/<case_name>/`. A `stages:` section groups the cases for analysis:
+
+| Stage | Cases | Contents |
+|---|---|---|
+| `A_method_scan` | 4 | seeded and C++/MCC at the baseline pressures (H2 1e-5, Kr 1e-6 Torr) |
+| `B_method_comparison` | 7 | stage A plus vacuum and seeded at the other pressure of each gas |
+| `C_pressure_scan` | 12 | seeded H2 and Kr at 1e-6 ... 3e-4 Torr |
+
+```bash
+# Validate (writes nothing into finished case directories)
+bash scripts/run_full_production.sh dry-run production --skip_step 5,5b,6,6b,7,7b,8
+# Run everything; --resume (default) skips finished cases, restarts unfinished ones from checkpoints
+bash scripts/run_full_production.sh medium production --snapshots 10
+# Stage summaries at any time, e.g. while later stages are still running
+python3 scripts/postprocess_stages.py --matrix cases/production.yaml --results_dir results/production
+```
+
+- Steps 3/3b are not used (the baselines are matrix cases), step 4 writes
+  `results/production/stage_<stage>/stage_summary.{csv,json}` and plots, and step 4b is not needed
+  (run_scan.py postprocesses each case).
+- Cases are ordered so that stage A finishes first, then the runs stage B adds, then stage C.
+- `config.yaml`/`metadata.json` of a directory that already holds simulation output are never replaced by
+  a dry run or a resume-skip; a checkpoint restart replaces them and keeps the previous metadata as
+  `metadata.prev.json`.
+- Pass `--snapshots 10`: the `medium` profile otherwise sets 15 snapshots per case.
+
 ## 4. Token Conservation & Quiet Log Redirection
 
 When running in quiet mode (default), each step redirects stdout and stderr to isolated log files under `logs/`:

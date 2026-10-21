@@ -1,0 +1,171 @@
+# Production matrix (task 97): every physical run once, analysis grouped into stages.
+# Usage:
+#   python scripts/run_scan.py --matrix cases/production.yaml --dry_run --output_dir results/production
+#   bash scripts/run_full_production.sh medium production
+#   python scripts/postprocess_stages.py --matrix cases/production.yaml --results_dir results/production
+#
+# Supersedes method_scan_baseline.yaml, method_comparison.yaml and pressure_scan_h2_kr.yaml, whose
+# overlapping cases were the same physical runs under different names. Cases are ordered so that stage A
+# completes first, then the runs B adds, then the runs C adds.
+#
+# Each case records what its runner actually passes (tests/test_case_files.py):
+#   seeded_compensation -> --neutralization -1, no MCC (numerics.mcc: none)
+#   cxx_mcc_custom      -> --mcc electron_impact, driver default seed (neutralization -1)
+#   vacuum              -> --neutralization 0, no plasma particles
+# Python-callback cases are not included (task 96); see cases/callback_h2_accelerated.yaml (rescaled).
+
+matrix_name: production
+description: >
+  Production runs for the plasma-column neutralizer: method comparison at baseline pressures (stage A),
+  methods vs vacuum and pressure (stage B), and the seeded pressure scan for H2 and Kr (stage C).
+
+defaults:
+  beam:
+    energy_keV: 30.0
+    current_mA: 10.0
+    radius_m: 0.002
+    rms_divergence: 0.0
+  plasma:
+    neutralization: -1.0
+  solenoid:
+    Bz_T: 0.15
+  # Production settings (task 94): 64x64x512 grid, electrostatic FFT solver (open boundaries).
+  # dt = 9.48e-12 s (electron gyration limit at 0.15 T). The beam front reaches the column end
+  # after ~9700 steps; 23000 steps = 2 domain transits (218 ns), used for every method.
+  # nppc_beam=4 -> beam macroparticle weight ~1150 (~5.9e6 beam macroparticles when filled).
+  # Measured cost (task 94): 8.8 h and ~8 GB per seeded case on 8 cores with 10 snapshots.
+  numerics:
+    nx: 64
+    ny: 64
+    nz: 512
+    xmax_m: 0.01
+    ymax_m: 0.01
+    zmin_m: -0.02
+    zmax_m: 0.24
+    max_steps: 23000
+    checkpoint_period: 11500
+    cfl: 0.5
+    solver: es
+    nppc_beam: 4
+    nppc_plasma: 16
+    diag_period: 2300
+    reduced_diag_period: 50
+    mcc: none
+
+stages:
+  A_method_scan:
+    [seeded_H2_1e-5Torr, seeded_Kr_1e-6Torr, cxx_mcc_H2_1e-5Torr, cxx_mcc_Kr_1e-6Torr]
+  B_method_comparison:
+    [vacuum_reference, seeded_H2_1e-6Torr, seeded_H2_1e-5Torr, seeded_Kr_1e-6Torr, seeded_Kr_1e-5Torr,
+     cxx_mcc_H2_1e-5Torr, cxx_mcc_Kr_1e-6Torr]
+  C_pressure_scan:
+    [seeded_H2_1e-6Torr, seeded_H2_3e-6Torr, seeded_H2_1e-5Torr, seeded_H2_3e-5Torr, seeded_H2_1e-4Torr,
+     seeded_H2_3e-4Torr, seeded_Kr_1e-6Torr, seeded_Kr_3e-6Torr, seeded_Kr_1e-5Torr, seeded_Kr_3e-5Torr,
+     seeded_Kr_1e-4Torr, seeded_Kr_3e-4Torr]
+
+cases:
+  # ── Stage A ────────────────────────────────────────────────────────────────
+  # seeded_H2_1e-5Torr was run in task 94 (results/es_check/seeded_H2_baseline, cases/baseline_h2.yaml)
+  # with the same driver command; it is moved here and skipped by --resume.
+  - case_name: seeded_H2_1e-5Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 1.0e-5
+
+  - case_name: seeded_Kr_1e-6Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 1.0e-6
+
+  - case_name: cxx_mcc_H2_1e-5Torr
+    method: cxx_mcc_custom
+    method_category: full_self_consistent_cxx_mcc
+    physics_nature: WarpX electron-impact MCC on a seeded plasma (H2 uses the atomic-H table, see task 95)
+    gas: H2
+    pressure_torr: 1.0e-5
+    numerics:
+      mcc: electron_impact
+
+  - case_name: cxx_mcc_Kr_1e-6Torr
+    method: cxx_mcc_custom
+    method_category: full_self_consistent_cxx_mcc
+    physics_nature: WarpX electron-impact MCC on a seeded plasma
+    gas: Kr
+    pressure_torr: 1.0e-6
+    numerics:
+      mcc: electron_impact
+
+  # ── Stage B (adds) ─────────────────────────────────────────────────────────
+  - case_name: vacuum_reference
+    method: vacuum
+    method_category: baseline_reference
+    physics_nature: Uncompensated beam propagation without gas or plasma
+    gas: none
+    pressure_torr: 0.0
+    plasma:
+      neutralization: 0.0
+    numerics:
+      nppc_plasma: 0
+
+  - case_name: seeded_H2_1e-6Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 1.0e-6
+
+  - case_name: seeded_Kr_1e-5Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 1.0e-5
+
+  # ── Stage C (adds) ─────────────────────────────────────────────────────────
+  - case_name: seeded_H2_3e-6Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 3.0e-6
+
+  - case_name: seeded_H2_3e-5Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 3.0e-5
+
+  - case_name: seeded_H2_1e-4Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 1.0e-4
+
+  - case_name: seeded_H2_3e-4Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: H2
+    pressure_torr: 3.0e-4
+
+  - case_name: seeded_Kr_3e-6Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 3.0e-6
+
+  - case_name: seeded_Kr_3e-5Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 3.0e-5
+
+  - case_name: seeded_Kr_1e-4Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 1.0e-4
+
+  - case_name: seeded_Kr_3e-4Torr
+    method: seeded_compensation
+    method_category: static_analytic_seeded
+    gas: Kr
+    pressure_torr: 3.0e-4
