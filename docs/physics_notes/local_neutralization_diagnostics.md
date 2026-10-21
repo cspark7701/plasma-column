@@ -57,7 +57,7 @@ the overlap integral with the beam core ($r \le r_{\text{core}}$) drops exponent
 When `scripts/postprocess_case.py` processes a simulation case directory (`runs/<case_name>/`), it outputs:
 
 1. **`global_particle_number.csv`**: Time series of total particle counts $N_p, N_e, N_i$ and global ratios.
-2. **`local_neutralization_vs_t.csv`**: Time series built from the **global** `ParticleNumber` ratios (columns are named `*_local` but are not core averages; only one plotfile is analyzed, so no local time series exists yet).
+2. **`local_neutralization_vs_t.csv`**: Beam-core time series with one row per plotfile (step, time, `beam_in_core`, `core_beam_fill_fraction`, core-averaged $n_p, n_e, n_i$, local $\eta$ and $K_{\text{eff,local}}/K_0$), using the same core definition as `diagnostics_summary.json`. Snapshots before the beam reaches the core have NaN $\eta$. Empty (header only) when the case has no plotfiles. Before task 99 this file held the global `ParticleNumber` ratios under `*_local` names.
 3. **`local_neutralization_vs_z.csv`**: Slice-by-slice $z$-profile of beam-core neutralization fractions along the beam axis.
 4. **`radial_density_profiles.csv`**: Radially-binned species densities $n_p(r), n_e(r), n_i(r)$ and net charge density $\rho_{\text{net}}(r)$.
 5. **`beam_core_charge_density.csv`**: Beam-core charge densities ($\text{C/m}^3$) for protons, electrons, ions, and net charge.

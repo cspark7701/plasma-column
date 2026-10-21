@@ -85,7 +85,8 @@ def main() -> None:
     # 2. Local eta and Keff vs time
     local_t_csv = case_dir / "local_neutralization_vs_t.csv"
     if local_t_csv.exists():
-        df_lt = pd.read_csv(local_t_csv)
+        # Beam-core values per snapshot; the shared plot functions read the unsuffixed column names.
+        df_lt = pd.read_csv(local_t_csv).rename(columns=lambda c: c.removesuffix("_local"))
         if not df_lt.empty:
             p1, p2 = plot_neutralization_evolution(
                 df_lt,

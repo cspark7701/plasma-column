@@ -168,6 +168,8 @@ def test_postprocess_case_directory():
         assert (td / "global_particle_number.csv").exists()
         assert (td / "neutralization_from_particle_number.csv").exists()
         assert (td / "local_neutralization_vs_t.csv").exists()
+        # No plotfiles: the local time series is empty, not filled with global ratios
+        assert pd.read_csv(td / "local_neutralization_vs_t.csv").empty
         assert (td / "local_neutralization_vs_z.csv").exists()
         assert (td / "beam_core_charge_density.csv").exists()
         assert (td / "radial_density_profiles.csv").exists()
@@ -175,3 +177,27 @@ def test_postprocess_case_directory():
         assert (td / "diagnostics_summary.json").exists()
     finally:
         shutil.rmtree(td)
+
+
+def test_local_neutralization_vs_t_uses_core_averages_per_plotfile(monkeypatch):
+    """Each plotfile gives one row of beam-core values (not domain-wide ParticleNumber ratios)."""
+    import plasma_column.warpx_io as wio
+    from plasma_column.diagnostics import compute_local_neutralization_vs_t
+
+    x = y = np.linspace(-0.004, 0.004, 9)
+    z = np.linspace(0.0, 0.2, 11)
+    shape = (x.size, y.size, z.size)
+
+    def fake_load(path):
+        step = int(Path(path).name[-6:])
+        np_3d = np.full(shape, 1.0e15) if step > 0 else np.zeros(shape)
+        return {"ne_3d": np.full(shape, 0.8e15), "ni_3d": np.full(shape, 0.3e15), "np_3d": np_3d,
+                "x": x, "y": y, "z": z, "time": step * 1.0e-11}
+
+    monkeypatch.setattr(wio, "load_plotfile_densities", fake_load)
+    df = compute_local_neutralization_vs_t([Path("diag1000000"), Path("diag1002300")])
+    assert list(df["step"]) == [0, 2300]
+    assert not bool(df["beam_in_core"].iloc[0]) and np.isnan(df["eta_net_local"].iloc[0])
+    assert df["eta_electron_only_local"].iloc[1] == pytest.approx(0.8)
+    assert df["eta_net_local"].iloc[1] == pytest.approx(0.5)
+    assert df["time"].iloc[1] == pytest.approx(2.3e-8)

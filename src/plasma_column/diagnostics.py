@@ -500,6 +500,36 @@ def source_rescaling_note(case_dir: str | Path) -> str | None:
             "Build-up times are shortened by this factor; results are illustrative, not predictive.")
 
 
+LOCAL_T_COLUMNS = [
+    "step", "time", "beam_in_core", "core_beam_fill_fraction", "np_core_avg", "ne_core_avg", "ni_core_avg",
+    "eta_electron_only_local", "eta_net_local", "keff_over_k0_electron_only_local", "keff_over_k0_local",
+]
+
+
+def compute_local_neutralization_vs_t(plotfiles: list[Path]) -> pd.DataFrame:
+    """
+    Beam-core neutralization (r <= r_core inside the column, beam-filled cells) at every plotfile.
+
+    Each row is one snapshot, so the time resolution is the diagnostic period. Snapshots where
+    the beam has not reached the core have NaN eta (``beam_in_core`` False).
+    """
+    from plasma_column.warpx_io import load_plotfile_densities
+
+    rows = []
+    for plt_path in plotfiles:
+        data = load_plotfile_densities(plt_path)
+        if data is None or "ne_3d" not in data:
+            continue
+        core = compute_local_core_neutralization(
+            data["ne_3d"], data["ni_3d"], data["np_3d"], data["x"], data["y"], data["z"]
+        )
+        digits = "".join(ch for ch in Path(plt_path).name if ch.isdigit())
+        row = {"step": int(digits[-6:]) if digits else np.nan, "time": data.get("time", np.nan)}
+        row.update({k: core.get(k, np.nan) for k in LOCAL_T_COLUMNS[2:]})
+        rows.append(row)
+    return pd.DataFrame(rows, columns=LOCAL_T_COLUMNS)
+
+
 def postprocess_case_directory(
     case_dir: str | Path,
     dry_run: bool = False,
@@ -604,27 +634,10 @@ def postprocess_case_directory(
         radial_df = pd.DataFrame(columns=["r", "np_r", "ne_r", "ni_r"])
         charge_density = {"rho_p": 0.0, "rho_e": 0.0, "rho_i": 0.0, "rho_net": 0.0}
 
-    # Build local neutralization vs time DataFrame
-    if not metrics_df.empty:
-        t_arr = metrics_df["time"].values if "time" in metrics_df.columns else np.linspace(0, 1e-7, len(metrics_df))
-        local_t_df = pd.DataFrame({
-            "step": metrics_df["step"].values if "step" in metrics_df.columns else np.arange(len(t_arr)),
-            "time": t_arr,
-            "eta_electron_only_local": metrics_df["eta_electron_only"].values,
-            "eta_net_local": metrics_df["eta_net"].values,
-            "keff_over_k0_electron_only_local": metrics_df["keff_over_k0_electron_only"].values,
-            "keff_over_k0_local": metrics_df["keff_over_k0"].values,
-        })
-    else:
-        t_arr = np.linspace(0, 1e-7, 10)
-        local_t_df = pd.DataFrame({
-            "step": np.arange(10),
-            "time": t_arr,
-            "eta_electron_only_local": [core_info["eta_electron_only_local"]] * 10,
-            "eta_net_local": [core_info["eta_net_local"]] * 10,
-            "keff_over_k0_electron_only_local": [core_info["keff_over_k0_electron_only_local"]] * 10,
-            "keff_over_k0_local": [core_info["keff_over_k0_local"]] * 10,
-        })
+    # Local neutralization vs time: beam-core averages from every plotfile (one row per snapshot).
+    # Domain-wide ParticleNumber ratios are in global_particle_number.csv, not here.
+    local_t_df = compute_local_neutralization_vs_t(plotfiles) if has_local_data else pd.DataFrame(
+        columns=LOCAL_T_COLUMNS)
 
     # Save CSV files
     local_t_csv = case_dir / "local_neutralization_vs_t.csv"
