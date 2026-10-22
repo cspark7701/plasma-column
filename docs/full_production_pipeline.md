@@ -95,7 +95,8 @@ baseline pressure (`seeded_H2_1e-5Torr` / `seeded_Kr_1e-6Torr`).
 
 `cases/production.yaml` replaces the three matrices for production. The old matrices shared several
 physical runs under different names; here each of the 15 runs exists once, in
-`results/production/<case_name>/`. A `stages:` section groups the cases for analysis:
+`results/production/<case_name>/`. A `stages:` section groups the cases for analysis (per-case table with a status column:
+[`production_matrix.md`](production_matrix.md)):
 
 | Stage | Cases | Contents |
 |---|---|---|
