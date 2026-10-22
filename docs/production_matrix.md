@@ -8,7 +8,7 @@ physical run, shared by those stages. Fill in **Status** as runs progress
 ## Cases
 
 | # | Case | Method | Gas | Pressure [Torr] | Stages | Status |
-|---|---|---|---|---|---|---|
+|--|-------------|-------------|---|-----|----|---------|
 | 1 | `seeded_H2_1e-5Torr` | Seeded compensation | H2 | 1e-5 | A, B, C | |
 | 2 | `seeded_Kr_1e-6Torr` | Seeded compensation | Kr | 1e-6 | A, B, C | |
 | 3 | `cxx_mcc_H2_1e-5Torr` | C++ MCC (electron impact on seeded plasma) | H2 | 1e-5 | A, B | |
@@ -30,7 +30,7 @@ Totals: 15 cases — 12 seeded, 2 C++ MCC, 1 vacuum.
 ## Stages
 
 | Stage | Name | Cases | Members |
-|---|---|---|---|
+|---|-----------|---|-------------------|
 | A | `A_method_scan` | 4 | `seeded_H2_1e-5Torr`, `seeded_Kr_1e-6Torr`, `cxx_mcc_H2_1e-5Torr`, `cxx_mcc_Kr_1e-6Torr` |
 | B | `B_method_comparison` | 7 | `vacuum_reference`, `seeded_H2_1e-6Torr`, `seeded_H2_1e-5Torr`, `seeded_Kr_1e-6Torr`, `seeded_Kr_1e-5Torr`, `cxx_mcc_H2_1e-5Torr`, `cxx_mcc_Kr_1e-6Torr` |
 | C | `C_pressure_scan` | 12 | `seeded_H2_1e-6Torr`, `seeded_H2_3e-6Torr`, `seeded_H2_1e-5Torr`, `seeded_H2_3e-5Torr`, `seeded_H2_1e-4Torr`, `seeded_H2_3e-4Torr`, `seeded_Kr_1e-6Torr`, `seeded_Kr_3e-6Torr`, `seeded_Kr_1e-5Torr`, `seeded_Kr_3e-5Torr`, `seeded_Kr_1e-4Torr`, `seeded_Kr_3e-4Torr` |
@@ -38,7 +38,7 @@ Totals: 15 cases — 12 seeded, 2 C++ MCC, 1 vacuum.
 ## Common settings (`defaults` in the matrix file)
 
 | Setting | Value |
-|---|---|
+|------|-------------|
 | Beam | 30 keV, 10 mA, radius 2 mm (DC) |
 | Solenoid B_z | 0.15 T |
 | Grid | 64×64×512, x,y ∈ ±10 mm, z ∈ [-2, 24] cm |
