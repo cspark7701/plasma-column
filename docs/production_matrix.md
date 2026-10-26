@@ -103,6 +103,9 @@ Summary:
   that the beam gets through the inflector. Next simulations: bunched-beam runs with electron
   confinement, and a fixed transport model.
 
+Strategies for a more efficient column, and the test plan, are in
+[`physics_notes/neutralizer_efficiency_strategy.md`](physics_notes/neutralizer_efficiency_strategy.md).
+
 ## Stages
 
 | Stage | Name | Cases | Members |
