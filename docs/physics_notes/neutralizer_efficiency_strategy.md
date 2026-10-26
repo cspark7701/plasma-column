@@ -19,8 +19,34 @@ feasibility table in `docs/production_matrix.md`. Numbers are for the design poi
 - "CW" describes the macro time structure: the cyclotron runs a continuous train of RF bunches.
   It is not the opposite of "bunched".
 
-The local bunching factor along the line is computed in task 105
-(`scripts/analyze_bunching_along_line.py`).
+### Local bunching factor along the line (task 105)
+
+`python scripts/analyze_bunching_along_line.py` (module `plasma_column.bunching`). Model: ballistic
+drift from a thin buncher gap at the buncher exit (z = 0) to the inflector entrance
+(z = 1.12 m, `InjectionLine`), with no space charge and a 5 eV rms source energy spread.
+B_f(z) is the beam fraction inside the best 36° acceptance window divided by 36/360, so DC = 1.
+The buncher voltage is set to maximize B_f at the inflector entrance.
+
+| Buncher | Voltage | B_f at cell entrance | B_f at cell exit (z = 0.20 m) | Cell mean | B_f at inflector |
+|------|-----|-----|-----|-----|-----|
+| Sine (single harmonic) | 620 V | 1.02 | 1.36 | 1.16 | 5.70 |
+| Ideal sawtooth (upper bound) | 1178 V | 1.02 | 1.22 | 1.11 | 10.0 (all in window) |
+
+- Inside the plasma cell the beam is nearly DC (B_f = 1.0–1.4). The bunch forms in the
+  solenoid–Q1–Q2 section and peaks at the inflector.
+- With the PIC core eta_avg = 0.96 (seeded H2, 1e-5 Torr), the static-background estimate at the
+  cell exit is K_eff,peak/K0,peak ~ 1 - 0.96/1.36 = 0.29. Using B_f = 5.7 (inflector) gives
+  0.83. So the peak-bunch penalty is small inside the cell.
+- The real limit moves downstream: from the solenoid to the inflector, B_f rises to 5.7–10, but
+  the compensating electrons stay in the cell (they are confined by the cell solenoid and do
+  not travel with the beam). The beam must be compensated there by other means (a longer or
+  second compensated section, residual-gas compensation in the line), or that space charge must
+  be handled by the optics.
+- Space charge opposes longitudinal bunching at multi-mA, so the real B_f values are lower than
+  these ballistic ones. Compensating the beam upstream may help the buncher reach its design
+  bunching.
+- Figure and data: `results/bunching_along_line/` (git-ignored; regenerate with the command
+  above).
 
 ## 2. What limits the neutralization
 
