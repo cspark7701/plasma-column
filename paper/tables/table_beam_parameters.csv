@@ -2,10 +2,11 @@ Parameter,Symbol,Value,Unit
 Beam Species,p+,Proton,-
 Kinetic Energy,E_k,30.0,keV
 Average Current,I_avg,10.0,mA
-Beam Radius (RMS),r_0,2.0,mm
-Relativistic Velocity,v_p,2.397 x 10^6,m/s
-Relativistic Beta,\beta,0.007996,-
-Uncompensated Perveance,K_0,1.34 x 10^-4,-
+Beam Edge Radius,a,2.0,mm
+Velocity,v_p,2.397e+06,m/s
+Relativistic Beta,\beta,0.007997,-
+Generalized Perveance,K_0,1.250e-03,-
+Nominal Beam Density,n_b,2.07e+15,m^-3
 RF Frequency,f_RF,50.0,MHz
 Bunch Phase Width,\Delta\phi,36.0,deg
 Bunching Factor,B_f,5.0,-

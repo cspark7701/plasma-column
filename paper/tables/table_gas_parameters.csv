@@ -1,3 +1,3 @@
-Gas Species,Molecular Weight [AMU],Pressure [Torr],Number Density [m^-3],Ionization Cross Section [m^2],Ionization Time Tau [ms]
-H2,2.016,1.0e-5,3.22e17,1.61e-20,0.259
-Kr,83.80,1.0e-6,3.22e16,8.96e-20,0.047
+Gas Species,Molecular Weight [AMU],Pressure [Torr],Number Density [m^-3],Ionization Cross Section [m^2],Ionization Time Tau [us]
+H2,2.016,1.0e-05,3.22e+17,1.61e-20,80
+Kr,83.80,1.0e-06,3.22e+16,8.96e-20,145

@@ -1,8 +1,10 @@
 Setting,Value
-Domain Grid Resolution,32 x 32 x 256 cells
+Domain Grid Resolution,64 x 64 x 512 cells
 "Domain Extents (X, Y, Z)","[-10, 10] mm, [-10, 10] mm, [-20, 240] mm"
-Time Step dt,1.0 x 10^-11 s
+Field Solver,"Electrostatic FFT Poisson solver, open boundaries"
+Cell Solenoid,0.15 T uniform over 0 <= z <= 200 mm
+Time Step dt,9.476e-12 s (omega_ce dt = 0.25)
+Steps / Duration,23000 / 218 ns
 Beam Particles per Cell,4
-Plasma Particles per Cell,4
-Field Solver,Electrostatic / Electromagnetic PIC
-Collision Algorithm,Monte Carlo Collisions (MCC) / Custom Ion-Impact
+Plasma Particles per Cell,16
+Plasma Model,Seeded n_e = n_i = f n_b in r <= 3 mm (analytic source estimate); optional WarpX electron-impact MCC

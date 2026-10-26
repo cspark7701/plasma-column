@@ -14,6 +14,10 @@ Generates all 10 publication figures (.png and .pdf) and metadata JSON files und
 - fig09_parameter_scan_summary
 - fig10_numerical_validation
 
+Figures 4, 5, 7 and 9 use the production PIC results frozen in paper/manuscript/pic_data/
+(scripts/make_manuscript_pic_results.py). Figure 8 is an illustrative phase-space sketch and
+Figure 10 shows only the analytic verification target; both are labeled as such.
+
 Usage:
     python scripts/make_paper_figures.py
 """
@@ -37,8 +41,6 @@ except ImportError:
 
 from plasma_column.beam import ProtonBeam, RFFocusedBeam
 from plasma_column.gas import gas_density_m3, get_h2_cross_section, get_kr_cross_section
-from plasma_column.diagnostics import compute_radial_density_profiles
-from plasma_column._testing import generate_synthetic_3d_grid
 from plasma_column.injection_line import InjectionLine, compute_beam_envelope
 from plasma_column.acceptance import InflectorAcceptance, compute_inflector_transmission, generate_phase_space_particles
 from plasma_column.plotting import save_figure, setup_publication_style
@@ -67,8 +69,14 @@ def write_figure_metadata(fig_path: Path, case_names: list[str], script_cmd: str
     save_metadata(meta, json_path)
 
 
+PIC_DATA = PROJECT_ROOT / "paper" / "manuscript" / "pic_data"
+
+
 def main() -> None:
     print("=== Generating 10 Publication Figures under paper/figures/ ===")
+    pic_cases = pd.read_csv(PIC_DATA / "production_cases.csv").set_index("case_name")
+    pic_ts = pd.read_csv(PIC_DATA / "local_eta_vs_t.csv")
+    pic_prof = pd.read_csv(PIC_DATA / "radial_profiles.csv")
     setup_publication_style()
     figures_dir = PROJECT_ROOT / "paper" / "figures"
     figures_dir.mkdir(parents=True, exist_ok=True)
@@ -141,37 +149,42 @@ def main() -> None:
     manifest_entries.append({"figure_id": "Fig 3", "filename": "fig03_analytical_neutralization_time", "title": "Analytical Neutralization Time"})
 
     # Figure 4: Local Plasma Density Profiles
-    ne_3d, ni_3d, np_3d, x, y, z = generate_synthetic_3d_grid()
-    df_r = compute_radial_density_profiles(ne_3d, ni_3d, np_3d, x, y, z)
+    df_r = pic_prof[pic_prof.case_name == "seeded_H2_1e-5Torr"]
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.plot(df_r["r"] * 1000, df_r["np_r"], label="Protons $n_p(r)$", color="tab:blue", lw=2)
     ax.plot(df_r["r"] * 1000, df_r["ne_r"], label="Electrons $n_e(r)$", color="tab:green", lw=2)
     ax.plot(df_r["r"] * 1000, df_r["ni_r"], label="Ions $n_i(r)$", color="tab:red", lw=2)
+    ax.set_xlim(0, 8)
     ax.set_xlabel("Radial Distance $r$ [mm]")
     ax.set_ylabel(r"Number Density [$\mathrm{m}^{-3}$]")
-    ax.set_title("Figure 4: Local Beam-Core Plasma Density Profiles")
+    ax.set_title("Figure 4: PIC Radial Profiles, seeded H$_2$ $10^{-5}$ Torr, t = 218 ns")
     ax.legend()
     f4_path = figures_dir / "fig04_local_plasma_density_profiles"
     save_figure(fig, f4_path)
     plt.close(fig)
-    write_figure_metadata(f4_path, ["seeded_H2_baseline"], "python scripts/make_paper_figures.py")
+    write_figure_metadata(f4_path, ["seeded_H2_1e-5Torr"], "python scripts/make_paper_figures.py")
     manifest_entries.append({"figure_id": "Fig 4", "filename": "fig04_local_plasma_density_profiles", "title": "Local Density Profiles"})
 
     # Figure 5: Local Keff/K0 vs Time
-    t_ns = np.linspace(0, 100, 100)
-    eta_e = 0.9 * (1.0 - np.exp(-t_ns / 20.0))
-    eta_net = 0.8 * (1.0 - np.exp(-t_ns / 20.0))
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot(t_ns, 1.0 - eta_e, label=r"Electron-Only $K_{\text{eff,e}}/K_0$", color="tab:green", lw=2)
-    ax.plot(t_ns, 1.0 - eta_net, label=r"Net Charge $K_{\text{eff,net}}/K_0$", color="tab:purple", lw=2, ls="--")
+    for name, label, color in (("seeded_H2_1e-5Torr", r"H$_2$ $10^{-5}$ Torr", "tab:blue"),
+                               ("seeded_Kr_1e-6Torr", r"Kr $10^{-6}$ Torr", "tab:red"),
+                               ("vacuum_reference", "vacuum", "0.4")):
+        d = pic_ts[pic_ts.case_name == name]
+        ax.plot(d.time * 1e9, 1.0 - d.eta_net_local, "o-", color=color, lw=2, label=f"{label}, net")
+        if name != "vacuum_reference":
+            ax.plot(d.time * 1e9, 1.0 - d.eta_electron_only_local, "s--", color=color, mfc="none", lw=1,
+                    label=f"{label}, electrons only")
+    ax.axhline(0.0, color="k", lw=0.8, ls=":")
     ax.set_xlabel("Time [ns]")
     ax.set_ylabel(r"Effective Perveance Ratio $K_{\text{eff,local}}/K_0$")
-    ax.set_title("Figure 5: Local Beam-Core Effective Perveance Reduction")
-    ax.legend()
+    ax.set_title("Figure 5: PIC Beam-Core $K_{eff}/K_0$ (seeded plasma)")
+    ax.legend(fontsize=8)
     f5_path = figures_dir / "fig05_local_Keff_over_K0_vs_time"
     save_figure(fig, f5_path)
     plt.close(fig)
-    write_figure_metadata(f5_path, ["seeded_H2_baseline"], "python scripts/make_paper_figures.py")
+    write_figure_metadata(f5_path, ["seeded_H2_1e-5Torr", "seeded_Kr_1e-6Torr", "vacuum_reference"],
+                          "python scripts/make_paper_figures.py")
     manifest_entries.append({"figure_id": "Fig 5", "filename": "fig05_local_Keff_over_K0_vs_time", "title": "Local Keff/K0 vs Time"})
 
     # Figure 6: Bunched-Beam Interpretation
@@ -193,19 +206,24 @@ def main() -> None:
     beam = ProtonBeam()
     line = InjectionLine()
     z_v, Rx_v, Ry_v = compute_beam_envelope(beam, line, eta_net=0.0)
-    z_h, Rx_h, Ry_h = compute_beam_envelope(beam, line, eta_net=0.90)
+    eta_h2 = float(pic_cases.loc["seeded_H2_1e-5Torr", "eta_net_local"])
+    eta_kr = float(pic_cases.loc["seeded_Kr_1e-6Torr", "eta_net_local"])
+    z_h, Rx_h, Ry_h = compute_beam_envelope(beam, line, eta_net=eta_h2)
+    z_k, Rx_k, Ry_k = compute_beam_envelope(beam, line, eta_net=eta_kr)
     fig, ax = plt.subplots(figsize=(8, 4.5))
     ax.plot(z_v * 100, Rx_v * 1000, label="Vacuum Reference", color="tab:blue", lw=2)
-    ax.plot(z_h * 100, Rx_h * 1000, label="H2 Neutralized (90%)", color="tab:green", lw=2)
+    ax.plot(z_h * 100, Rx_h * 1000, label=rf"H2 $10^{{-5}}$ Torr, PIC $\eta_{{net}}$ = {eta_h2:.2f}", color="tab:green", lw=2)
+    ax.plot(z_k * 100, Rx_k * 1000, label=rf"Kr $10^{{-6}}$ Torr, PIC $\eta_{{net}}$ = {eta_kr:.2f}", color="tab:red", lw=2)
     ax.axhline(5.0, color="black", ls=":", label="Inflector Aperture (5 mm)")
     ax.set_xlabel("Beamline Position $z$ [cm]")
     ax.set_ylabel("Beam Envelope Radius [mm]")
-    ax.set_title("Figure 7: Beam Envelope Trajectories to Inflector Entrance")
+    ax.set_title("Figure 7: Analytic Envelope to Inflector with PIC Core $\\eta_{net}$ (DC beam)")
     ax.legend()
     f7_path = figures_dir / "fig07_beam_envelope_to_inflector"
     save_figure(fig, f7_path)
     plt.close(fig)
-    write_figure_metadata(f7_path, ["vacuum_reference", "seeded_H2_baseline"], "python scripts/make_paper_figures.py")
+    write_figure_metadata(f7_path, ["vacuum_reference", "seeded_H2_1e-5Torr", "seeded_Kr_1e-6Torr"],
+                          "python scripts/make_paper_figures.py")
     manifest_entries.append({"figure_id": "Fig 7", "filename": "fig07_beam_envelope_to_inflector", "title": "Beam Envelope to Inflector"})
 
     # Figure 8: Inflector Acceptance / Transmission
@@ -216,36 +234,43 @@ def main() -> None:
     ax.scatter(df_h2_xxp["x_mm"], df_h2_xxp["xp_mrad"], alpha=0.5, label="H2 Neutralized", color="tab:green")
     ax.set_xlabel("Position $x$ [mm]")
     ax.set_ylabel("Divergence $x'$ [mrad]")
-    ax.set_title("Figure 8: Transverse Phase Space $(x, x')$ at Inflector Entrance")
+    ax.set_title("Figure 8: ILLUSTRATIVE $(x, x')$ at Inflector (assumed sizes, not PIC)")
     ax.legend()
     f8_path = figures_dir / "fig08_inflector_acceptance_transmission"
     save_figure(fig, f8_path)
     plt.close(fig)
-    write_figure_metadata(f8_path, ["vacuum_reference", "seeded_H2_baseline"], "python scripts/make_paper_figures.py")
+    write_figure_metadata(f8_path, ["illustrative"], "python scripts/make_paper_figures.py")
     manifest_entries.append({"figure_id": "Fig 8", "filename": "fig08_inflector_acceptance_transmission", "title": "Inflector Acceptance Transmission"})
 
     # Figure 9: Parameter Scan Summary
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    cases_sc = ["Vacuum", "H2 (1e-6)", "H2 (1e-5)", "Kr (1e-6)", "Kr (1e-5)"]
-    trans = [25.0, 60.0, 100.0, 85.0, 100.0]
-    ax.bar(cases_sc, trans, color=["tab:blue", "tab:green", "tab:green", "tab:purple", "tab:purple"], width=0.5)
-    ax.set_ylabel("Transmission Efficiency [%]")
-    ax.set_title("Figure 9: Parameter Scan Inflector Transmission Summary")
+    seeded = pic_cases[pic_cases.method == "seeded_compensation"].reset_index()
+    for gas, color in (("H2", "tab:green"), ("Kr", "tab:purple")):
+        d = seeded[seeded.gas == gas].sort_values("pressure_torr")
+        ax.semilogx(d.pressure_torr, d.keff_over_k0_local, "o-", color=color, lw=2, label=f"{gas} seeded")
+    for name, marker in (("cxx_mcc_H2_1e-5Torr", "s"), ("cxx_mcc_Kr_1e-6Torr", "s")):
+        r = pic_cases.loc[name]
+        ax.semilogx(r.pressure_torr, r.keff_over_k0_local, marker, mfc="none", color="k", ms=9)
+    ax.semilogx([], [], "s", mfc="none", color="k", label="+ electron-impact MCC")
+    ax.set_ylim(0, 1.05)
+    ax.set_xlabel("Gas Pressure [Torr]")
+    ax.set_ylabel(r"Beam-Core $K_{eff}/K_0$ at 218 ns")
+    ax.set_title("Figure 9: PIC Pressure Scan Summary (seeded plasma, DC beam)")
+    ax.legend()
     f9_path = figures_dir / "fig09_parameter_scan_summary"
     save_figure(fig, f9_path)
     plt.close(fig)
-    write_figure_metadata(f9_path, ["cases/method_comparison.yaml"], "python scripts/make_paper_figures.py")
+    write_figure_metadata(f9_path, ["cases/production.yaml"], "python scripts/make_paper_figures.py")
     manifest_entries.append({"figure_id": "Fig 9", "filename": "fig09_parameter_scan_summary", "title": "Parameter Scan Summary"})
 
     # Figure 10: Numerical Validation (Analytic vs Simulated MCC Rate)
     t_v = np.linspace(0, 1e-9, 50)
     ne_v = 1000 * 7.7e3 * t_v
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot(t_v * 1e9, ne_v, label="Analytic Rate $dN_e/dt$", color="black", lw=2)
-    ax.plot(t_v * 1e9, ne_v, label="Custom MCC Verification", color="tab:green", ls="--", lw=2)
+    ax.plot(t_v * 1e9, ne_v, label="Analytic target $dN_e/dt$", color="black", lw=2)
     ax.set_xlabel("Time [ns]")
     ax.set_ylabel("Secondary Electron Macroparticles")
-    ax.set_title("Figure 10: Custom MCC Ion-Impact Ionization Rate Validation")
+    ax.set_title("Figure 10: Ion-Impact MCC Analytic Target (PIC verification PENDING)")
     ax.legend()
     f10_path = figures_dir / "fig10_numerical_validation"
     save_figure(fig, f10_path)

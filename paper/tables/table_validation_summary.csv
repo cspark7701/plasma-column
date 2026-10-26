@@ -1,8 +1,8 @@
 Test ID,Case Name,Physics Condition,Expected Behavior,Status
-Test 1,no_gas,n_gas = 0,"N_e = 0, N_i = 0",PASSED
-Test 2,zero_cross_section,sigma_i = 0,"N_e = 0, N_i = 0",PASSED
-Test 3,fixed_cross_section,sigma_i = 1e-20 m^2,dNe/dt = Np n_gas sigma_i vp,PASSED (<0.1% err)
-Test 4,h2_vs_kr_ratio,"Equal P, T","Ne,Kr / Ne,H2 = sigma_Kr / sigma_H2",PASSED
-Test 5,timestep_convergence,"dt, dt/2, dt/4",P = 1 - exp(-nu dt) converges,PASSED
-Test 6,weight_conservation,Physical weights,N_phys = w * N_macro,PASSED
-Test 7,energy_bookkeeping,Secondary energy,"E_e,sec ~ 10 eV assigned",PASSED
+Test 1,no_gas,n_gas = 0,"N_e = 0, N_i = 0",PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 2,zero_cross_section,sigma_i = 0,"N_e = 0, N_i = 0",PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 3,fixed_cross_section,sigma_i = 1e-20 m^2,dNe/dt = Np n_gas sigma_i vp,PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 4,h2_vs_kr_ratio,"Equal P, T","Ne,Kr / Ne,H2 = sigma_Kr / sigma_H2",PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 5,timestep_convergence,"dt, dt/2, dt/4",P = 1 - exp(-nu dt) converges,PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 6,weight_conservation,Physical weights,N_phys = w * N_macro,PENDING: analytic target only; not run with the patched WarpX proton-impact MCC
+Test 7,energy_bookkeeping,Secondary energy,"E_e,sec ~ 10 eV assigned",PENDING: analytic target only; not run with the patched WarpX proton-impact MCC

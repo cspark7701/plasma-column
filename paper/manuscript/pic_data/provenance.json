@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-10-26T04:41:10.072229+00:00",
+  "command_line": "scripts/make_manuscript_pic_results.py",
+  "conda_env": "warpx-dev",
+  "plasma_column_repo": {
+    "commit": "b300a7111f50f44e8d5edd4b3e4ea08f9e1d90fa",
+    "branch": "main",
+    "dirty": true,
+    "status": "M scripts/make_manuscript_figures.py\n M src/plasma_column/design_estimates.py\n M tests/test_design_estimates.py\n?? paper/manuscript/numbers_pic.tex\n?? paper/manuscript/pic_data/\n?? scripts/make_manuscript_pic_results.py"
+  },
+  "matrix": "cases/production.yaml",
+  "results_dir": "/home/cspark/Work/projects/plasma-column/results/production",
+  "core_definition": "r <= 2 mm, 0 <= z <= 0.20 m, beam-filled cells, last snapshot t = 218 ns",
+  "runs": {
+    "seeded_H2_1e-5Torr": {
+      "timestamp": "2026-10-16T05:07:09.773065+00:00",
+      "plasma_column_commit": "bced0fee1a0f29156beab412d5a789c1db19b6d0",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_1e-6Torr": {
+      "timestamp": "2026-10-21T00:47:39.069748+00:00",
+      "plasma_column_commit": "bc773d0adbc9fa2c0ded4df06eab274d7113939a",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "cxx_mcc_H2_1e-5Torr": {
+      "timestamp": "2026-10-21T09:42:09.548792+00:00",
+      "plasma_column_commit": "bc773d0adbc9fa2c0ded4df06eab274d7113939a",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "cxx_mcc_Kr_1e-6Torr": {
+      "timestamp": "2026-10-21T18:39:12.504625+00:00",
+      "plasma_column_commit": "bc773d0adbc9fa2c0ded4df06eab274d7113939a",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "vacuum_reference": {
+      "timestamp": "2026-10-22T04:05:22.696724+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_H2_1e-6Torr": {
+      "timestamp": "2026-10-22T12:20:56.550696+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_1e-5Torr": {
+      "timestamp": "2026-10-22T21:22:56.051432+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_H2_3e-6Torr": {
+      "timestamp": "2026-10-23T06:09:53.567366+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_H2_3e-5Torr": {
+      "timestamp": "2026-10-23T14:55:19.401428+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_H2_1e-4Torr": {
+      "timestamp": "2026-10-23T23:39:34.751405+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_H2_3e-4Torr": {
+      "timestamp": "2026-10-24T08:21:57.741551+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_3e-6Torr": {
+      "timestamp": "2026-10-24T17:04:51.611126+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_3e-5Torr": {
+      "timestamp": "2026-10-25T01:48:43.179727+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_1e-4Torr": {
+      "timestamp": "2026-10-25T10:33:20.292845+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "seeded_Kr_3e-4Torr": {
+      "timestamp": "2026-10-25T19:18:07.680287+00:00",
+      "plasma_column_commit": "381e0d50c139a0785999771873899f2cc74f56e6",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    },
+    "callback_H2_accel_x1000_rescaled": {
+      "timestamp": "2026-10-19T22:39:02.015798+00:00",
+      "plasma_column_commit": "46446e13cf5122bc090ee57d895f3bbc73b76a02",
+      "warpx_commit": "6b32fecc73d30bf131db33876e310a047e0f3a87"
+    }
+  },
+  "accelerated_tau_eff_s": 8.032260026326372e-08,
+  "accelerated_source_rate_factor": 1000.0
+}

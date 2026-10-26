@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from plasma_column.constants import AMU, EPSILON_0, ME, QE, estimate_cfl_timestep
+from plasma_column.constants import AMU, EPSILON_0, ME, QE, estimate_electrostatic_timestep
 from plasma_column.beam import ProtonBeam
 from plasma_column.gas import gas_density_m3, get_h2_cross_section, get_kr_cross_section
 
@@ -138,16 +138,16 @@ class DesignPoint:
     pressure_kr_torr: float = 1.0e-6
     temperature_K: float = 300.0
     secondary_electron_energy_eV: float = 10.0
-    # PIC numerics: defaults of scripts/plasma_column_mcc_picmi_v7.py (PlasmaColumnConfig)
+    # PIC numerics of the production matrix (cases/production.yaml, task 97): electrostatic solver,
+    # time step set by electron gyration in the 0.15 T cell solenoid, 23000 steps for every case.
     pic_nx: int = 64
     pic_ny: int = 64
     pic_nz: int = 512
     pic_xmax_m: float = 1.0e-2
     pic_zmin_m: float = -2.0e-2
     pic_zmax_m: float = 2.4e-1
-    pic_cfl: float = 0.5
-    pic_steps_seeded: int = 20000
-    pic_steps_dynamic: int = 120000
+    pic_solenoid_Bz_T: float = 0.15
+    pic_steps: int = 23000
 
 
 def compute_design_numbers(dp: DesignPoint = DesignPoint()) -> dict[str, float]:
@@ -170,8 +170,12 @@ def compute_design_numbers(dp: DesignPoint = DesignPoint()) -> dict[str, float]:
     tau_kr = 1.0 / (n_kr * sig_kr * v)
 
     K0 = beam.perveance_K0
-    pic_dt = estimate_cfl_timestep(2 * dp.pic_xmax_m / dp.pic_nx, 2 * dp.pic_xmax_m / dp.pic_ny,
-                                   (dp.pic_zmax_m - dp.pic_zmin_m) / dp.pic_nz, dp.pic_cfl)
+    # Same rule as the production driver (omega_ce*dt <= 0.25 binds at 0.15 T; the plasma limit at
+    # the beam density is ~8x looser).
+    dx_min = min(2 * dp.pic_xmax_m / dp.pic_nx, (dp.pic_zmax_m - dp.pic_zmin_m) / dp.pic_nz)
+    pic_dt = estimate_electrostatic_timestep(
+        dx_min, dp.pic_solenoid_Bz_T, uniform_beam_density_m3(I_avg, v, dp.beam_radius_m), 0.0
+    )["dt_s"]
     T_rf = 1.0 / dp.rf_frequency_hz
     dt_b = dp.bunch_phase_width_deg / 360.0 * T_rf
 
@@ -211,8 +215,7 @@ def compute_design_numbers(dp: DesignPoint = DesignPoint()) -> dict[str, float]:
         "t_expel_krp_peak_s": ion_expulsion_time_s(lam_peak, dp.beam_radius_m, 83.798 * AMU),
         "t_electron_cross_s": electron_crossing_time_s(dp.beam_radius_m, dp.secondary_electron_energy_eV),
         "pic_dt_s": pic_dt,
-        "pic_duration_s": pic_dt * dp.pic_steps_seeded,
-        "pic_duration_dynamic_s": pic_dt * dp.pic_steps_dynamic,
+        "pic_duration_s": pic_dt * dp.pic_steps,
         "z_double_K0_m": doubling_length_m(dp.beam_radius_m, K0),
         "z_double_K0_peak_m": doubling_length_m(dp.beam_radius_m, dp.bunching_factor * K0),
     }
@@ -224,7 +227,7 @@ def compute_design_numbers(dp: DesignPoint = DesignPoint()) -> dict[str, float]:
     out["ion_fraction_h2"] = out["t_expel_h2p_avg_s"] / tau_h2
     out["ion_fraction_kr"] = out["t_expel_krp_avg_s"] / tau_kr
     out["B_confine_T"] = axial_field_for_larmor_radius_T(dp.secondary_electron_energy_eV, dp.beam_radius_m / 10.0)
-    out["pic_duration_over_tau_h2"] = out["pic_duration_dynamic_s"] / tau_h2
+    out["pic_duration_over_tau_h2"] = out["pic_duration_s"] / tau_h2
     out["omega_pe_peak_times_bunch"] = out["omega_pe_peak_rad_s"] * dt_b
     return out
 

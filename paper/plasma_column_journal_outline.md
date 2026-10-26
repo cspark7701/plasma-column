@@ -9,10 +9,11 @@
 ## Abstract
 - High-current compact cyclotron axial injection challenge (space-charge beam blowup).
 - Application of a compact beam-ionized $\text{H}_2/\text{Kr}$ plasma neutralizer located upstream of the main solenoid.
-- Analytical kinetics, PICMI/WarpX PIC simulations, and custom MCC ion-impact analytical benchmarks.
+- Analytical kinetics and 3D electrostatic PICMI/WarpX simulations of a DC beam in a seeded plasma column (production matrix, 15 cases).
 - Local volume-averaged beam-core perveance reduction $K_{\text{eff,local}}/K_0$.
 - RF-bunched beam interpretation ($K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$).
-- Downstream envelope transport from buncher through solenoid and quadrupole doublet to spiral inflector, demonstrating $\sim 100\%$ transmission efficiency.
+- Ion expulsion decides the result within 218 ns: H2 core $\eta_{\text{net}} \approx 0.96$, Kr $\approx 0.50$–$0.58$ (Kr$^+$ retained).
+- Downstream transport to the spiral inflector and transmission: pending (not yet computed from PIC output).
 
 ---
 
@@ -44,9 +45,10 @@
 ## 4. Simulation Methods
 - Taxonomy of model levels:
   1. `Vacuum reference` (`vacuum_reference`)
-  2. `Static seeded PIC` (`seeded_H2` / `seeded_Kr`)
-  3. `Python callback dynamic source` (`callback_H2` / `callback_Kr`)
-  4. `Custom ion-impact MCC` (`cxx_H2_mcc_or_custom` / `cxx_Kr_mcc_or_custom`)
+  2. `Static seeded PIC` (`seeded_H2_<p>Torr` / `seeded_Kr_<p>Torr`, pressure scan 1e-6 to 3e-4 Torr)
+  3. `Python callback dynamic source`: not in production (tau_ion >> run); one run with the rate x1000, labeled rescaled (`callback_H2_accel_x1000_rescaled`)
+  4. `Seeded + WarpX electron-impact MCC` (`cxx_mcc_H2_1e-5Torr` / `cxx_mcc_Kr_1e-6Torr`); custom proton-impact MCC pending validation
+- Numerics: 64x64x512, electrostatic FFT solver, 0.15 T cell solenoid, dt = 9.48 ps, 23000 steps (218 ns).
 - Diagnostics and local compensation metrics ($\eta_{\text{local,net}}$, $K_{\text{eff,local}}/K_0$).
 
 ---
@@ -56,11 +58,13 @@
 - Fixed-rate ionization benchmark.
 - Time-step convergence ($\Delta t, \Delta t/2, \Delta t/4$).
 - Macroparticle-weight consistency ($N_{\text{phys}} = w \cdot N_{\text{macro}}$).
+- Status: proton-impact MCC tests pending; ES vs EM solver check done (1% global, ~10% local).
 
 ---
 
 ## 6. Results
-- $\text{H}_2$ vs $\text{Kr}$ neutralization build-up time and steady-state density.
+- $\text{H}_2$ vs $\text{Kr}$ neutralization build-up time (analytic) and seeded-plasma PIC response (Table II, Figs. 6–8 of the manuscript).
+- Ion retention: H2+ expelled (13% of seed left in core), Kr+ retained (80%).
 - Local beam-core effective perveance ratio $K_{\text{eff,local}}/K_0$.
 - Beam envelope reduction ($R_x(z), R_y(z)$).
 - Bunched-beam peak perveance ($K_{\text{eff,peak}}/K_{0,\text{peak}}$ vs $B_f$).

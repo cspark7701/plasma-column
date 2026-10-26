@@ -71,5 +71,11 @@ def test_well_depth_and_ion_expulsion_scaling():
 def test_timescale_ordering(numbers):
     # Electrons cross the beam much faster than the bunch gap; PIC runs are far shorter than tau.
     assert numbers["t_electron_cross_s"] < numbers["bunch_gap_s"]
-    assert numbers["pic_duration_dynamic_s"] < 1e-2 * numbers["tau_h2_s"]
+    assert numbers["pic_duration_s"] < 1e-2 * numbers["tau_h2_s"]
+
+
+def test_pic_numbers_match_production_driver(numbers):
+    # Production ES runs: dt = 0.25 / omega_ce at 0.15 T = 9.476e-12 s; 23000 steps = 218 ns.
+    assert numbers["pic_dt_s"] == pytest.approx(9.4760501726e-12, rel=1e-9)
+    assert numbers["pic_duration_s"] == pytest.approx(2.1794915397e-07, rel=1e-9)
     assert numbers["eta_free_escape_h2"] < 1e-2

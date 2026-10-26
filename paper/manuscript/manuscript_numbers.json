@@ -1,21 +1,21 @@
 {
   "provenance": {
-    "timestamp": "2026-10-09T11:04:36.796597+00:00",
+    "timestamp": "2026-10-26T04:41:44.260619+00:00",
     "command_line": "scripts/make_manuscript_figures.py",
     "conda_env": "warpx-dev",
     "plasma_column_repo": {
-      "commit": "e667eb91b9aa50b91045148ca0e3620bef1d452c",
+      "commit": "b300a7111f50f44e8d5edd4b3e4ea08f9e1d90fa",
       "branch": "main",
       "dirty": true,
-      "status": "?? paper/manuscript/\n?? scripts/make_manuscript_figures.py\n?? src/plasma_column/design_estimates.py"
+      "status": "M paper/manuscript/numbers.tex\n M scripts/make_manuscript_figures.py\n M src/plasma_column/design_estimates.py\n M tests/test_design_estimates.py\n?? paper/manuscript/numbers_pic.tex\n?? paper/manuscript/pic_data/\n?? scripts/make_manuscript_pic_results.py"
     },
     "warpx_source": {
       "path": "/home/cspark/Work/simulation_codes-working/warpx",
       "git": {
-        "commit": "6c04a74dc578ab43a908fd0e859cd6c47c44d610",
+        "commit": "6b32fecc73d30bf131db33876e310a047e0f3a87",
         "branch": "development",
         "dirty": true,
-        "status": "M .gitignore\n M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H\n M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp\n M Source/Particles/Collision/ScatteringProcess.H\n M Source/Particles/Collision/ScatteringProcess.cpp"
+        "status": "M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.H\n M Source/Particles/Collision/BackgroundMCC/BackgroundMCCCollision.cpp\n M Source/Particles/Collision/ScatteringProcess.H\n M Source/Particles/Collision/ScatteringProcess.cpp\n?? Source/Particles/Collision/BackgroundMCC/IonImpactIonization.H\n?? install.sh\n?? install/\n?? setup.sh\n?? upgrade.sh\n?? warpx.build.out\n?? warpx.cmake.out\n?? warpx.install.out\n?? warpx.pip_install.out"
       },
       "note": "Not used: all manuscript numbers are analytical."
     }
@@ -39,9 +39,8 @@
     "pic_xmax_m": 0.01,
     "pic_zmin_m": -0.02,
     "pic_zmax_m": 0.24,
-    "pic_cfl": 0.5,
-    "pic_steps_seeded": 20000,
-    "pic_steps_dynamic": 120000
+    "pic_solenoid_Bz_T": 0.15,
+    "pic_steps": 23000
   },
   "numbers": {
     "beta": 0.007996516033356901,
@@ -78,9 +77,8 @@
     "t_expel_h2p_peak_s": 1.9662721637450985e-08,
     "t_expel_krp_peak_s": 1.2677339463833874e-07,
     "t_electron_cross_s": 1.0663611117783434e-09,
-    "pic_dt_s": 3.379322569496777e-13,
-    "pic_duration_s": 6.758645138993554e-09,
-    "pic_duration_dynamic_s": 4.0551870833961326e-08,
+    "pic_dt_s": 9.476050172609538e-12,
+    "pic_duration_s": 2.1794915397001937e-07,
     "z_double_K0_m": 0.08581456463766468,
     "z_double_K0_peak_m": 0.03837743999787357,
     "t_electron_escape_cell_s": 1.0663611117783435e-07,
@@ -89,7 +87,7 @@
     "ion_fraction_h2": 0.0005474022796883967,
     "ion_fraction_kr": 0.001960973247672321,
     "B_confine_T": 0.05331805558891716,
-    "pic_duration_over_tau_h2": 0.0005048808094443255,
+    "pic_duration_over_tau_h2": 0.002713520807082827,
     "omega_pe_peak_times_bunch": 11.483800581773517
   },
   "envelope": {

@@ -1,4 +1,16 @@
-Case Name,Gas,Pressure [Torr],eta_net (local),K_eff/K0 (local),"K_eff,peak/K0,peak",Inflector Transmission [%]
-vacuum_reference,none,0.0,0.00,1.00,1.00,25.0%
-h2_baseline,H2,1.0e-5,0.90,0.10,0.82,100.0%
-kr_assisted,Kr,1.0e-6,0.95,0.05,0.81,100.0%
+Case Name,Model,Gas,Pressure [Torr],Seed fraction f,n_e/n_b (local),n_i/n_b (local),eta_net (local),K_eff/K0 (local),"K_eff,peak/K0,peak (static est., B_f=5)"
+seeded_H2_1e-5Torr,seeded_compensation,H2,1e-05,0.83,1.13,0.17,0.96,0.04,0.81
+seeded_Kr_1e-6Torr,seeded_compensation,Kr,1e-06,0.67,2.00,1.51,0.50,0.50,0.90
+cxx_mcc_H2_1e-5Torr,cxx_mcc_custom,H2,1e-05,0.83,1.13,0.18,0.95,0.05,0.81
+cxx_mcc_Kr_1e-6Torr,cxx_mcc_custom,Kr,1e-06,0.67,1.99,1.49,0.50,0.50,0.90
+vacuum_reference,vacuum,none,0,0.00,0.00,0.00,0.00,1.00,1.00
+seeded_H2_1e-6Torr,seeded_compensation,H2,1e-06,0.20,0.58,0.18,0.41,0.59,0.92
+seeded_Kr_1e-5Torr,seeded_compensation,Kr,1e-05,0.90,2.34,1.77,0.57,0.43,0.89
+seeded_H2_3e-6Torr,seeded_compensation,H2,3e-06,0.47,0.85,0.11,0.74,0.26,0.85
+seeded_H2_3e-5Torr,seeded_compensation,H2,3e-05,0.90,1.18,0.23,0.96,0.04,0.81
+seeded_H2_1e-4Torr,seeded_compensation,H2,1e-04,0.90,1.20,0.23,0.96,0.04,0.81
+seeded_H2_3e-4Torr,seeded_compensation,H2,3e-04,0.90,1.20,0.24,0.96,0.04,0.81
+seeded_Kr_3e-6Torr,seeded_compensation,Kr,3e-06,0.89,2.32,1.74,0.58,0.42,0.88
+seeded_Kr_3e-5Torr,seeded_compensation,Kr,3e-05,0.90,2.36,1.78,0.58,0.42,0.88
+seeded_Kr_1e-4Torr,seeded_compensation,Kr,1e-04,0.90,2.33,1.76,0.57,0.43,0.89
+seeded_Kr_3e-4Torr,seeded_compensation,Kr,3e-04,0.90,2.30,1.72,0.57,0.43,0.89

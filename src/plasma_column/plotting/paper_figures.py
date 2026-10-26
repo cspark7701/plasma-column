@@ -308,52 +308,101 @@ def generate_fig05_inflector_phase_space(output_dir: str | Path) -> tuple[Path, 
 def generate_paper_tables(
     output_dir: str | Path = "paper/tables",
     dry_run: bool = False,
+    pic_cases_csv: str | Path | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """Generates canonical publication CSV tables summarizing beam, gas, simulation, and results.
+    """Generates publication CSV tables summarizing beam, gas, simulation, and results.
+
+    Beam and gas values come from ``plasma_column.design_estimates`` (the same source as the
+    manuscript macros). PIC results come from the frozen production dataset
+    ``paper/manuscript/pic_data/production_cases.csv`` (scripts/make_manuscript_pic_results.py);
+    without it, the result table is empty. No inflector transmission is listed: it has not been
+    computed from PIC output.
 
     Returns:
         dict[str, pd.DataFrame]: Mapping of table filename to DataFrame.
     """
+    from plasma_column.design_estimates import DesignPoint, compute_design_numbers
+
+    dp = DesignPoint()
+    d = compute_design_numbers(dp)
+    if pic_cases_csv is None:
+        pic_cases_csv = Path(__file__).resolve().parents[3] / "paper" / "manuscript" / "pic_data" / "production_cases.csv"
+    pic_cases_csv = Path(pic_cases_csv)
+
+    def sci(x: float, nd: int = 2) -> str:
+        return f"{x:.{nd}e}"
+
+    results = pd.DataFrame(columns=[
+        "Case Name", "Model", "Gas", "Pressure [Torr]", "Seed fraction f", "n_e/n_b (local)",
+        "n_i/n_b (local)", "eta_net (local)", "K_eff/K0 (local)", "K_eff,peak/K0,peak (static est., B_f=5)",
+    ])
+    if pic_cases_csv.exists():
+        pic = pd.read_csv(pic_cases_csv)
+        results = pd.DataFrame({
+            "Case Name": pic.case_name,
+            "Model": pic.method,
+            "Gas": pic.gas,
+            "Pressure [Torr]": pic.pressure_torr.map(lambda x: f"{x:.0e}" if x > 0 else "0"),
+            "Seed fraction f": pic.seed_fraction.map(lambda x: f"{x:.2f}"),
+            "n_e/n_b (local)": pic.eta_electron_only_local.map(lambda x: f"{x:.2f}"),
+            "n_i/n_b (local)": pic.ni_over_np_local.map(lambda x: f"{x:.2f}"),
+            "eta_net (local)": pic.eta_net_local.map(lambda x: f"{abs(x) if abs(x) < 5e-3 else x:.2f}"),
+            "K_eff/K0 (local)": pic.keff_over_k0_local.map(lambda x: f"{x:.2f}"),
+            "K_eff,peak/K0,peak (static est., B_f=5)": pic.eta_net_local.map(
+                lambda x: f"{1.0 - max(x, 0.0) / dp.bunching_factor:.2f}"),
+        })
+
     tables = {
         "table_beam_parameters.csv": pd.DataFrame([
             {"Parameter": "Beam Species", "Symbol": "p+", "Value": "Proton", "Unit": "-"},
-            {"Parameter": "Kinetic Energy", "Symbol": "E_k", "Value": "30.0", "Unit": "keV"},
-            {"Parameter": "Average Current", "Symbol": "I_avg", "Value": "10.0", "Unit": "mA"},
-            {"Parameter": "Beam Radius (RMS)", "Symbol": "r_0", "Value": "2.0", "Unit": "mm"},
-            {"Parameter": "Relativistic Velocity", "Symbol": "v_p", "Value": "2.397 x 10^6", "Unit": "m/s"},
-            {"Parameter": "Relativistic Beta", "Symbol": r"\beta", "Value": "0.007996", "Unit": "-"},
-            {"Parameter": "Uncompensated Perveance", "Symbol": "K_0", "Value": "1.34 x 10^-4", "Unit": "-"},
-            {"Parameter": "RF Frequency", "Symbol": "f_RF", "Value": "50.0", "Unit": "MHz"},
-            {"Parameter": "Bunch Phase Width", "Symbol": r"\Delta\phi", "Value": "36.0", "Unit": "deg"},
-            {"Parameter": "Bunching Factor", "Symbol": "B_f", "Value": "5.0", "Unit": "-"},
-            {"Parameter": "Peak Current", "Symbol": "I_peak", "Value": "50.0", "Unit": "mA"},
+            {"Parameter": "Kinetic Energy", "Symbol": "E_k", "Value": f"{dp.energy_keV:.1f}", "Unit": "keV"},
+            {"Parameter": "Average Current", "Symbol": "I_avg", "Value": f"{dp.current_avg_mA:.1f}", "Unit": "mA"},
+            {"Parameter": "Beam Edge Radius", "Symbol": "a", "Value": f"{dp.beam_radius_m * 1e3:.1f}", "Unit": "mm"},
+            {"Parameter": "Velocity", "Symbol": "v_p", "Value": sci(d["v_m_s"], 3), "Unit": "m/s"},
+            {"Parameter": "Relativistic Beta", "Symbol": r"\beta", "Value": f"{d['beta']:.6f}", "Unit": "-"},
+            {"Parameter": "Generalized Perveance", "Symbol": "K_0", "Value": sci(d["K0"], 3), "Unit": "-"},
+            {"Parameter": "Nominal Beam Density", "Symbol": "n_b", "Value": sci(d["n_beam_avg_m3"], 2), "Unit": "m^-3"},
+            {"Parameter": "RF Frequency", "Symbol": "f_RF", "Value": f"{dp.rf_frequency_hz / 1e6:.1f}", "Unit": "MHz"},
+            {"Parameter": "Bunch Phase Width", "Symbol": r"\Delta\phi", "Value": f"{dp.bunch_phase_width_deg:.1f}", "Unit": "deg"},
+            {"Parameter": "Bunching Factor", "Symbol": "B_f", "Value": f"{dp.bunching_factor:.1f}", "Unit": "-"},
+            {"Parameter": "Peak Current", "Symbol": "I_peak", "Value": f"{d['I_peak_A'] * 1e3:.1f}", "Unit": "mA"},
         ]),
         "table_gas_parameters.csv": pd.DataFrame([
-            {"Gas Species": "H2", "Molecular Weight [AMU]": "2.016", "Pressure [Torr]": "1.0e-5", "Number Density [m^-3]": "3.22e17", "Ionization Cross Section [m^2]": "1.61e-20", "Ionization Time Tau [ms]": "0.259"},
-            {"Gas Species": "Kr", "Molecular Weight [AMU]": "83.80", "Pressure [Torr]": "1.0e-6", "Number Density [m^-3]": "3.22e16", "Ionization Cross Section [m^2]": "8.96e-20", "Ionization Time Tau [ms]": "0.047"},
+            {"Gas Species": "H2", "Molecular Weight [AMU]": "2.016", "Pressure [Torr]": f"{dp.pressure_h2_torr:.1e}",
+             "Number Density [m^-3]": sci(d["n_h2_m3"]), "Ionization Cross Section [m^2]": sci(d["sigma_h2_m2"]),
+             "Ionization Time Tau [us]": f"{d['tau_h2_s'] * 1e6:.0f}"},
+            {"Gas Species": "Kr", "Molecular Weight [AMU]": "83.80", "Pressure [Torr]": f"{dp.pressure_kr_torr:.1e}",
+             "Number Density [m^-3]": sci(d["n_kr_m3"]), "Ionization Cross Section [m^2]": sci(d["sigma_kr_m2"]),
+             "Ionization Time Tau [us]": f"{d['tau_kr_s'] * 1e6:.0f}"},
         ]),
         "table_simulation_parameters.csv": pd.DataFrame([
-            {"Setting": "Domain Grid Resolution", "Value": "32 x 32 x 256 cells"},
-            {"Setting": "Domain Extents (X, Y, Z)", "Value": "[-10, 10] mm, [-10, 10] mm, [-20, 240] mm"},
-            {"Setting": "Time Step dt", "Value": "1.0 x 10^-11 s"},
+            {"Setting": "Domain Grid Resolution", "Value": f"{dp.pic_nx} x {dp.pic_ny} x {dp.pic_nz} cells"},
+            {"Setting": "Domain Extents (X, Y, Z)",
+             "Value": f"[-{dp.pic_xmax_m * 1e3:.0f}, {dp.pic_xmax_m * 1e3:.0f}] mm, "
+                      f"[-{dp.pic_xmax_m * 1e3:.0f}, {dp.pic_xmax_m * 1e3:.0f}] mm, "
+                      f"[{dp.pic_zmin_m * 1e3:.0f}, {dp.pic_zmax_m * 1e3:.0f}] mm"},
+            {"Setting": "Field Solver", "Value": "Electrostatic FFT Poisson solver, open boundaries"},
+            {"Setting": "Cell Solenoid", "Value": f"{dp.pic_solenoid_Bz_T:.2f} T uniform over 0 <= z <= {dp.cell_length_m * 1e3:.0f} mm"},
+            {"Setting": "Time Step dt", "Value": f"{d['pic_dt_s']:.3e} s (omega_ce dt = 0.25)"},
+            {"Setting": "Steps / Duration", "Value": f"{dp.pic_steps} / {d['pic_duration_s'] * 1e9:.0f} ns"},
             {"Setting": "Beam Particles per Cell", "Value": "4"},
-            {"Setting": "Plasma Particles per Cell", "Value": "4"},
-            {"Setting": "Field Solver", "Value": "Electrostatic / Electromagnetic PIC"},
-            {"Setting": "Collision Algorithm", "Value": "Monte Carlo Collisions (MCC) / Custom Ion-Impact"},
+            {"Setting": "Plasma Particles per Cell", "Value": "16"},
+            {"Setting": "Plasma Model", "Value": "Seeded n_e = n_i = f n_b in r <= 3 mm (analytic source estimate); "
+                                                  "optional WarpX electron-impact MCC"},
         ]),
-        "table_result_summary.csv": pd.DataFrame([
-            {"Case Name": "vacuum_reference", "Gas": "none", "Pressure [Torr]": "0.0", "eta_net (local)": "0.00", "K_eff/K0 (local)": "1.00", "K_eff,peak/K0,peak": "1.00", "Inflector Transmission [%]": "25.0%"},
-            {"Case Name": "h2_baseline", "Gas": "H2", "Pressure [Torr]": "1.0e-5", "eta_net (local)": "0.90", "K_eff/K0 (local)": "0.10", "K_eff,peak/K0,peak": "0.82", "Inflector Transmission [%]": "100.0%"},
-            {"Case Name": "kr_assisted", "Gas": "Kr", "Pressure [Torr]": "1.0e-6", "eta_net (local)": "0.95", "K_eff/K0 (local)": "0.05", "K_eff,peak/K0,peak": "0.81", "Inflector Transmission [%]": "100.0%"},
-        ]),
+        "table_result_summary.csv": results,
         "table_validation_summary.csv": pd.DataFrame([
-            {"Test ID": "Test 1", "Case Name": "no_gas", "Physics Condition": "n_gas = 0", "Expected Behavior": "N_e = 0, N_i = 0", "Status": "PASSED"},
-            {"Test ID": "Test 2", "Case Name": "zero_cross_section", "Physics Condition": "sigma_i = 0", "Expected Behavior": "N_e = 0, N_i = 0", "Status": "PASSED"},
-            {"Test ID": "Test 3", "Case Name": "fixed_cross_section", "Physics Condition": "sigma_i = 1e-20 m^2", "Expected Behavior": "dNe/dt = Np n_gas sigma_i vp", "Status": "PASSED (<0.1% err)"},
-            {"Test ID": "Test 4", "Case Name": "h2_vs_kr_ratio", "Physics Condition": "Equal P, T", "Expected Behavior": "Ne,Kr / Ne,H2 = sigma_Kr / sigma_H2", "Status": "PASSED"},
-            {"Test ID": "Test 5", "Case Name": "timestep_convergence", "Physics Condition": "dt, dt/2, dt/4", "Expected Behavior": "P = 1 - exp(-nu dt) converges", "Status": "PASSED"},
-            {"Test ID": "Test 6", "Case Name": "weight_conservation", "Physics Condition": "Physical weights", "Expected Behavior": "N_phys = w * N_macro", "Status": "PASSED"},
-            {"Test ID": "Test 7", "Case Name": "energy_bookkeeping", "Physics Condition": "Secondary energy", "Expected Behavior": "E_e,sec ~ 10 eV assigned", "Status": "PASSED"},
+            {"Test ID": f"Test {i}", "Case Name": name, "Physics Condition": cond, "Expected Behavior": exp,
+             "Status": "PENDING: analytic target only; not run with the patched WarpX proton-impact MCC"}
+            for i, (name, cond, exp) in enumerate([
+                ("no_gas", "n_gas = 0", "N_e = 0, N_i = 0"),
+                ("zero_cross_section", "sigma_i = 0", "N_e = 0, N_i = 0"),
+                ("fixed_cross_section", "sigma_i = 1e-20 m^2", "dNe/dt = Np n_gas sigma_i vp"),
+                ("h2_vs_kr_ratio", "Equal P, T", "Ne,Kr / Ne,H2 = sigma_Kr / sigma_H2"),
+                ("timestep_convergence", "dt, dt/2, dt/4", "P = 1 - exp(-nu dt) converges"),
+                ("weight_conservation", "Physical weights", "N_phys = w * N_macro"),
+                ("energy_bookkeeping", "Secondary energy", "E_e,sec ~ 10 eV assigned"),
+            ], start=1)
         ]),
     }
 
