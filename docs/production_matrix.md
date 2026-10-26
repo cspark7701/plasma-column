@@ -71,6 +71,38 @@ overcompensated (local eta_net <= 1).
 Stage figures: `results/production/stage_<stage>/local_eta_by_case.{png,pdf}` and, for stages B and C,
 `eta_vs_pressure.{png,pdf}`.
 
+## Feasibility of space-charge compensation
+
+Assessment combining these production results with the analytical estimates of the manuscript
+(`paper/manuscript/plasma_column_prab.tex`, task 103). Verdicts: **Feasible**, **Partial**,
+**Not feasible**, **Unknown** (not yet simulated or validated).
+
+| Condition | Verdict | Evidence | Caveat |
+|-----------|------|-------------|-------------|
+| DC beam, H2 >= 1e-5 Torr, 0.15 T cell solenoid | **Feasible** | PIC core eta_net = 0.96, K_eff/K0 = 0.04; flat from 1e-5 to 3e-4 Torr | Seeded plasma; ionization build-up not simulated |
+| DC beam, H2 1e-6 to 3e-6 Torr | **Partial** | eta_net = 0.41 (1e-6) and 0.74 (3e-6) | Too little gas for a dense enough plasma |
+| DC beam, Kr 1e-6 to 3e-4 Torr | **Partial** | eta_net = 0.50–0.58 at every pressure | Kr+ ions stay in the core (80% after 218 ns); later or gradual build-up not tested |
+| Kr instead of H2 for faster build-up | **Not feasible** (no advantage) | Kr 1e-6 Torr builds up slower than H2 1e-5 Torr (145 vs 80 us) | Kr matches H2 only at 1.8e-6 Torr, and its ions leave more slowly |
+| Time to establish compensation | **Feasible** for CW, **not** for short pulses | Build-up time 80 us (H2), 145 us (Kr); steady state after a few hundred us | Pulses shorter than about 0.3 ms are not compensated |
+| No axial confinement (no solenoid or end electrodes) | **Not feasible** | Analytic: electrons escape the 20 cm cell in about 107 ns, so local eta is about 1e-3 | A cell solenoid and/or electrostatic end plugs are needed |
+| RF-bunched beam, peak bunch (baseline layout) | **Largely not feasible** | Ideal eta_avg = 0.9 with B_f = 5 gives K_peak/K0 = 0.82 (18% reduction) | Main limit, because the buncher is upstream of the column |
+| Holding electrons through the 18 ns bunch gap | **Unknown** (needs B_z >= 53 mT) | Without it, electrons cross the beam in 1.1 ns and are lost each gap | No bunched-beam PIC runs yet |
+| Overcompensation (net focusing) | **Feasible** (no problem) | Electrons alone exceed n_b, but net eta <= 1 in every case | — |
+| Beam envelope and transmission into the inflector | **Unknown** | Not computed; the envelope transport model gives unphysical radii (task 103) | Needs a model fix and transport runs |
+| Self-consistent proton-impact ionization | **Unknown** | Custom proton-impact MCC not run or verified | All production results use the seeded model |
+| Beam loss from charge exchange and scattering in the gas | **Unknown** | Not assessed | May limit how high the pressure can go |
+
+Summary:
+
+- **Promising:** a compact H2 cell at about 1e-5 Torr inside a solenoid can, in principle,
+  cancel almost all of the space charge in the core of a continuous beam. Use H2 rather than Kr.
+- **Limited:** in the baseline layout the beam arrives bunched, so even perfect average
+  compensation removes only about 1/B_f of the peak-bunch space charge (about 18% at B_f = 5),
+  and electrons must be held through each inter-bunch gap.
+- **Not yet shown:** that the plasma actually builds up, that it survives the bunch gaps, and
+  that the beam gets through the inflector. Next simulations: bunched-beam runs with electron
+  confinement, and a fixed transport model.
+
 ## Stages
 
 | Stage | Name | Cases | Members |
