@@ -44,16 +44,19 @@ class InjectionLine:
     Compact-cyclotron axial injection beamline layout:
     buncher exit -> plasma neutralizer -> solenoid -> Q1 -> Q2 -> inflector entrance
     """
+    # Default optics: matched for the uncompensated DC 10 mA beam, a = 2 mm, eps_n,edge = 1 pi mm mrad
+    # (scripts/transport_to_inflector.py, dc_uncompensated). The earlier 5 / -4.5 T/m gradients
+    # (k L ~ 1.7 at Brho = 0.025 T m) overfocused and blew the beam up to ~0.8 m.
     plasma_cell_length: float = 0.20
     drift1_length: float = 0.10
     solenoid_length: float = 0.25
-    solenoid_field_T: float = 0.15
+    solenoid_field_T: float = 0.23
     drift2_length: float = 0.10
     q1_length: float = 0.12
-    q1_gradient_Tm: float = 5.0
+    q1_gradient_Tm: float = -0.28
     drift3_length: float = 0.08
     q2_length: float = 0.12
-    q2_gradient_Tm: float = -4.5
+    q2_gradient_Tm: float = 0.85
     drift4_length: float = 0.15
 
     @property

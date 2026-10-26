@@ -80,6 +80,13 @@ Recommended configuration: an H2 cell at about 1e-5 Torr inside the 0.15 T solen
 negatively biased end electrodes and an optional small electron or plasma source for a fast
 start. It sits close to the buncher, where the beam is still nearly DC.
 
+For a CW beam the cell trap is the main lever. For an RF-bunched beam the peak space charge builds
+up downstream (B_f 1.3 in the cell, 5.7 at the inflector), and electrons compensate only the
+RF-averaged charge, so compensation must extend along the line and bunching should happen late.
+Configurations for both beams and the simulation task list:
+[simulation_strategy_tasks.md](simulation_strategy_tasks.md)
+(figure `figures/recommended_configurations.png`).
+
 ## 4. Test plan in this repository
 
 | Step | Task | Purpose | Cost |
@@ -88,6 +95,24 @@ start. It sits close to the buncher, where the beam is still nearly DC.
 | 2 | Confinement scan with the seeded driver: end-electrode bias, B_z = 0, 0.05, 0.15 T, runs longer than 218 ns | Measure tau_c directly (strategies 1, 6) | Driver change, a few ~9 h runs |
 | 3 | Bunched-beam PIC with the best configuration from step 2 | RF-averaged and peak-bunch eta (strategies 5, 6) | New beam injection, several runs |
 | 4 | Fix the envelope transport model (`compute_beam_envelope`, task 103 open item), then transmission into the inflector | The result that decides the design | Model work |
+
+### Step 4 result: transport to the inflector (task 106)
+
+Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
+eta_cell = 0.958, transmission estimate T at 0.25 / 0.5 / 1.0 pi mm mrad:
+
+| Scenario | T |
+|---|---|
+| DC, no compensation | 0.17 / 0.13 / 0.08 |
+| DC, cell only | 0.20 / 0.16 / 0.10 |
+| DC, whole line | 1.00 / 0.62 / 0.17 |
+| Bunched, whole line, RF-averaged compensation | 0.001 / 0.003 / 0.007 |
+| Bunched, whole line, per-slice (upper bound) | 0.99 / 0.58 / 0.17 |
+
+The cell alone does little for transmission: the beam blows up again in the uncompensated drift
+and solenoid. For a DC beam the compensation must extend along the line. For a bunched beam the
+electrons compensate only the RF-averaged charge, so the peak slice is not transported in this
+layout with any compensation; bunching must happen close to the inflector.
 
 ## 5. Limitations
 

@@ -83,8 +83,8 @@ def test_envelope_integration_neutralized_focusing():
 def test_envelope_cell_only_vs_uniform_neutralization():
     """
     Verify that cell-only neutralization (eta_cell=0.9, eta_downstream=0.0)
-    experiences more downstream expansion than uniform neutralization (eta_downstream=0.9),
-    but remains smaller than full vacuum (eta_cell=0.0).
+    reaches a larger maximum envelope than uniform neutralization (eta_downstream=0.9),
+    but smaller than full vacuum (eta_cell=0.0).
     """
     beam = ProtonBeam(energy_keV=30.0, current_mA=10.0, radius_m=0.002)
     line = InjectionLine()
@@ -93,9 +93,9 @@ def test_envelope_cell_only_vs_uniform_neutralization():
     z, rx_cell, ry_cell = compute_beam_envelope(beam, line, eta_cell=0.90, eta_downstream=0.0)
     z, rx_unif, ry_unif = compute_beam_envelope(beam, line, eta_cell=0.90, eta_downstream=0.90)
 
-    # At the inflector entrance:
-    assert rx_unif[-1] < rx_cell[-1] < rx_vac[-1]
-    assert ry_unif[-1] < ry_cell[-1] < ry_vac[-1]
+    # Largest envelope along the line (at a fixed tune the exit radius depends on the matching):
+    r_max = [max(rx.max(), ry.max()) for rx, ry in ((rx_unif, ry_unif), (rx_cell, ry_cell), (rx_vac, ry_vac))]
+    assert r_max[0] < r_max[1] < r_max[2]
 
     # Inside the plasma cell (z <= 0.20 m), cell-only and uniform curves must agree closely (< 0.1%)
     cell_mask = z <= line.plasma_cell_length

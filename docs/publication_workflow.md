@@ -118,11 +118,12 @@ python scripts/analyze_bunched_beam_neutralization.py
 python scripts/transport_to_inflector.py
 ```
 
-### Output Optics Metrics & Figures:
-- `data/inflector_entrance_summary.csv`: Transmission percentages and envelope radii at inflector entrance.
-- `data/beam_envelope_to_inflector.csv`: Envelope trajectories $R_x(z), R_y(z)$ from $z=0$ to $z=1.0\text{ m}$.
-- `data/phase_space_at_inflector.csv`: Transverse phase-space macroparticle coordinates $(x, x')$ and $(y, y')$.
-- `plots/envelope_buncher_to_inflector.png` / `.pdf`: Beam envelope comparison (vacuum vs neutralized).
+### Output Optics Metrics & Figures (`results/transport_to_inflector/`, git-ignored):
+- `transport_summary.csv` / `.json`: matched solenoid and Q1/Q2 settings, envelope radii and divergence at the inflector entrance, and the transmission estimate per scenario and emittance.
+- `envelopes.csv`: matched envelopes $R_x(z), R_y(z)$ from the buncher exit to the inflector entrance.
+- `envelopes_matched.png` / `.pdf`: matched envelopes, DC and bunched scenarios.
+
+Model and results: `docs/physics_notes/injection_line_transport.md`.
 - `plots/inflector_phase_space_xxp.png` / `.pdf`: Phase space ellipse at inflector entrance.
 - `plots/transmission_comparison.png` / `.pdf`: Bar chart showing inflector transmission efficiency ($25\%$ vacuum vs $100\%$ neutralized).
 

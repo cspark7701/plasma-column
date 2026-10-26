@@ -86,10 +86,10 @@ Assessment combining these production results with the analytical estimates of t
 | Time to establish compensation | **Feasible** for CW, **not** for short pulses | Build-up time 80 us (H2), 145 us (Kr); steady state after a few hundred us | Pulses shorter than about 0.3 ms are not compensated |
 | No axial confinement (no solenoid or end electrodes) | **Not feasible** | Analytic: electrons escape the 20 cm cell in about 107 ns, so local eta is about 1e-3 | A cell solenoid and/or electrostatic end plugs are needed |
 | RF-bunched beam, peak bunch inside the cell | **Feasible** (nearly DC there) | Task 105: B_f = 1.0–1.4 in the cell (sine buncher set for the inflector), so K_peak/K0 ~ 0.29 at the cell exit with eta_avg = 0.96 | Ballistic model, no space charge |
-| Bunched beam downstream (solenoid → inflector) | **Not feasible** with the cell alone | B_f rises to 5.7 (sine) – 10 (sawtooth) at the inflector; with B_f = 5.7, even eta_avg = 0.96 would give only K_peak/K0 = 0.83, and the cell electrons do not travel with the beam | Main limit; needs downstream compensation or optics that handle the space charge |
+| Bunched beam downstream (solenoid → inflector) | **Not feasible** with the cell alone | B_f rises to 5.7 (sine) – 10 (sawtooth) at the inflector; with B_f = 5.7, even eta_avg = 0.96 would give only K_peak/K0 = 0.83, and the cell electrons do not travel with the beam. Matched transport (task 106): T < 0.01 with cell-only or whole-line RF-averaged compensation | Main limit; needs bunching close to the inflector (alternative-placement study) or optics that handle the space charge |
 | Holding electrons through the 18 ns bunch gap | **Unknown** (needs B_z >= 53 mT) | Without it, electrons cross the beam in 1.1 ns and are lost each gap | No bunched-beam PIC runs yet |
 | Overcompensation (net focusing) | **Feasible** (no problem) | Electrons alone exceed n_b, but net eta <= 1 in every case | — |
-| Beam envelope and transmission into the inflector | **Unknown** | Not computed; the envelope transport model gives unphysical radii (task 103) | Needs a model fix and transport runs |
+| Beam envelope and transmission into the inflector | **Partial** (DC: only with whole-line compensation) | Matched KV envelopes (task 106), 0.25 pi mm mrad: DC T = 0.17 uncompensated, 0.20 cell only, 1.0 whole line; bunched T < 0.01 | Geometric estimate, no particle tracking; 2 mm parallel launch is emittance-limited at 1 pi mm mrad |
 | Self-consistent proton-impact ionization | **Unknown** | Custom proton-impact MCC not run or verified | All production results use the seeded model |
 | Beam loss from charge exchange and scattering in the gas | **Unknown** | Not assessed | May limit how high the pressure can go |
 
@@ -101,8 +101,11 @@ Summary:
   compensation removes only about 1/B_f of the peak-bunch space charge (about 18% at B_f = 5),
   and electrons must be held through each inter-bunch gap.
 - **Not yet shown:** that the plasma actually builds up, that it survives the bunch gaps, and
-  that the beam gets through the inflector. Next simulations: bunched-beam runs with electron
-  confinement, and a fixed transport model.
+  that the beam gets through the inflector. The matched envelope model (task 106) shows that
+  cell-only compensation barely helps transmission; a DC beam needs compensation along the whole
+  line, and a bunched beam is not transported in this layout. Next simulations: confinement and
+  plug scans, then the best configuration on the production grid
+  ([`physics_notes/simulation_strategy_tasks.md`](physics_notes/simulation_strategy_tasks.md)).
 
 Strategies for a more efficient column, and the test plan, are in
 [`physics_notes/neutralizer_efficiency_strategy.md`](physics_notes/neutralizer_efficiency_strategy.md).

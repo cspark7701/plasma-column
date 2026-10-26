@@ -41,9 +41,9 @@ def test_envelope_integration_vacuum_vs_neutralized():
     # Neutralized case (eta_net = 0.90)
     z_neut, Rx_neut, Ry_neut = compute_beam_envelope(beam, line, eta_net=0.90)
 
-    # Vacuum beam should experience significantly larger space-charge blowup
-    assert Rx_vac[-1] > Rx_neut[-1]
-    assert Ry_vac[-1] > Ry_neut[-1]
+    # Vacuum beam should experience a larger space-charge blowup (largest envelope along the line;
+    # the exit radius at a fixed tune depends on the matching)
+    assert max(Rx_vac.max(), Ry_vac.max()) > max(Rx_neut.max(), Ry_neut.max())
 
 
 def test_inflector_transmission_calculation():

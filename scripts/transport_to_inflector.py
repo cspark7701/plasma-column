@@ -2,31 +2,54 @@
 """
 scripts/transport_to_inflector.py
 
-Simulates space-charge beam envelope transport through the downstream axial injection line:
-buncher exit -> plasma neutralizer -> solenoid -> quadrupole Q1 -> quadrupole Q2 -> spiral inflector
+Matched envelope transport through the axial injection line
+(buncher exit -> plasma neutralizer -> solenoid -> Q1 -> Q2 -> spiral inflector), task 106.
 
-Evaluates envelope trajectories R(z), transmission efficiency at inflector entrance, and phase-space distributions.
+For each compensation scenario and beam emittance, the solenoid field and the Q1/Q2 gradients are
+matched (plasma_column.transport.match_optics) and the geometric KV transmission estimate is
+reported: pipe clipping (10 mm), inflector aperture (5 mm) and divergence (50 mrad).
 
-Generated CSV Files:
-- data/inflector_entrance_summary.csv
-- data/beam_envelope_to_inflector.csv
-- data/phase_space_at_inflector.csv
-- data/transmission_vs_case.csv
+Scenarios (peak-slice perveance; bunched cases use B_f(z) of a sine buncher set for the inflector,
+task 105). The electrons cancel only the RF-averaged charge (tau_ion ~ 80 us >> T_RF = 20 ns), so the
+physical bunched cases use K = K0 (B_f - eta) ("average"). The "_slice" cases use K = K0 B_f (1 - eta),
+an upper bound reached only if every slice were compensated by the same fraction:
+    dc_uncompensated             DC beam, eta = 0
+    dc_cell                      DC beam, eta = eta_cell in the cell
+    dc_full                      DC beam, eta_cell over the whole line (residual-gas compensation)
+    bunched_uncompensated        peak slice, eta = 0
+    bunched_cell                 eta_cell in the cell (average)
+    bunched_cell_down0p5         eta_cell in the cell + 0.5 downstream (average, illustrative)
+    bunched_full                 eta_cell over the whole line (average)
+    bunched_cell_slice           as bunched_cell, per-slice upper bound
+    bunched_cell_down0p5_slice   as bunched_cell_down0p5, per-slice upper bound
+    bunched_full_slice           as bunched_full, per-slice upper bound
+eta_cell = PIC beam-core eta_net of seeded H2 at 1e-5 Torr (paper/manuscript/pic_data, DC beam).
 
-Generated Plots:
-- plots/envelope_buncher_to_inflector.png / .pdf
-- plots/inflector_phase_space_xxp.png / .pdf
-- plots/inflector_phase_space_yyp.png / .pdf
-- plots/transmission_comparison.png / .pdf
+Beam at the buncher exit: a = 2 mm, parallel (as in the PIC runs); normalized edge emittance
+0.25, 0.5 and 1.0 pi mm mrad.
+
+Outputs (default results/transport_to_inflector/, git-ignored):
+    transport_summary.csv / .json, envelopes.csv, envelopes_matched.{png,pdf}
 
 Usage:
+    python scripts/transport_to_inflector.py --dry_run
     python scripts/transport_to_inflector.py
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
+import json
+import os
+import sys
 from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 try:
@@ -34,131 +57,122 @@ try:
 except ImportError:
     from scripts._path_setup import PROJECT_ROOT
 
-from plasma_column.beam import ProtonBeam
-from plasma_column.injection_line import InjectionLine, compute_beam_envelope
-from plasma_column.acceptance import (
-    InflectorAcceptance,
-    compute_inflector_transmission,
-    generate_phase_space_particles,
-)
-from plasma_column.plotting import (
-    plot_multi_case_beam_envelopes,
-    plot_inflector_phase_space_comparison,
-    plot_transmission_comparison_bar,
-    setup_publication_style,
-)
+from plasma_column.bunching import BuncherModel, bunching_along_line
+from plasma_column.injection_line import InjectionLine
+from plasma_column.plotting import save_figure, setup_publication_style
+from plasma_column.transport import TransportBeam, envelope, match_optics, perveance_profile
+from plasma_column.warpx_io import get_git_info
+
+PIC_CASES = PROJECT_ROOT / "paper" / "manuscript" / "pic_data" / "production_cases.csv"
+EMITTANCES = (0.25e-6, 0.5e-6, 1.0e-6)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Simulate beam envelope transport through injection line to spiral inflector."
-    )
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description="Matched envelope transport to the spiral inflector.")
+    p.add_argument("--output_dir", type=Path, default=PROJECT_ROOT / "results" / "transport_to_inflector")
+    p.add_argument("--buncher_voltage_V", type=float, default=620.0, help="Sine buncher (task 105 optimum).")
+    p.add_argument("--maxiter", type=int, default=40, help="Differential-evolution generations per match.")
+    p.add_argument("--dry_run", action="store_true", help="List scenarios; write nothing.")
+    return p.parse_args()
 
 
-def main() -> None:
-    print("=== Simulating Downstream Transport to Inflector Entrance ===")
-    setup_publication_style()
-    plots_dir = PROJECT_ROOT / "plots"
-    plots_dir.mkdir(parents=True, exist_ok=True)
-
-    beam = ProtonBeam(energy_keV=30.0, current_mA=10.0, radius_m=0.002)
+def main() -> int:
+    args = parse_args()
     line = InjectionLine()
-    acceptance = InflectorAcceptance(aperture_radius_m=0.005)
+    eta_cell = float(pd.read_csv(PIC_CASES).set_index("case_name").loc["seeded_H2_1e-5Torr", "eta_net_local"])
+    zb = np.linspace(0.0, line.total_length, 225)
+    bf = bunching_along_line(zb, BuncherModel(voltage_V=args.buncher_voltage_V), n_particles=100_000)["bunching_factor"]
+    bf = np.maximum(bf, 1.0)
 
-    cases = [
-        ("vacuum_reference", 0.0, "tab:blue"),
-        ("seeded_H2_neutralized", 0.90, "tab:green"),
-        ("seeded_Kr_neutralized", 0.95, "tab:purple"),
-    ]
+    scenarios = {
+        "dc_uncompensated": dict(eta_cell=0.0, eta_downstream=0.0, bunched=False),
+        "dc_cell": dict(eta_cell=eta_cell, eta_downstream=0.0, bunched=False),
+        "dc_full": dict(eta_cell=eta_cell, eta_downstream=eta_cell, bunched=False),
+        "bunched_uncompensated": dict(eta_cell=0.0, eta_downstream=0.0, bunched=True),
+    }
+    for mode, suffix in (("average", ""), ("per_slice", "_slice")):
+        scenarios[f"bunched_cell{suffix}"] = dict(eta_cell=eta_cell, eta_downstream=0.0, bunched=True, mode=mode)
+        scenarios[f"bunched_cell_down0p5{suffix}"] = dict(eta_cell=eta_cell, eta_downstream=0.5, bunched=True,
+                                                          mode=mode)
+        scenarios[f"bunched_full{suffix}"] = dict(eta_cell=eta_cell, eta_downstream=eta_cell, bunched=True,
+                                                  mode=mode)
+    print(f"Transport scan: {len(scenarios)} scenarios x {len(EMITTANCES)} emittances, eta_cell = {eta_cell:.3f}")
+    if args.dry_run:
+        for k, v in scenarios.items():
+            print(f"  {k}: {v}")
+        print("[DRY RUN SUCCESS] nothing written.")
+        return 0
 
-    summary_records = []
-    envelope_data_dict = {}
+    rows, envs = [], {}
+    for eps_n in EMITTANCES:
+        beam = TransportBeam(emittance_n_edge_m_rad=eps_n)
+        K0 = beam.proton.perveance_K0
+        found = []  # optima of the scenarios already matched at this emittance, used as extra starts
+        for name, sc in scenarios.items():
+            K = perveance_profile(K0, line, sc["eta_cell"], sc["eta_downstream"],
+                                  zb if sc["bunched"] else None, bf if sc["bunched"] else None,
+                                  compensation=sc.get("mode", "average"))
+            optics, t = match_optics(beam, line, K, maxiter=args.maxiter, starts=tuple(reversed(found)))
+            found.append(optics)
+            envs[(eps_n, name)] = envelope(beam, line, optics, K)
+            rows.append({"emittance_n_edge_pi_mm_mrad": eps_n * 1e6, "scenario": name,
+                         "eta_cell": sc["eta_cell"], "eta_downstream": sc["eta_downstream"],
+                         "bunched_peak_slice": sc["bunched"],
+                         "compensation": sc.get("mode", "average") if sc["bunched"] else "dc",
+                         "solenoid_B_T": optics.solenoid_B_T, "q1_gradient_Tm": optics.q1_gradient_Tm,
+                         "q2_gradient_Tm": optics.q2_gradient_Tm, **t})
+            print(f"  eps_n {eps_n * 1e6:.2f}  {name:24s} T = {t['T_total']:.3f} "
+                  f"(pipe {t['T_pipe']:.2f}, ap {t['T_inflector_aperture']:.2f}, div {t['T_inflector_divergence']:.2f}), "
+                  f"max R {t['max_R_mm']:.1f} mm", flush=True)
 
-    for cname, eta_net, color in cases:
-        z_arr, Rx_arr, Ry_arr = compute_beam_envelope(
-            beam, line, eta_net=eta_net, r0_m=0.002, rp0_rad=0.0, emittance_n_mrad=1.0e-6
-        )
+    out = args.output_dir
+    out.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame(rows)
+    df.to_csv(out / "transport_summary.csv", index=False, float_format="%.6g")
+    env_rows = []
+    for (eps_n, name), e in envs.items():
+        env_rows.append(pd.DataFrame({"emittance_n_edge_pi_mm_mrad": eps_n * 1e6, "scenario": name,
+                                      "z_m": e["z_m"], "Rx_mm": e["Rx_m"] * 1e3, "Ry_mm": e["Ry_m"] * 1e3}))
+    pd.concat(env_rows).iloc[::5].to_csv(out / "envelopes.csv", index=False, float_format="%.5g")
+    meta = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "command_line": " ".join(sys.argv),
+        "conda_env": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
+        "plasma_column_repo": get_git_info(PROJECT_ROOT),
+        "model": "KV envelope, matched solenoid + Q1/Q2 per scenario, geometric transmission estimate",
+        "beam": "30 keV, 10 mA, a = 2 mm parallel at the buncher exit",
+        "eta_cell_source": "PIC core eta_net, seeded_H2_1e-5Torr (DC beam)",
+        "bunching": f"sine buncher {args.buncher_voltage_V} V, ballistic B_f(z) (task 105)",
+        "compensation": "average: K = K0 (B_f - eta) (physical, tau_ion >> T_RF); "
+                        "per_slice: K = K0 B_f (1 - eta) (upper bound)",
+        "apertures": "pipe 10 mm, inflector 5 mm, divergence 50 mrad",
+        "rows": rows,
+    }
+    (out / "transport_summary.json").write_text(json.dumps(meta, indent=2, default=str))
 
-        envelope_data_dict[cname] = (z_arr, Rx_arr, Ry_arr, color)
-
-        # Evaluate inflector entrance metrics
-        Rx_end, Ry_end = Rx_arr[-1], Ry_arr[-1]
-        dRx_end = (Rx_arr[-1] - Rx_arr[-2]) / (z_arr[-1] - z_arr[-2])
-        dRy_end = (Ry_arr[-1] - Ry_arr[-2]) / (z_arr[-1] - z_arr[-2])
-
-        trans_info = compute_inflector_transmission(Rx_end, Ry_end, dRx_end, dRy_end, acceptance)
-        trans_info["case_name"] = cname
-        trans_info["eta_net"] = eta_net
-        summary_records.append(trans_info)
-
-    df_summary = pd.DataFrame(summary_records)
-
-    # Save CSV outputs
-    out_summary_csv = PROJECT_ROOT / "data" / "inflector_entrance_summary.csv"
-    out_trans_csv = PROJECT_ROOT / "data" / "transmission_vs_case.csv"
-    out_summary_csv.parent.mkdir(parents=True, exist_ok=True)
-    df_summary.to_csv(out_summary_csv, index=False)
-    df_summary[["case_name", "eta_net", "r_beam_mm", "transmission_percent"]].to_csv(out_trans_csv, index=False)
-
-    print(f"  Saved summary to: {out_summary_csv}")
-    print(f"  Saved transmission table to: {out_trans_csv}")
-
-    # Save Envelope trajectories CSV
-    env_records = []
-    z_ref = envelope_data_dict["vacuum_reference"][0]
-    for i, z_val in enumerate(z_ref):
-        rec = {"z_m": z_val}
-        for cname, (z_a, Rx_a, Ry_a, _) in envelope_data_dict.items():
-            rec[f"{cname}_Rx_mm"] = Rx_a[i] * 1000.0
-            rec[f"{cname}_Ry_mm"] = Ry_a[i] * 1000.0
-        env_records.append(rec)
-
-    df_env = pd.DataFrame(env_records)
-    out_env_csv = PROJECT_ROOT / "data" / "beam_envelope_to_inflector.csv"
-    df_env.to_csv(out_env_csv, index=False)
-
-    # 1. Plot Envelope Trajectories (Buncher -> Neutralizer -> Solenoid -> Q1 -> Q2 -> Inflector)
-    p1, p2 = plot_multi_case_beam_envelopes(
-        envelope_data_dict,
-        plots_dir,
-        aperture_radius_mm=acceptance.aperture_radius_m * 1000.0,
-        output_name="envelope_buncher_to_inflector",
-    )
-    print(f"  Saved: {p1} / {p2}")
-
-    # 2. Plot Inflector Phase Space (x, x') and (y, y') for baseline vs neutralized
-    vac_summary = df_summary[df_summary["case_name"] == "vacuum_reference"].iloc[0]
-    h2_summary = df_summary[df_summary["case_name"] == "seeded_H2_neutralized"].iloc[0]
-
-    df_vac_xxp, df_vac_yyp = generate_phase_space_particles(
-        vac_summary["Rx_end_mm"] / 1000.0, vac_summary["dRx_end_mrad"] / 1000.0,
-        vac_summary["Ry_end_mm"] / 1000.0, vac_summary["dRy_end_mrad"] / 1000.0
-    )
-    df_h2_xxp, df_h2_yyp = generate_phase_space_particles(
-        h2_summary["Rx_end_mm"] / 1000.0, h2_summary["dRx_end_mrad"] / 1000.0,
-        h2_summary["Ry_end_mm"] / 1000.0, h2_summary["dRy_end_mrad"] / 1000.0
-    )
-
-    out_phase_csv = PROJECT_ROOT / "data" / "phase_space_at_inflector.csv"
-    df_h2_xxp.to_csv(out_phase_csv, index=False)
-
-    p1, p2 = plot_inflector_phase_space_comparison(
-        df_vac_xxp, df_h2_xxp, plots_dir, plane="x", output_name="inflector_phase_space_xxp"
-    )
-    print(f"  Saved: {p1} / {p2}")
-
-    p1, p2 = plot_inflector_phase_space_comparison(
-        df_vac_yyp, df_h2_yyp, plots_dir, plane="y", output_name="inflector_phase_space_yyp"
-    )
-    print(f"  Saved: {p1} / {p2}")
-
-    # 3. Transmission Comparison Bar Chart
-    p1, p2 = plot_transmission_comparison_bar(
-        df_summary, plots_dir, output_name="transmission_comparison"
-    )
-    print(f"  Saved: {p1} / {p2}")
+    setup_publication_style()
+    fig, axes = plt.subplots(1, len(EMITTANCES), figsize=(14, 4), sharey=True)
+    colors = {"dc_uncompensated": "0.5", "dc_cell": "k", "bunched_uncompensated": "tab:red",
+              "bunched_full": "tab:blue", "bunched_full_slice": "tab:cyan"}
+    for ax, eps_n in zip(axes, EMITTANCES):
+        for name, color in colors.items():
+            e = envs[(eps_n, name)]
+            ax.plot(e["z_m"] * 100, e["Rx_m"] * 1e3, color=color, lw=1.6, label=f"{name} (x)")
+            ax.plot(e["z_m"] * 100, e["Ry_m"] * 1e3, color=color, lw=1.0, ls="--")
+        ax.axhline(10.0, color="k", lw=0.8, ls=":")
+        ax.axhline(5.0, color="k", lw=0.8, ls="-.")
+        ax.set_ylim(0, 40)
+        ax.set_xlabel("z from buncher exit [cm]")
+        ax.set_title(rf"$\varepsilon_n$ = {eps_n * 1e6:.2f} $\pi$ mm mrad (edge)", fontsize=10)
+    axes[0].set_ylabel("edge radius [mm] (solid x, dashed y)")
+    axes[0].legend(fontsize=7, loc="upper left")
+    fig.suptitle("Matched envelopes to the inflector (pipe 10 mm dotted, inflector 5 mm dash-dot)", fontsize=10)
+    fig.tight_layout()
+    save_figure(fig, out / "envelopes_matched")
+    plt.close(fig)
+    print(f"Wrote {out}/transport_summary.csv and figure.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

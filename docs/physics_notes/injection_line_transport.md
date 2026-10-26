@@ -10,32 +10,84 @@ The baseline neutralizer MUST NOT be placed downstream of the main solenoid.
 
 ---
 
-## 2. Space-Charge Envelope Equations & Region-Dependent Perveance $K_{\text{eff}}(z)$
+## 2. Envelope Model (task 106, `plasma_column.transport`)
 
-Transverse beam envelope evolution $R_x(z)$ and $R_y(z)$ is calculated using the coupled 2D envelope ODEs:
+KV (uniform-density) edge envelopes, integrated with fixed-step RK4 on a 1 mm grid:
 
-$$\frac{d^2 R_x}{dz^2} + k_x^2(z) R_x - \frac{2 K_{\text{eff}}(z)}{R_x + R_y} - \frac{\epsilon_{x,n}^2}{\beta^2 \gamma^2 R_x^3} = 0$$
+```text
+R_x'' = -k_x(z) R_x + 2 K(z) / (R_x + R_y) + eps^2 / R_x^3      (same for y)
+solenoid   : k_x = k_y = (B / 2 B rho)^2
+quadrupole : k_x = -k_y = G / B rho,   B rho = 0.02503 T m (30 keV protons)
+```
 
-$$\frac{d^2 R_y}{dz^2} + k_y^2(z) R_y - \frac{2 K_{\text{eff}}(z)}{R_x + R_y} - \frac{\epsilon_{y,n}^2}{\beta^2 \gamma^2 R_y^3} = 0$$
+Perveance along the line, eta = eta_cell for z <= L_cell and eta_downstream after it:
 
-where:
-- $K_{\text{eff}}(z)$ is the region-dependent space-charge perveance separating the plasma neutralizer cell from downstream high vacuum:
-  $$K_{\text{eff}}(z) = \begin{cases} K_0 (1 - \eta_{\text{cell}}), & z \le L_{\text{cell}} \\ K_0 (1 - \eta_{\text{downstream}}), & z > L_{\text{cell}} \end{cases}$$
-  In baseline operation, $\eta_{\text{cell}} \approx 0.90$ and $\eta_{\text{downstream}} = 0.0$ (vacuum drift/matching).
-- $k_x(z), k_y(z)$ are magnetic focusing strengths from the solenoid ($B_z = 0.15\text{ T}$) and quadrupole doublet Q1 ($G_1 = 5.0\text{ T/m}$) and Q2 ($G_2 = -4.5\text{ T/m}$).
-- $\epsilon_{x,n}, \epsilon_{y,n}$ are normalized transverse emittances ($1.0\text{ mm}\cdot\text{mrad}$).
+```text
+DC beam                              K = K0 (1 - eta)
+bunched peak slice, "average"        K = K0 (B_f(z) - eta)          (physical)
+bunched peak slice, "per_slice"      K = K0 B_f(z) (1 - eta)         (upper bound only)
+```
+
+The electrons are created in tau_ion ~ 80 us, far longer than T_RF = 20 ns, and the electron
+plasma frequency (~28 MHz) is below f_RF = 50 MHz. They therefore cancel only the RF-averaged
+charge, and the peak slice keeps K_peak/K0,peak = 1 - eta_avg/B_f (AGENTS.md). B_f(z) comes from
+the ballistic sine buncher set for the inflector (620 V, task 105): 1.02–1.36 in the cell and 5.7
+at the inflector.
+
+Beam at the buncher exit: 30 keV, 10 mA, a = 2 mm, parallel (as in the PIC runs); normalized edge
+emittance 0.25, 0.5 and 1.0 pi mm mrad.
+
+For each scenario the solenoid field (0–0.6 T) and both quadrupole gradients (+-1.5 T/m) are
+matched by differential evolution to maximize the transmission estimate:
+
+```text
+T = T_pipe x T_aperture x T_divergence
+T_pipe       : smallest fraction of the beam ellipse inside the 10 mm pipe along the line
+T_aperture   : fraction inside the 5 mm inflector aperture
+T_divergence : min(1, 50 mrad / theta) per plane at the inflector entrance
+```
+
+This is a geometric estimate for a uniform beam; halo, nonlinear fields and particle loss
+upstream of the clipping point are not modeled.
+
+`InjectionLine` defaults are now the matched optics of the uncompensated DC beam at
+1 pi mm mrad: solenoid 0.23 T, Q1 -0.28 T/m, Q2 0.85 T/m. The earlier defaults (0.15 T,
+5 and -4.5 T/m; k L ~ 1.7 per quadrupole) overfocused and gave envelope radii of ~0.8 m.
 
 ---
 
-## 3. Inflector Acceptance Cut and Transmission Efficiency
+## 3. Results (matched optics, transmission estimate T)
 
-The spiral inflector entrance is modeled with an aperture radius $r_{\text{aperture}} = 5.0\text{ mm}$ and angular acceptance $\theta_{\text{ap}} = 25\text{ mrad}$.
+eta_cell = 0.958 (PIC beam-core eta_net, seeded H2 1e-5 Torr, DC beam).
 
-Transmission efficiency is evaluated as:
+| Scenario | eps_n 0.25 | eps_n 0.5 | eps_n 1.0 |
+|---|---|---|---|
+| DC, no compensation | 0.17 | 0.13 | 0.08 |
+| DC, cell only | 0.20 | 0.16 | 0.10 |
+| DC, whole line (eta = 0.958) | 1.00 | 0.62 | 0.17 |
+| Bunched, no compensation | 0.004 | 0.004 | 0.004 |
+| Bunched, cell only (average) | 0.001 | 0.001 | 0.004 |
+| Bunched, cell + 0.5 downstream (average) | 0.001 | 0.002 | 0.005 |
+| Bunched, whole line (average) | 0.001 | 0.003 | 0.007 |
+| Bunched, whole line (per-slice upper bound) | 0.99 | 0.58 | 0.17 |
 
-$$T = \min\left(1.0, \frac{r_{\text{aperture}}^2}{0.5(R_x^2 + R_y^2)}\right) \times 100\%$$
+- **DC beam.** A 10 mA, 30 keV beam is space-charge dominated: without compensation it grows to
+  24–36 mm before the solenoid and only 8–17% reaches the inflector. Compensating the 20 cm cell
+  alone adds only 2–3 points, because the beam blows up again in the uncompensated drift and
+  solenoid. Compensation along the whole line (residual gas) gives T = 1.0 at 0.25 pi mm mrad.
+- **Emittance.** At 1 pi mm mrad, a 2 mm parallel beam is emittance-dominated (about 19 mm after
+  the 0.3 m to the solenoid even without space charge), so compensation cannot help; the beam
+  must be launched with a larger, converging envelope. Initial conditions are an open design
+  parameter.
+- **Bunched beam.** With the physical (RF-averaged) compensation, the peak slice keeps
+  K ~ 4.7 K0 at the inflector and T < 0.01 in every case. The cell does not change this. The
+  per-slice values show what would be needed: every slice compensated by the same fraction along
+  the whole line, which the electrons cannot do at 50 MHz.
+- Differences below about 0.005 are within the optimizer's noise (for example bunched cell-only
+  below uncompensated at 0.25 pi mm mrad).
 
-### Case Comparison:
-1. **Vacuum Reference ($\eta = 0.0$)**: Uncompensated space-charge blowup causes envelope expansion, leading to aperture clipping at the inflector entrance ($T \approx 32\%$).
-2. **$\text{H}_2$ Neutralized Cell ($\eta_{\text{cell}} = 0.90$, $\eta_{\text{downstream}} = 0.0$)**: Perveance reduction in the initial $20\text{ cm}$ prevents early beam blowout, enabling the solenoid and quadrupole doublet to focus the beam into the $5\text{ mm}$ inflector entrance aperture with $T > 98\%$.
-3. **$\text{Kr}$ Neutralized Cell ($\eta_{\text{cell}} = 0.95$, $\eta_{\text{downstream}} = 0.0$)**: Rapid neutralization buildup ($\tau \sim 0.3\ \mu\text{s}$) provides tight envelope control and low divergence entering matching optics.
+Run: `python scripts/transport_to_inflector.py` (outputs in `results/transport_to_inflector/`,
+git-ignored: `transport_summary.csv/.json`, `envelopes.csv`, `envelopes_matched.png/.pdf`).
+
+The transmission claims of the earlier version of this note (T > 98% with cell-only
+compensation) came from the unphysical quadrupole settings and are withdrawn.

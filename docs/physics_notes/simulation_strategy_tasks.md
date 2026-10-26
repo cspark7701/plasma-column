@@ -1,0 +1,70 @@
+# Simulation Strategy Task List: CW and RF-Bunched Beams
+
+Companion to [neutralizer_efficiency_strategy.md](neutralizer_efficiency_strategy.md).
+Recommended configurations (schematic, not to scale):
+
+![Recommended configurations](figures/recommended_configurations.png)
+
+Figure source: `scripts/make_recommended_config_sketch.py` (writes
+`docs/physics_notes/figures/recommended_configurations.{png,pdf}`).
+
+Two points set the strategy:
+
+- A CW beam is helped by holding electrons in the cell long enough: a cell solenoid plus
+  negatively biased end plugs.
+- For an RF-bunched beam, the peak space charge builds up downstream: B_f rises from about 1.3 in
+  the cell to 5.7 at the inflector (task 105). The electrons also compensate only the RF-averaged
+  charge (tau_ion about 80 us, much longer than T_RF = 20 ns; f_pe about 28 MHz, below f_RF):
+  `K_eff,peak / K0,peak ~ 1 - eta_avg / B_f`. Compensation therefore has to extend along the line,
+  and bunching should happen late.
+
+Status values: done, running, planned, blocked (with the reason).
+All PIC cases start from a seeded plasma (analytic source estimate), not self-consistent
+proton-impact ionization.
+
+## Common tasks (both beams)
+
+| ID | Task | Method | Output / decides | Depends on | Status |
+|----|------|--------|------------------|------------|--------|
+| C0 | Production DC matrix, seeded H2/Kr, 218 ns | WarpX ES, 64x64x512 | Core eta_net 0.96 (H2), 0.50–0.58 (Kr) | – | done (tasks 96–103) |
+| C1 | Confinement scan: B_z = 0, 0.05, 0.15 T; seed T_e = 1, 10 eV; plugs 0 / 300 V | WarpX, 32x32x256, 650 ns, `scripts/run_confinement_scan.py` | tau_c, eta_ss lower bound; selects cell B and plug voltage | – | running (task 107) |
+| C2 | Extrapolate tau_c to the 80 us scale | Test-electron orbit tracking in the static beam well + solenoid + plug fields for 100 us (no PIC) | Whether the trap holds electrons for tau_ion, not just 650 ns | C1 | planned |
+| C3 | Plug-field effect on the beam | Beam rms emittance and size at the cell exit, plug on vs off (from C1 data) | Plug voltage limit set by beam quality | C1 | planned |
+| C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 100–500 V, w = 3–10 mm | Final plug setting | C1, C3 | planned |
+| C5 | Self-consistent build-up from zero | Needs a validated proton-impact ionization source (WarpX extension) | Build-up time with the trap | WarpX source work | blocked (no validated p+ impact source) |
+
+## CW (DC) beam track
+
+Target configuration: H2 cell at about 1e-5 Torr, cell solenoid 0.05–0.15 T, -300 V end plugs,
+electron suppressor before the inflector (figure, panel a).
+
+| ID | Task | Method | Output / decides | Depends on | Status |
+|----|------|--------|------------------|------------|--------|
+| CW1 | Best C1 configuration on the production grid | WarpX 64x64x512, 650 ns, restartable from checkpoints to about 2 us | Core eta_net and its time trend in the trap | C1 | planned |
+| CW2 | Transmission vs downstream compensation | Envelope model (`plasma_column.transport`), eta_cell from CW1, eta_downstream 0–0.9 | The downstream eta needed for a target transmission (end points from task 106: T = 0.20 cell only, 1.0 whole line at 0.25 pi mm mrad) | CW1 | planned |
+| CW3 | Electron retention in the main-solenoid and quadrupole region | WarpX section model with seeded residual-gas plasma; quadrupoles do not trap electrons | Achievable eta_downstream (input to CW2) | C1 | planned |
+| CW4 | Electron suppressor before the inflector | WarpX or analytic 2D field: suppressor voltage vs electron drain into the inflector field | Suppressor voltage | CW3 | planned |
+| CW5 | Particle tracking through the line | Track the PIC beam distribution at the cell exit through solenoid/Q1/Q2 with the CW2 compensation | Transmission with halo, replacing the KV estimate | CW1, CW2 | planned |
+
+## RF-bunched beam track
+
+Target configuration: same cell, solenoid and plugs; H2 at about 1e-5 Torr along the whole line
+up to the suppressor; bunching as late as possible (figure, panel b). Any change of the
+buncher position from the baseline (buncher -> neutralizer -> solenoid -> Q1 -> Q2 -> inflector)
+is an alternative-placement study and is labeled as such.
+
+| ID | Task | Method | Output / decides | Depends on | Status |
+|----|------|--------|------------------|------------|--------|
+| B1 | Correct the bunched transport perveance | Envelope model with average-only compensation K = K0 (B_f - eta_avg), keep B_f (1 - eta) as the per-slice upper bound | Bunched T < 0.01 with any RF-averaged compensation; per-slice upper bound 0.99 (whole line, 0.25 pi mm mrad) | – | done (task 106) |
+| B2 | Bunched-beam PIC in the cell | WarpX small grid, von Mises current profile; B_f = 1.3 (baseline cell) and B_f = 5 (bunch-focus study, labeled); best C1 configuration vs B = 0 | Electron retention through the 18 ns gaps; RF-averaged vs peak-bunch eta | C1 | planned |
+| B3 | Late-bunching layout | Buncher voltage and position vs B_f(z) (`plasma_column.bunching`), with transport from B1 | Buncher-to-inflector distance and voltage that maximize transmission | B1 | planned (alternative-placement study) |
+| B4 | Compensation of a strongly bunched beam downstream | WarpX section model of the gas-filled main solenoid at B_f = 3–6 | Whether electrons follow the bunches at all (f_pe vs f_RF) | B2 | planned |
+| B5 | Sliced-bunch transport | Envelope per longitudinal slice with eta_avg; transmission weighted over the 36 deg acceptance | RF-averaged transmission into the inflector acceptance | B1, B4 | planned |
+| B6 | Sawtooth buncher (B_f = 10) vs sine (B_f = 5.7) | B3 + B5 with the sawtooth model | Whether stronger bunching still pays off with space charge | B3, B5 | planned |
+
+## Order of execution
+
+1. C1 (running) → C3, C4 → CW1.
+2. B1 (done, task 106) → B2.
+3. CW2 and B3 (cheap model work), then C2.
+4. CW3, B4 (new section models), then CW4, CW5, B5, B6.

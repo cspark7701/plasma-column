@@ -54,6 +54,8 @@ warpx_ion_impact_ionization_patch
 *.pdf
 !docs/plasma_column_consolidated_report.pdf
 !docs/consolidated_report/*.pdf
+!docs/physics_notes/figures/*.png
+!docs/physics_notes/figures/*.pdf
 
 # LaTeX build artifacts
 *.aux
