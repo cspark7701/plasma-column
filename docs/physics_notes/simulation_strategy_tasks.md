@@ -40,7 +40,7 @@ electron suppressor before the inflector (figure, panel a).
 
 | ID | Task | Method | Output / decides | Depends on | Status |
 |----|------|--------|------------------|------------|--------|
-| CW1 | Best C1/C4 configuration on the production grid: 0.15 T, 1 eV, 300 V / 10 mm plugs | WarpX 64x64x672 (production dz, z in [-0.07, 0.27] m), 650 ns, `scripts/run_cw_best_config.py`, restartable from checkpoints to about 2 us | Core eta_net and its time trend in the trap | C1, C4 | planned (configuration chosen in task 109) |
+| CW1 | Best C1/C4 configuration on the production grid: 0.15 T, 1 eV, 300 V / 10 mm plugs | WarpX 64x64x672 (production dz, z in [-0.07, 0.27] m), 650 ns, `scripts/run_cw_best_config.py`, restartable from checkpoints to about 2 us | Core eta_net and its time trend in the trap | C1, C4 | running (launched in task 110) |
 | CW2 | Transmission vs downstream compensation | Envelope model (`plasma_column.transport`), eta_cell from CW1, eta_downstream 0–0.9 | The downstream eta needed for a target transmission (end points from task 106: T = 0.20 cell only, 1.0 whole line at 0.25 pi mm mrad) | CW1 | planned |
 | CW3 | Electron retention in the main-solenoid and quadrupole region | WarpX section model with seeded residual-gas plasma; quadrupoles do not trap electrons | Achievable eta_downstream (input to CW2) | C1 | planned |
 | CW4 | Electron suppressor before the inflector | WarpX or analytic 2D field: suppressor voltage vs electron drain into the inflector field | Suppressor voltage | CW3 | planned |
@@ -64,7 +64,7 @@ is an alternative-placement study and is labeled as such.
 
 ## Order of execution
 
-1. C1 → C3, C4 (done) → CW1.
+1. C1 → C3, C4 (done) → CW1 (running).
 2. B1 (done, task 106) → B2.
 3. CW2 and B3 (cheap model work), then C2.
 4. CW3, B4 (new section models), then CW4, CW5, B5, B6.

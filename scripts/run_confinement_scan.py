@@ -157,8 +157,11 @@ def run_case(case: dict, cmd: list[str], out: Path, fixed: dict | None = None) -
         "case": case,
         "fixed": fixed or FIXED,
     }
-    (out / "metadata.json").write_text(json.dumps(meta, indent=2, default=str))
-    with open(out / "run.log", "w") as log:
+    # A restart keeps the original metadata and appends to the log.
+    restart = "--restart_from" in cmd
+    (out / ("metadata_restart.json" if restart else "metadata.json")).write_text(
+        json.dumps(meta, indent=2, default=str))
+    with open(out / "run.log", "a" if restart else "w") as log:
         rc = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=PROJECT_ROOT).returncode
     print(f"  [{datetime.datetime.now():%H:%M}] {case['case_name']}: exit {rc} (cpus {slot})", flush=True)
     if slot is not None:
