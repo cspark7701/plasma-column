@@ -29,8 +29,8 @@ proton-impact ionization.
 | C0 | Production DC matrix, seeded H2/Kr, 218 ns | WarpX ES, 64x64x512 | Core eta_net 0.96 (H2), 0.50–0.58 (Kr) | – | done (tasks 96–103) |
 | C1 | Confinement scan: B_z = 0, 0.05, 0.15 T; seed T_e = 1, 10 eV; plugs 0 / 300 V | WarpX, 32x32x256, 650 ns, `scripts/run_confinement_scan.py` | tau_c = 0.7 us (0 T) to 2.15 us (0.15 T, 1 eV, no plugs); 5 mm, 300 V plugs shorten it ~4x; selected 0.15 T, 1 eV for C4 | – | done (task 107) |
 | C2 | Extrapolate tau_c to the 80 us scale | Test-electron orbit tracking in the static beam well + solenoid + plug fields for 100 us (no PIC) | Whether the trap holds electrons for tau_ion, not just 650 ns | C1 | planned |
-| C3 | Plug-field effect on the beam | Beam rms emittance and size at the cell exit, plug on vs off (from C1 data) | Plug voltage limit set by beam quality | C1 | planned |
-| C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 0.15 T, 1 eV, 100–300 V, w = 5–20 mm, longer domain | Final plug setting | C1, C3 | planned |
+| C3 | Plug-field effect on the beam | Beam rms emittance and size at the cell exit, plug on vs off (from C1 data) | 5 mm, 300 V plugs triple the exit divergence (7.6 → 23.9 mrad at 0.15 T) and quadruple eps_n,rms; no-plug beam leaves at 2.5 mm, 7.6 mrad | C1 | done (task 108) |
+| C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 0.15 T, 1 eV, 100–300 V, w = 5–20 mm, longer domain | Final plug setting | C1, C3 | running (launched in task 108, `scripts/run_plug_scan.py`) |
 | C5 | Self-consistent build-up from zero | Needs a validated proton-impact ionization source (WarpX extension) | Build-up time with the trap | WarpX source work | blocked (no validated p+ impact source) |
 
 ## CW (DC) beam track

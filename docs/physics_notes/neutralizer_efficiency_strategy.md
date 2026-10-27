@@ -124,6 +124,27 @@ over 325–650 ns; eta_ss uses its 2-sigma lower bound and tau_ion = 80 us.
   is far stronger than a real electrode with a ~10 mm aperture would give, and the upstream plug
   sat 5 mm from the injection plane. Wider plugs in a longer domain are tested in task C4.
 
+### Task C3 result: beam quality at the cell exit (task 108)
+
+Beam rms size, divergence and normalized rms emittance from the particle data of the confinement
+scan, averaged over the second half of each run (`scripts/analyze_beam_quality.py`). Injected beam:
+r_rms = 1.45 mm, r'_rms = 0.17 mrad.
+
+| Case | r_rms at exit | r'_rms at exit | eps_n,rms at exit | Energy in the cell |
+|---|---|---|---|---|
+| 0 T, 1 eV, no plugs | 3.4 mm | 13.2 mrad | 0.014 pi mm mrad | 29.99 keV |
+| 0 T, 1 eV, 300 V plugs | 5.0 mm | 24.0 mrad | 0.021 pi mm mrad | 29.81 keV |
+| 0.15 T, 1 eV, no plugs | 2.5 mm | 7.6 mrad | 0.041 pi mm mrad | 29.99 keV |
+| 0.15 T, 1 eV, 300 V plugs | 4.6 mm | 23.9 mrad | 0.16 pi mm mrad | 29.81 keV |
+
+- Without plugs the beam leaves the 0.15 T cell smallest (2.5 mm, 7.6 mrad); the residual space
+  charge, not the plasma, sets the growth from the injected 1.45 mm.
+- The 5 mm, 300 V plugs triple the exit divergence and quadruple the emittance at 0.15 T. Most of
+  the growth appears already at mid-cell, after the upstream plug, consistent with its strong
+  paraxial radial field and with injection inside that plug (the beam starts 0.18 keV low).
+- The projected x-x' emittance in the solenoid includes x-y coupling from the beam rotation, so it
+  overstates the intrinsic growth at 0.15 T.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
