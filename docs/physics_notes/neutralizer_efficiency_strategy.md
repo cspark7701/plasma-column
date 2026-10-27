@@ -145,6 +145,40 @@ r_rms = 1.45 mm, r'_rms = 0.17 mrad.
 - The projected x-x' emittance in the solenoid includes x-y coupling from the beam rotation, so it
   overstates the intrinsic growth at 0.15 T.
 
+### Task C4 result: end-plug voltage and width scan (task 109)
+
+0.15 T, 1 eV seed, 650 ns, small grid, z domain [-0.12, 0.32] m so the beam is injected 3 widths
+outside the upstream plug for every width (`scripts/run_plug_scan.py`). Plug centres 3 widths
+outside the cell ends. Beam moments in the last slab inside the cell (z = 0.18–0.20 m), where
+all cases use the same slab:
+
+| Case | tau_c (second half / last quarter) | eta_ss lower bound | r_rms | r'_rms | eps_n,rms |
+|---|---|---|---|---|---|
+| no plugs | 3.4 / 3.2 us | 0.040 | 6.8 mm | 29 mrad | 0.48 pi mm mrad |
+| 300 V, 5 mm | 1.1 / 1.0 us | 0.013 | 8.3 mm | 35 mrad | 0.71 |
+| 100 V, 10 mm | 4.8 / 4.7 us | 0.057 | 8.0 mm | 33 mrad | 0.66 |
+| 300 V, 10 mm | 7.2 / 6.4 us | 0.077 | 8.2 mm | 33 mrad | 0.69 |
+| 100 V, 20 mm | 4.7 / 5.5 us | 0.048 | 7.8 mm | 32 mrad | 0.61 |
+| 300 V, 20 mm | 9.3 / 16.6 us | 0.085 | 8.0 mm | 32 mrad | 0.66 |
+
+- Plugs at least 10 mm wide do confine: 300 V plugs keep 89–90% of the cell electrons at 650 ns
+  against 69% without plugs, and double to triple tau_c. The 5 mm plugs still shorten tau_c
+  without the injection artifact, so their failure in task 107 was the radial field of the narrow
+  analytic potential.
+- 300 V at 10 mm and at 20 mm give the same electron curve; the tau_c difference is within the
+  fit noise over 650 ns. **Selected for CW1: 300 V, 10 mm** (fits a shorter domain with less
+  uncompensated drift before the cell; a 10 mm wide potential matches a ~10 mm electrode aperture).
+- The plugs cost beam quality: +10–15% divergence and +30–40% emittance at the cell end relative to
+  no plugs, much less than the 3–4x of the 5 mm plugs in task C3.
+- Even 16 us is ~5x short of tau_ion = 80 us: the trap alone gives eta_ss of order 0.1, not
+  steady-state compensation. Task C2 (orbit tracking to 100 us) decides whether tau_c keeps rising.
+- Caveat: with injection 0.12 m before the cell the uncompensated 10 mA beam blows up to
+  r_rms ~5–7 mm in the cell and fills much of the +-10 mm box (part of it is lost transversely), so
+  the absolute beam numbers and tau_c (3.4 us without plugs here vs 2.15 us in task 107) are not
+  comparable with tasks 107/108; only the comparison between C4 cases is. The local core eta at
+  650 ns is not meaningful for the same reason. The exit slab (behind the downstream plug) is only
+  4 mm long for the 20 mm plugs and is not used.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

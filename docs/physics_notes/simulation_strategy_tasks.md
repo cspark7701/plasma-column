@@ -30,7 +30,7 @@ proton-impact ionization.
 | C1 | Confinement scan: B_z = 0, 0.05, 0.15 T; seed T_e = 1, 10 eV; plugs 0 / 300 V | WarpX, 32x32x256, 650 ns, `scripts/run_confinement_scan.py` | tau_c = 0.7 us (0 T) to 2.15 us (0.15 T, 1 eV, no plugs); 5 mm, 300 V plugs shorten it ~4x; selected 0.15 T, 1 eV for C4 | – | done (task 107) |
 | C2 | Extrapolate tau_c to the 80 us scale | Test-electron orbit tracking in the static beam well + solenoid + plug fields for 100 us (no PIC) | Whether the trap holds electrons for tau_ion, not just 650 ns | C1 | planned |
 | C3 | Plug-field effect on the beam | Beam rms emittance and size at the cell exit, plug on vs off (from C1 data) | 5 mm, 300 V plugs triple the exit divergence (7.6 → 23.9 mrad at 0.15 T) and quadruple eps_n,rms; no-plug beam leaves at 2.5 mm, 7.6 mrad | C1 | done (task 108) |
-| C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 0.15 T, 1 eV, 100–300 V, w = 5–20 mm, longer domain | Final plug setting | C1, C3 | running (launched in task 108, `scripts/run_plug_scan.py`) |
+| C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 0.15 T, 1 eV, 100–300 V, w = 5–20 mm, longer domain, `scripts/run_plug_scan.py` | Plugs >= 10 mm wide double to triple tau_c (3.4 → 7–9 us, eta_ss ~0.08) at +10–15% divergence; 5 mm plugs still harmful; selected 300 V, 10 mm for CW1 | C1, C3 | done (task 109) |
 | C5 | Self-consistent build-up from zero | Needs a validated proton-impact ionization source (WarpX extension) | Build-up time with the trap | WarpX source work | blocked (no validated p+ impact source) |
 
 ## CW (DC) beam track
@@ -40,7 +40,7 @@ electron suppressor before the inflector (figure, panel a).
 
 | ID | Task | Method | Output / decides | Depends on | Status |
 |----|------|--------|------------------|------------|--------|
-| CW1 | Best C1 configuration on the production grid | WarpX 64x64x512, 650 ns, restartable from checkpoints to about 2 us | Core eta_net and its time trend in the trap | C1 | planned |
+| CW1 | Best C1/C4 configuration on the production grid: 0.15 T, 1 eV, 300 V / 10 mm plugs | WarpX 64x64x672 (production dz, z in [-0.07, 0.27] m), 650 ns, `scripts/run_cw_best_config.py`, restartable from checkpoints to about 2 us | Core eta_net and its time trend in the trap | C1, C4 | planned (configuration chosen in task 109) |
 | CW2 | Transmission vs downstream compensation | Envelope model (`plasma_column.transport`), eta_cell from CW1, eta_downstream 0–0.9 | The downstream eta needed for a target transmission (end points from task 106: T = 0.20 cell only, 1.0 whole line at 0.25 pi mm mrad) | CW1 | planned |
 | CW3 | Electron retention in the main-solenoid and quadrupole region | WarpX section model with seeded residual-gas plasma; quadrupoles do not trap electrons | Achievable eta_downstream (input to CW2) | C1 | planned |
 | CW4 | Electron suppressor before the inflector | WarpX or analytic 2D field: suppressor voltage vs electron drain into the inflector field | Suppressor voltage | CW3 | planned |
@@ -64,7 +64,7 @@ is an alternative-placement study and is labeled as such.
 
 ## Order of execution
 
-1. C1 (running) → C3, C4 → CW1.
+1. C1 → C3, C4 (done) → CW1.
 2. B1 (done, task 106) → B2.
 3. CW2 and B3 (cheap model work), then C2.
 4. CW3, B4 (new section models), then CW4, CW5, B5, B6.
