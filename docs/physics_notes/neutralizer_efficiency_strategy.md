@@ -58,7 +58,8 @@ eta_ss ~ min(1, tau_c / tau_ion)
 
 - tau_ion = 80 us (H2, 1e-5 Torr) and 145 us (Kr, 1e-6 Torr): set by the ionization rate.
 - tau_c: electron confinement time in the beam core. Free axial escape of a 10 eV electron
-  from the 20 cm cell takes about 107 ns, so eta is about 1e-3 without confinement.
+  from the 20 cm cell takes about 107 ns, so eta is about 1e-3 without confinement. (The PIC
+  confinement scan shows that the beam potential well alone holds electrons for ~0.7 us; see below.)
 - The net value also needs the ions to leave. In the PIC runs, 13% of the seeded H2+ density is
   left in the core after 218 ns (eta_net = 0.96), but 80% of the Kr+ density (eta_net = 0.50–0.58).
 
@@ -95,6 +96,33 @@ Configurations for both beams and the simulation task list:
 | 2 | Confinement scan with the seeded driver: end-electrode bias, B_z = 0, 0.05, 0.15 T, runs longer than 218 ns | Measure tau_c directly (strategies 1, 6) | Driver change, a few ~9 h runs |
 | 3 | Bunched-beam PIC with the best configuration from step 2 | RF-averaged and peak-bunch eta (strategies 5, 6) | New beam injection, several runs |
 | 4 | Fix the envelope transport model (`compute_beam_envelope`, task 103 open item), then transmission into the inflector | The result that decides the design | Model work |
+
+### Step 2 result: confinement scan (task 107)
+
+Seeded H2 at 1e-5 Torr, DC 10 mA beam, 650 ns, 32x32x256 grid (`scripts/run_confinement_scan.py`,
+`scripts/analyze_confinement_scan.py`). tau_c is the exponential fit of the electrons in the cell
+over 325–650 ns; eta_ss uses its 2-sigma lower bound and tau_ion = 80 us.
+
+| Cell B_z | Seed T_e | tau_c, no plugs | tau_c, 300 V plugs (w 5 mm) | core eta_net at 650 ns, no plugs / plugs |
+|---|---|---|---|---|
+| 0 | 1 eV | 0.70 us | 0.32 us | 0.79 / 0.67 |
+| 0 | 10 eV | 0.97 us | 0.40 us | 0.71 / 0.57 |
+| 0.05 T | 1 eV | 1.55 us | 0.35 us | 0.84 / 0.64 |
+| 0.05 T | 10 eV | 1.23 us | 0.44 us | 0.76 / 0.56 |
+| 0.15 T | 1 eV | **2.15 us** | 0.47 us | **0.90** / 0.67 |
+| 0.15 T | 10 eV | 1.88 us | 0.43 us | 0.82 / 0.51 |
+
+- The beam's own potential well already holds electrons for ~0.7 us with no field, far longer than
+  the 107 ns free-escape estimate of section 2. The cell solenoid triples this to 2.15 us at
+  0.15 T. Best case: 0.15 T, 1 eV seed, no plugs (69% of the electrons left after 650 ns).
+- Even 2.15 us is ~40x short of tau_ion = 80 us, so eta_ss >= 0.026 is all this trap guarantees
+  in steady state. Reaching eta -> 1 needs tau_c ~ 100 us: strategies #1 (much better trap) or #2
+  (active filling) remain necessary.
+- The 300 V, 5 mm analytic plugs shorten tau_c about 4x. They hold the electrons better during the
+  first ~200 ns, but then pull the ions out (negative potential) and the electron loss accelerates
+  (late-quarter tau_c 0.3–0.6 us). Their paraxial radial field, ~V r / (2 w^2) (6 MV/m at r = 1 mm),
+  is far stronger than a real electrode with a ~10 mm aperture would give, and the upstream plug
+  sat 5 mm from the injection plane. Wider plugs in a longer domain are tested in task C4.
 
 ### Step 4 result: transport to the inflector (task 106)
 

@@ -164,6 +164,22 @@ class PlasmaColumnConfig:
     # Solenoid
     solenoid_Bz: float = 0.15
     field_margin: float = 0.0
+    # Electrostatic end plugs (task 107): analytic potential phi(z) = -V * sum_k exp(-(z-z_k)^2/(2 w^2))
+    # centred end_plug_offset outside each cell end (paraxial E_r = (r/2) phi''). V > 0 is a potential
+    # hill for electrons. The offset (3 w by default) keeps the plugs off the seeded plasma, which would
+    # otherwise start up to e*V high on the hill. Applied to particles only (no electrode surfaces or
+    # image charges). 0 disables.
+    end_plug_voltage: float = 0.0
+    end_plug_width: float = 0.005
+    end_plug_offset: float = 0.015
+    # RF-bunched injection (task B2, docs/physics_notes/simulation_strategy_tasks.md): the injected
+    # current is I_avg * f(t), with the periodic von Mises profile f = exp(kappa cos(omega t)) / I0(kappa)
+    # (mean 1), and kappa set so that the beam fraction inside +-bunch_acceptance_deg/2 equals
+    # beam_bunching_factor * bunch_acceptance_deg / 360.
+    # Density bunching at constant velocity (no velocity modulation). 1.0 = DC beam.
+    beam_bunching_factor: float = 1.0
+    rf_frequency_hz: float = 50.0e6
+    bunch_acceptance_deg: float = 36.0
 
     # Numerics — production defaults
     # Grid: 64×64×512 → dx=dy=0.31 mm, dz=0.51 mm (beam radius resolved by ~6 cells)
@@ -300,6 +316,16 @@ def parse_args() -> PlasmaColumnConfig:
 
     p.add_argument("--solenoid_Bz", type=float, default=PlasmaColumnConfig.solenoid_Bz)
     p.add_argument("--field_margin", type=float, default=PlasmaColumnConfig.field_margin)
+    p.add_argument("--end_plug_voltage", type=float, default=PlasmaColumnConfig.end_plug_voltage,
+                   help="Analytic end-plug potential depth [V] at both cell ends (>0 repels electrons; 0 = off).")
+    p.add_argument("--end_plug_width", type=float, default=PlasmaColumnConfig.end_plug_width,
+                   help="Gaussian width of each end-plug potential [m].")
+    p.add_argument("--end_plug_offset", type=float, default=PlasmaColumnConfig.end_plug_offset,
+                   help="Distance of each end-plug centre outside the cell end [m].")
+    p.add_argument("--beam_bunching_factor", type=float, default=PlasmaColumnConfig.beam_bunching_factor,
+                   help="Bunching factor inside the acceptance window of the injected beam (1 = DC).")
+    p.add_argument("--rf_frequency_hz", type=float, default=PlasmaColumnConfig.rf_frequency_hz)
+    p.add_argument("--bunch_acceptance_deg", type=float, default=PlasmaColumnConfig.bunch_acceptance_deg)
 
     p.add_argument("--max_steps", type=int, default=PlasmaColumnConfig.max_steps)
     p.add_argument("--solver", choices=["em", "es"], default=PlasmaColumnConfig.solver,
@@ -458,6 +484,65 @@ def estimate_neutralization_from_proton_impact(cfg: PlasmaColumnConfig, v_beam: 
     f = cfg.steady_state_neutralization * (1.0 - math.exp(-cfg.plasma_age / tau))
     f = max(0.0, min(f, 0.999))
     return f, tau, ng, sigma, xsec_file, e_cm_eV
+
+def end_plug_field_expressions(cfg: PlasmaColumnConfig, z0: float, z1: float) -> dict[str, str]:
+    """
+    Applied-field expressions of the analytic end plugs (empty dict when disabled).
+
+    phi(z) = -V * sum_k g_k, g_k = exp(-(z - z_k)^2 / (2 w^2)), z_k = z0 - offset, z1 + offset.
+    E_z = -phi' = -V * sum_k (z - z_k) / w^2 * g_k
+    E_x = (x/2) phi'' , E_y = (y/2) phi'' with phi'' = -V * sum_k ((z - z_k)^2 / w^4 - 1 / w^2) * g_k
+    (paraxial solution of Laplace's equation around the axis).
+    """
+    V, w = cfg.end_plug_voltage, cfg.end_plug_width
+    if V == 0.0:
+        return {}
+    if w <= 0.0:
+        raise ValueError("end_plug_width must be positive")
+    centres = (z0 - cfg.end_plug_offset, z1 + cfg.end_plug_offset)
+    g = [f"exp(-(z-({zk:.17e}))*(z-({zk:.17e}))/({2.0 * w * w:.17e}))" for zk in centres]
+    dz = [f"(z-({zk:.17e}))" for zk in centres]
+    ez = " + ".join(f"{d}*{gk}" for d, gk in zip(dz, g))
+    phi2 = " + ".join(f"({d}*{d}/{w**4:.17e} - {1.0 / w**2:.17e})*{gk}" for d, gk in zip(dz, g))
+    return {
+        "Ez_expression": f"-({V:.17e})/({w * w:.17e})*({ez})",
+        "Ex_expression": f"0.5*x*(-({V:.17e}))*({phi2})",
+        "Ey_expression": f"0.5*y*(-({V:.17e}))*({phi2})",
+    }
+
+
+def bunch_profile_kappa(bunching_factor: float, acceptance_deg: float) -> float:
+    """
+    von Mises concentration kappa whose fraction inside +-acceptance/2 is bunching_factor * acceptance / 360.
+    Returns 0 for a DC beam (bunching_factor <= 1).
+    """
+    if bunching_factor <= 1.0:
+        return 0.0
+    target = bunching_factor * acceptance_deg / 360.0
+    if not 0.0 < target < 1.0:
+        raise ValueError("beam_bunching_factor * bunch_acceptance_deg / 360 must be below 1")
+    from scipy.integrate import quad
+    from scipy.optimize import brentq
+    from scipy.special import i0e
+
+    half = math.radians(acceptance_deg) / 2.0
+
+    def frac(k: float) -> float:
+        # exp(k cos x) / (2 pi I0(k)) = exp(k (cos x - 1)) / (2 pi i0e(k)), stable for large k
+        val, _ = quad(lambda x: math.exp(k * (math.cos(x) - 1.0)), -half, half)
+        return val / (2.0 * math.pi * i0e(k))
+
+    return brentq(lambda k: frac(k) - target, 1e-6, 2000.0)
+
+
+def bunched_flux_expression(cfg: PlasmaColumnConfig, flux: float) -> str:
+    """flux_function(x,y,z,t) of the bunched beam: flux * exp(kappa (cos(omega t) - 1)) / i0e(kappa)."""
+    from scipy.special import i0e
+
+    k = bunch_profile_kappa(cfg.beam_bunching_factor, cfg.bunch_acceptance_deg)
+    omega = 2.0 * math.pi * cfg.rf_frequency_hz
+    return f"{flux / i0e(k):.17e}*exp({k:.17e}*(cos({omega:.17e}*t)-1.0))"
+
 
 def get_electron_impact_dir(cfg: PlasmaColumnConfig) -> Path:
     """
@@ -827,6 +912,12 @@ def build_sim(cfg: PlasmaColumnConfig):
         "beam_domain_transit_steps": (cfg.zmax - cfg.zmin) / (v_beam * estimate_pic_dt(cfg)),
         "beam_reaches_column_end_step": (cfg.column_zmin + cfg.column_length - cfg.zmin) / (v_beam * estimate_pic_dt(cfg)),
         "reduced_diagnostic_period": cfg.reduced_diag_period,
+        "end_plug_voltage_V": cfg.end_plug_voltage,
+        "end_plug_width_m": cfg.end_plug_width,
+        "end_plug_offset_m": cfg.end_plug_offset,
+        "beam_bunching_factor": cfg.beam_bunching_factor,
+        "bunch_profile_kappa": bunch_profile_kappa(cfg.beam_bunching_factor, cfg.bunch_acceptance_deg),
+        "rf_frequency_hz": cfg.rf_frequency_hz,
         "species_order_for_particle_number": "beam_protons, plasma_electrons, gas_ions",
     }
 
@@ -858,8 +949,7 @@ def build_sim(cfg: PlasmaColumnConfig):
     # Continuous proton source at zmin.
     vth_p = abs(cfg.beam_rms_divergence) * v_beam
 
-    proton_flux_dist = picmi.UniformFluxDistribution(
-        flux=flux,
+    flux_kwargs = dict(
         flux_normal_axis="z",
         surface_flux_position=cfg.zmin,
         flux_direction=1,
@@ -870,6 +960,10 @@ def build_sim(cfg: PlasmaColumnConfig):
         flux_tmin=0.0,
         flux_tmax=None,
     )
+    if cfg.beam_bunching_factor > 1.0:
+        proton_flux_dist = picmi.AnalyticFluxDistribution(flux=bunched_flux_expression(cfg, flux), **flux_kwargs)
+    else:
+        proton_flux_dist = picmi.UniformFluxDistribution(flux=flux, **flux_kwargs)
 
     beam_protons = picmi.Species(
         particle_type="proton",
@@ -929,10 +1023,12 @@ def build_sim(cfg: PlasmaColumnConfig):
     # Hard-edge solenoid particle field.
     bz_z0 = z0 - cfg.field_margin
     bz_z1 = z1 + cfg.field_margin
+    plug_E = end_plug_field_expressions(cfg, z0, z1)
     solenoid_field = picmi.AnalyticAppliedField(
         Bx_expression="0.0",
         By_expression="0.0",
         Bz_expression=f"(z >= {bz_z0:.17e})*(z <= {bz_z1:.17e})*{cfg.solenoid_Bz:.17e}",
+        **plug_E,
     )
 
     # Optional MCC.
