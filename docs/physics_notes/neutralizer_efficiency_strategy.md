@@ -179,6 +179,35 @@ all cases use the same slab:
   650 ns is not meaningful for the same reason. The exit slab (behind the downstream plug) is only
   4 mm long for the 20 mm plugs and is not used.
 
+### Task CW1 result: best configuration at production resolution (task 111)
+
+0.15 T, 1 eV seed, -300 V / 10 mm end plugs (task 109), seeded H2 1e-5 Torr (analytic source
+estimate), DC 10 mA, 64x64x672 (production dx, dz), z in [-0.07, 0.27] m, electron-impact MCC,
+975 ns (the restart ran past the planned 650 ns, see task 111).
+
+| Quantity | 227 ns | 650 ns | 975 ns |
+|---|---|---|---|
+| N_e in the cell / N_e(0) | 0.97 | 0.87 | 0.81 |
+| N_i in the cell / N_i(0) | 0.98 | 0.65 | 0.52 |
+| Beam-core eta_net | 0.27 (transient) | 0.81 | 0.93 |
+
+- Beam-core eta_net rings for ~400 ns after the beam arrives (0.27–1.7), then stays at
+  0.91 on average (0.81–1.00) from 490 to 975 ns. The trap keeps the core compensated for ~1 us
+  from the seed, at the level of the 218 ns production matrix (0.96).
+- tau_c = 4.2 us (2-sigma lower bound 4.1 us; last quarter 3.9 us), so eta_ss >= 0.05 against
+  tau_ion = 80 us. Ions leave twice as fast as electrons; the cell turns net negative
+  ((N_e - N_i)/N_p = 0.5 over the cell at 975 ns), and the seed still decays.
+- Beam: injected at x_rms 1.0 mm; 1.7 mm and 15 mrad at the cell entrance, 4.7 mm and 21 mrad at
+  the cell end, cell-end slab r_rms 6.9 mm, eps_n,rms 0.51 pi mm mrad. Most of the divergence is
+  made before the cell: in the uncompensated 7 cm drift and the upstream plug. Without that drift
+  (task 107 domain, injection 2 cm before the cell, no plugs) the beam stays at x_rms 1.0–1.7 mm,
+  <= 5 mrad through the cell. In the plug scan the upstream 300 V / 10 mm plug added about
+  10 mrad at the cell entrance (22 vs 12 mrad).
+- Conclusion for the CW track: the cell holds eta ~0.9 in the core, but the beam must arrive
+  compensated. An uncompensated drift of a few cm before the cell (and the plug lens) already
+  costs more beam quality than the cell recovers, consistent with the transport result (task
+  106): compensation along the whole line, including the buncher-to-cell drift.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

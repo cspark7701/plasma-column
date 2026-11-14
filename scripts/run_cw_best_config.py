@@ -82,7 +82,8 @@ def main() -> int:
     cmd = rcs.command(case, out, steps, args.snapshots, args.cores, COMMON)
     cmd[cmd.index("--checkpoint_period") + 1] = str(steps // 4)
     if args.restart_from:
-        cmd += ["--restart_from", args.restart_from]
+        # Absolute: the driver changes into the output directory before reading the checkpoint.
+        cmd += ["--restart_from", str(Path(args.restart_from).resolve())]
     print(f"CW1: {name}, {steps} steps ({args.duration_ns:.0f} ns), {args.cores} threads")
     if args.dry_run:
         print("  " + " ".join(cmd[1:]))

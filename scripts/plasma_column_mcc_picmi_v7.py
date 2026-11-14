@@ -52,6 +52,7 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Optional
@@ -613,6 +614,14 @@ def electrostatic_dt_limits(cfg: PlasmaColumnConfig) -> dict:
     limits.update({"beam_potential_depth_V": dphi, "electron_speed_max_m_per_s": ve_max,
                    "electron_density_for_dt_m3": ne_max})
     return limits
+
+
+def checkpoint_step(path: str | Path) -> int:
+    """Step number of a WarpX checkpoint directory named chkNNNNNN."""
+    m = re.search(r"chk(\d+)$", Path(path).name)
+    if m is None:
+        raise ValueError(f"cannot read the step from checkpoint name {path}")
+    return int(m.group(1))
 
 
 def estimate_pic_dt(cfg: PlasmaColumnConfig) -> float:
@@ -1257,8 +1266,10 @@ def main():
             from pywarpx import amr
             amr.restart = str(restart_path)
 
-        print(f"\nRunning WarpX in: {output_dir}")
-        sim.step()
+        # PICMI step() runs max_steps more steps from the checkpoint; stop at max_steps in total.
+        nsteps = cfg.max_steps - checkpoint_step(cfg.restart_from) if cfg.restart_from else cfg.max_steps
+        print(f"\nRunning WarpX in: {output_dir} ({nsteps} steps)")
+        sim.step(nsteps)
         print("\nWarpX run complete.")
         postprocess_particle_number(output_dir, cfg, derived)
 
