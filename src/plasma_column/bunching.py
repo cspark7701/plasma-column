@@ -134,3 +134,24 @@ def bunching_along_line(
         peak.append(peak_current_ratio(psi))
     return {"z_m": np.asarray(z_m, float), "bunching_factor": np.asarray(bf),
             "window_centre_deg": np.asarray(centre), "peak_current_ratio_2deg": np.asarray(peak)}
+
+
+def bunching_with_buncher_at(
+    z_m: np.ndarray,
+    buncher_z_m: float,
+    buncher: BuncherModel,
+    acceptance_deg: float = 36.0,
+    n_particles: int = 100_000,
+) -> np.ndarray:
+    """
+    Window bunching factor along the line for a buncher gap at ``buncher_z_m`` (B_f = 1 upstream of
+    it, ballistic bunching downstream). A buncher anywhere but upstream of the neutralizer is an
+    alternative-placement study (baseline: buncher -> neutralizer -> solenoid -> Q1 -> Q2 -> inflector).
+    """
+    z = np.asarray(z_m, float)
+    bf = np.ones_like(z)
+    down = z >= buncher_z_m
+    if np.any(down):
+        bf[down] = np.maximum(
+            bunching_along_line(z[down] - buncher_z_m, buncher, acceptance_deg, n_particles)["bunching_factor"], 1.0)
+    return bf

@@ -42,3 +42,16 @@ def test_bunching_grows_from_cell_to_inflector():
     r = bunching_along_line(np.array([0.0, 0.2, 1.12]), b, n_particles=100_000)
     bf = r["bunching_factor"]
     assert bf[0] < 1.1 < bf[1] < 1.6 < 4.0 < bf[2] <= 10.0
+
+
+def test_buncher_at_position_shifts_profile():
+    import numpy as np
+
+    from plasma_column.bunching import BuncherModel, bunching_along_line, bunching_with_buncher_at
+
+    b = BuncherModel(voltage_V=1500.0)
+    z = np.array([0.0, 0.3, 0.5, 0.8])
+    bf = bunching_with_buncher_at(z, 0.3, b, n_particles=50_000)
+    assert bf[0] == 1.0
+    ref = bunching_along_line(np.array([0.0, 0.2, 0.5]), b, n_particles=50_000)["bunching_factor"]
+    assert np.allclose(bf[1:], np.maximum(ref, 1.0), rtol=0.05)

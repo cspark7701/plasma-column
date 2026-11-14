@@ -227,6 +227,34 @@ after the cell (drift, main solenoid, Q1, Q2), optics rematched at each point
 - Target for the CW line: eta_down of about 0.7 along the solenoid and quadrupoles, and a source
   emittance near 0.25 pi mm mrad. Task CW3 tests whether residual-gas electrons can stay there.
 
+### Task B3 result: late-bunching layout (task 113, ALTERNATIVE-PLACEMENT STUDY)
+
+Sine buncher moved from its baseline position (upstream of the neutralizer) to the middle of each
+downstream drift, voltage set for the best 36 deg window B_f at the inflector (ballistic), peak
+slice matched with RF-averaged compensation K = K0 (B_f - eta), eta_cell = 0.91
+(`scripts/late_bunching_layout.py`). Accepted-current gain over an unbunched beam with the same
+compensation, G = B_f T_peak / T_DC (T_DC from CW2):
+
+| Buncher position (drift to inflector) | Voltage | B_f | G, eta_down 0 / 0.5 / 0.9 (0.25 pi mm mrad) |
+|---|---|---|---|
+| baseline, before the cell (1.12 m) | 0.62 kV | 5.7 | 0.025 / 0.014 / 0.009 |
+| after the cell (0.87 m) | 0.80 kV | 5.7 | 0.029 / 0.016 / 0.010 |
+| between solenoid and Q1 (0.52 m) | 1.34 kV | 5.7 | 1.03 / 0.54 / 0.33 |
+| between Q1 and Q2 (0.31 m) | 2.25 kV | 5.7 | 1.77 / 0.97 / 0.63 |
+| between Q2 and inflector (0.075 m) | 8.74 kV | 5.6 | 5.1 / 4.3 / 5.3 |
+
+- With the baseline buncher the peak bunch is lost (G ~ 0.01–0.06): bunching through the cell and
+  solenoid costs far more than the factor 5.7 it gains.
+- Bunching pays only over the last ~0.3 m. Over 0.075 m the full B_f gain survives, but the gap
+  voltage (8.7 kV, a +-29% energy modulation of the 30 keV beam) is far outside the ballistic model
+  and the inflector's energy acceptance; it marks a limit, not a design. Between Q1 and Q2
+  (2.25 kV, +-7.5%) the gain is 1.8 without downstream compensation and falls below 1 with it,
+  because compensation helps the DC reference more than the RF-averaged-compensated peak slice.
+- Conclusion: in this layout the buncher position, not the plasma, decides the bunched-beam
+  current. A buncher close to the inflector (alternative placement) with modest voltage, or a
+  shorter buncher-to-inflector line, is required; tasks B5/B6 refine this with slices and a
+  sawtooth.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
