@@ -208,6 +208,25 @@ estimate), DC 10 mA, 64x64x672 (production dx, dz), z in [-0.07, 0.27] m, electr
   costs more beam quality than the cell recovers, consistent with the transport result (task
   106): compensation along the whole line, including the buncher-to-cell drift.
 
+### Task CW2 result: transmission vs downstream compensation (task 112)
+
+Matched KV envelope (task 106 model), DC beam, eta_cell = 0.91 from CW1, compensation eta_down
+after the cell (drift, main solenoid, Q1, Q2), optics rematched at each point
+(`scripts/transmission_vs_downstream.py`). Transmission estimate T:
+
+| eta_down | 0 | 0.3 | 0.5 | 0.7 | 0.8 | 0.9 |
+|---|---|---|---|---|---|---|
+| 0.25 pi mm mrad | 0.22 | 0.33 | 0.51 | 0.93 | 1.00 | 1.00 |
+| 0.5 pi mm mrad | 0.16 | 0.27 | 0.39 | 0.48 | 0.54 | 0.56 |
+| 1.0 pi mm mrad | 0.10 | 0.12 | 0.14 | 0.16 | 0.16 | 0.16 |
+
+- At 0.25 pi mm mrad: T >= 0.5 needs eta_down >= 0.49, T >= 0.9 needs eta_down >= 0.69.
+- At 0.5 pi mm mrad T saturates at ~0.56 above eta_down ~ 0.8 (emittance and the 5 mm / 50 mrad
+  inflector acceptance limit it); at 1.0 pi mm mrad the beam is emittance-dominated (T <= 0.16)
+  and compensation hardly matters.
+- Target for the CW line: eta_down of about 0.7 along the solenoid and quadrupoles, and a source
+  emittance near 0.25 pi mm mrad. Task CW3 tests whether residual-gas electrons can stay there.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
