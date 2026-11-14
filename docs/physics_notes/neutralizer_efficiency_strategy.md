@@ -255,6 +255,34 @@ compensation, G = B_f T_peak / T_DC (T_DC from CW2):
   shorter buncher-to-inflector line, is required; tasks B5/B6 refine this with slices and a
   sawtooth.
 
+### Task C2 result: test electrons in the static trap to 100 us (task 114)
+
+Guiding-centre test electrons (`plasma_column.electron_trap`, `scripts/trap_orbit_tracking.py`):
+analytic plugs (w = 10 mm, as CW1), uniform cell solenoid, static net beam well (1 - eta) phi_b,
+elastic e-H2 collisions at 1e-5 Torr (approximate cross section), Coulomb heating by the 10 mA
+beam (0.04 eV/us); 2000 electrons per case, 100 us.
+
+| Plugs | B_z | Surviving at 100 us | tau_c | Mean energy at 100 us (born at 1 / 10 eV) |
+|---|---|---|---|---|
+| none | 0.05, 0.15 T | 0 (all axial) | 1.5–2.7 us | – |
+| 100 V | 0.05, 0.15 T | 0.999–1.000 | >> 100 us | 5.0–5.3 / 16–18 eV |
+| 300 V | 0.05, 0.15 T | 1.000 | >> 100 us | 4.9–5.4 / 16–18 eV |
+
+Same for eta = 0.5 and 0.9; no radial loss in any case; a dt / 2.5 check agrees.
+
+- A static, quiescent trap with >= 100 V plugs holds electrons far longer than tau_ion = 80 us:
+  classical collisions (one per ~30 us, guiding-centre steps of ~10 um) and beam heating
+  (~4 eV in 100 us) do not reach the plug barrier or the wall. The classical bound on eta_ss is 1.
+- Without plugs the electrons stream out in ~2 us, in line with the no-plug PIC values
+  (0.7–2.2 us, task 107).
+- The PIC tau_c of 4–9 us with plugs (tasks 109, 111) is therefore not a single-particle loss:
+  it comes from self-consistent effects absent here (ions leaving so the cell turns net negative,
+  the electron cloud's own space charge, fluctuations) or from numerical heating at the low
+  particle counts of those runs. Two consequences: (1) a PIC convergence check of tau_c
+  (nppc, grid) is needed before trusting the PIC numbers; (2) with ions leaving and electrons
+  held, the trap fills until the electron space charge reaches the plug barrier, so the steady
+  state may overcompensate (eta > 1) rather than undercompensate. Both are open.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
