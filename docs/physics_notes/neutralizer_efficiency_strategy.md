@@ -386,6 +386,36 @@ Values for 0.25 pi mm mrad; 0.5 pi mm mrad is similar (baseline per-slice bound 
   slices (bunch length ~ pipe radius at the focus overestimates the slice field); KV envelopes and
   the geometric transmission estimate.
 
+### Task B6 result: ideal sawtooth vs sine buncher (task 118)
+
+Same sliced-bunch model as B5 with an ideal sawtooth buncher (linear energy ramp over the whole RF
+period, no flyback; `scripts/sliced_bunch_transport.py --waveform sawtooth`), voltage for the best
+36 deg window at the inflector. Gain G = sum_s f_s T_s / (0.1 T_DC), 0.25 pi mm mrad, eta_cell 0.91;
+non-baseline positions are an ALTERNATIVE-PLACEMENT STUDY.
+
+| Buncher (drift to inflector) | Waveform, voltage | Window B_f | G, RF-averaged, eta_down 0 / 0.5 / 0.9 | G, per-slice bound, eta_down 0.9 |
+|---|---|---|---|---|
+| baseline (1.12 m) | sine, 0.62 kV | 5.7 | 0.010 / 0.003 / 0.001 | 0.59 |
+| baseline (1.12 m) | sawtooth, 1.17 kV | 10.0 | 1.25 / 0.59 / 0.33 | 6.9 |
+| Q1–Q2 (0.31 m) | sine, 2.25 kV | 5.7 | 0.62 / 0.29 / 0.15 | 4.4 |
+| Q1–Q2 (0.31 m) | sawtooth, 4.27 kV | 10.0 | 3.4 / 2.0 / 1.5 | 10.0 |
+| last 7.5 cm | sine, 8.7 kV | 5.6 | 4.2 / 3.2 / 3.5 | 5.6 |
+| last 7.5 cm | sawtooth, 14 kV | 6.8 | 6.0 / 5.3 / 5.9 | 6.8 |
+
+- The ideal sawtooth puts the whole beam into the window and compresses it monotonically: the
+  slices peak at the inflector (local factor 19 at the baseline) instead of crossing over at
+  ~22x half-way, as the sine bunch does. That is why it does much better than the sine even
+  where both have similar peak factors.
+- With the baseline buncher, RF-averaged compensation and eta_down 0, the sawtooth just breaks
+  even (G = 1.25); downstream compensation helps the DC reference more than the bunch, so G
+  falls below 1 (0.33 at eta_down 0.9). Stronger bunching pays only if the electrons compensate
+  each slice (bound 6.9) — the B4 question.
+- Sawtooth between Q1 and Q2 (4.3 kV, +-14% energy modulation): G = 1.5–3.4 with RF-averaged
+  compensation, the only case inside the ballistic model with a clear gain. The 7.5 cm case
+  (14 kV) is far outside the model.
+- Limitations: an ideal sawtooth is not realizable (a 2–3 harmonic approximation reaches a lower
+  B_f); otherwise as B5 (ballistic, independent slices, KV envelopes).
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

@@ -60,7 +60,7 @@ is an alternative-placement study and is labeled as such.
 | B3 | Late-bunching layout | Buncher in each downstream drift, voltage for best B_f at the inflector, peak slice with RF-averaged compensation (`scripts/late_bunching_layout.py`) | Gain B_f T_peak/T_DC: 0.01–0.06 for the baseline buncher, 1.8 between Q1 and Q2 (2.25 kV), ~5 only 7.5 cm before the inflector (8.7 kV, outside the ballistic model) | B1 | done (task 113, alternative-placement study) |
 | B4 | Compensation of a strongly bunched beam downstream | WarpX section model of the gas-filled main solenoid at B_f = 3–6 | Whether electrons follow the bunches at all (f_pe vs f_RF) | B2 | planned |
 | B5 | Sliced-bunch transport | 9 slices of the 36 deg window, local perveance per slice, common matched optics, RF-averaged and per-slice compensation (`scripts/sliced_bunch_transport.py`) | Slices pass a ~22x crossover before the inflector; G = sum f_s T_s / (0.1 T_DC): baseline <= 0.03 (per-slice bound 0.6), Q1–Q2 buncher 0.15–0.6 (bound 4.4), last 7.5 cm 3.2–4.2 (0.25 pi mm mrad); B4 decides which compensation limit applies | B1, B4 | done (task 117; B4 pending) |
-| B6 | Sawtooth buncher (B_f = 10) vs sine (B_f = 5.7) | B3 + B5 with the sawtooth model | Whether stronger bunching still pays off with space charge | B3, B5 | planned |
+| B6 | Sawtooth buncher (B_f = 10) vs sine (B_f = 5.7) | B5 slice model with an ideal sawtooth (`scripts/sliced_bunch_transport.py --waveform sawtooth`) | No crossover; RF-averaged G = 1.25 / 0.33 (baseline, eta_down 0 / 0.9), 3.4 / 1.5 (sawtooth between Q1 and Q2, 4.3 kV, alternative placement); per-slice bound 6.9–10 | B3, B5 | done (task 118) |
 
 ## Order of execution
 
