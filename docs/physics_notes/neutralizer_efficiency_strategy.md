@@ -312,6 +312,46 @@ the suppressor) >= 20 V, against the ~5 eV electrons of task C2.
 - Limitations: axisymmetric, static, uniform beam; electrons treated by the on-axis barrier only
   (no off-axis or magnetized orbits); real inflector field not modeled.
 
+### Task CW5 result: particle tracking to the inflector (task 116)
+
+Transverse tracking of the DC beam through the task 106 lattice (`plasma_column.particle_tracking`,
+`scripts/track_to_inflector.py`): space charge from the actual distribution (2D open-boundary FFT
+field) scaled by K0 (1 - eta(z)), eta_cell = 0.91, loss at the 10 mm pipe, accepted if r < 5 mm and
+|x'|, |y'| < 50 mrad at the inflector; 20 000 particles.
+
+Model beams (2 mm, parallel, launched at the cell entrance, CW2 optics), counted T vs the
+envelope estimate:
+
+| Beam | eta_down 0 | 0.5 | 0.7 | 0.9 |
+|---|---|---|---|---|
+| KV, 0.25 pi mm mrad | 0.30 (0.21) | 0.57 (0.51) | 0.93 (0.93) | 1.00 (1.00) |
+| Gaussian, 0.25 pi mm mrad | 0.30 | 0.52 | 0.77 | 0.93 |
+| KV, 0.5 pi mm mrad | 0.23 (0.16) | 0.38 (0.39) | 0.47 (0.48) | 0.56 (0.56) |
+| Gaussian, 0.5 pi mm mrad | 0.24 | 0.41 | 0.51 | 0.63 |
+
+PIC beams at the cell exit (z = 0.20 m), optics rematched by tracking:
+
+| PIC input | Exit beam (x_rms, x'_rms, eps_rms geometric) | eta_down 0.5 | 0.7 | 0.9 |
+|---|---|---|---|---|
+| CW1 (task 111; injection 7 cm before the cell, 300 V / 10 mm plugs) | 5.0 mm, 17 mrad, 9.0 mm mrad | 0.46 | 0.48 | 0.49 |
+| C1 short (task 107; injection 2 cm before the cell, no plugs) | 1.6 mm, 3.2 mrad, 1.2 mm mrad | 0.53 | 0.76 | 1.00 |
+
+- The tracker reproduces the envelope model for KV beams where the beam is contained (within
+  0.01–0.06); in the clipped cases (eta_down 0) counting gives more than the geometric estimate.
+- A Gaussian beam with the same rms loses its tails: at 0.25 pi mm mrad T drops from 0.93 to 0.77
+  at eta_down 0.7 and from 1.0 to 0.93 at 0.9. With tails, the CW2 target moves from
+  eta_down ~0.7 to ~0.9.
+- The CW1 beam leaves the cell already ~10 mm wide (edge): about half of it is lost at the pipe
+  right after the cell whatever eta_down is. The short-injection beam reaches T = 1 at
+  eta_down 0.9. The uncompensated injection drift before the cell decides the result.
+- Caveat: the PIC cell solenoid of tasks <= 111 is a hard-edge B_z without radial fringe field,
+  so the beam got no Busch kick and was not focused by the cell solenoid (f ~ 0.55 m at 0.15 T);
+  the PIC exit beams are therefore larger than with a real solenoid, and the CW1 numbers are
+  pessimistic. Their residual mean rotation is removed as a rigid rotation. The driver now has a
+  tanh fringe option (task CW3), used from CW3/B4 on.
+- Limitations: linear hard-edge lattice (rotation dropped in the Larmor frame), 2D slice space
+  charge, no gas scattering, single-plane divergence limit at the inflector.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

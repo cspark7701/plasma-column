@@ -44,7 +44,7 @@ electron suppressor before the inflector (figure, panel a).
 | CW2 | Transmission vs downstream compensation | Envelope model, eta_cell = 0.91 (CW1), eta_down 0–0.95, `scripts/transmission_vs_downstream.py` | 0.25 pi mm mrad: T >= 0.5 at eta_down 0.49, T >= 0.9 at 0.69; 0.5 pi mm mrad saturates at T ~0.56; 1.0 pi mm mrad emittance-dominated (T <= 0.16) | CW1 | done (task 112) |
 | CW3 | Electron retention in the main-solenoid and quadrupole region | WarpX section model with seeded residual-gas plasma; quadrupoles do not trap electrons | Achievable eta_downstream (input to CW2) | C1 | planned |
 | CW4 | Electron suppressor before the inflector | Axisymmetric (r, z) Poisson model with the compensated beam and an illustrative inflector leakage potential (`scripts/suppressor_scan.py`) | 20 V on-axis barrier needs -62 / -96 / -122 V (5 mm aperture) or -115 / -154 / -195 V (7.5 mm) at eta_down 0.5 / 0.7 / 0.9; lens effect negligible (f ~ km) | CW3 | done (task 115) |
-| CW5 | Particle tracking through the line | Track the PIC beam distribution at the cell exit through solenoid/Q1/Q2 with the CW2 compensation | Transmission with halo, replacing the KV estimate | CW1, CW2 | planned |
+| CW5 | Particle tracking through the line | 2D space-charge particle tracking (`scripts/track_to_inflector.py`): KV/Gaussian model beams with CW2 optics; PIC cell-exit beams with rematched optics | KV agrees with the envelope; Gaussian tails lower T to 0.77 / 0.93 at eta_down 0.7 / 0.9 (0.25 pi mm mrad); CW1 PIC beam T ~0.48 (too wide after the 7 cm uncompensated drift; hard-edge PIC solenoid did not focus); short-injection beam T = 1.0 at eta_down 0.9 | CW1, CW2 | done (task 116) |
 
 ## RF-bunched beam track
 
