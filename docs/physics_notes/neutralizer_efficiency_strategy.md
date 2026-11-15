@@ -416,6 +416,45 @@ non-baseline positions are an ALTERNATIVE-PLACEMENT STUDY.
 - Limitations: an ideal sawtooth is not realizable (a 2–3 harmonic approximation reaches a lower
   B_f); otherwise as B5 (ballistic, independent slices, KV envelopes).
 
+### Task B2 result: bunched beam in the cell (task 119)
+
+WarpX, CW1 domain (z = -0.07 to 0.27 m) on the small grid (32 x 32 x 336), seeded H2 at 1e-5 Torr
+(analytic source estimate), 10 mA average, 50 MHz von Mises current profile at injection, 650 ns
+(`scripts/run_bunched_cell.py`). Trap = CW1 configuration (0.15 T, 1 eV seed, -300 V / 10 mm
+plugs); open = no field, no plugs. B_f = 5 moves the bunch focus into the cell: a bunch-focus
+study, not the baseline layout. Analysis over three RF wavelengths in the cell (z = 0.02–0.164 m),
+beam core r <= 2 mm, averaged over 341–650 ns (`scripts/analyze_bunched_cell.py`): eta_avg over
+the wavelengths, eta_peak over the top 10% of the proton line density (the 36 deg window).
+
+| Case | B_cell | eta_avg | eta_peak | Static-cloud eta_avg / B_cell | tau_c (electrons in the cell) |
+|---|---|---|---|---|---|
+| trap, DC | 1.01 | 0.96 +- 0.20 | 0.96 +- 0.44 | 0.95 | 3.0 us |
+| trap, B_f 1.3 | 1.26 | 0.85 +- 0.38 | 1.20 +- 0.42 | 0.68 | 1.3 us |
+| open, B_f 1.3 | 1.25 | 0.72 +- 0.06 | 0.69 +- 0.08 | 0.58 | 0.31 us |
+| trap, B_f 5 | 3.6 | -0.30 +- 0.10 | -0.01 +- 0.26 | -0.08 | 0.12 us |
+| open, B_f 5 | 3.6 | -0.18 +- 0.20 | -0.06 +- 0.08 | -0.05 | 0.02 us |
+
+(+- : standard deviation over the snapshots; the small-grid core values oscillate by +-0.2–0.4
+in the trap cases, more than in the production-grid CW1 run.)
+
+- Baseline bunching (B_f 1.3 in the cell): the trap still holds a plasma that compensates the
+  core on average (eta_avg 0.85), and the peak-bunch value is not distinguishable from it within
+  the fluctuations, i.e. no sign of a large peak deficit at B_cell 1.26. But the bunched beam
+  roughly halves the electron confinement time (3.0 → 1.3 us), so the steady state is lower than
+  for a DC beam (eta_ss ~ tau_c / tau_ion = 0.016 vs 0.036 from these fits). Without the trap the
+  plasma leaves in 0.3 us.
+- Strong bunching (B_f 5 at the cell entrance): the plasma is lost within ~0.1 us even with the
+  trap, and the core is left with a small ion excess (eta_net < 0, K_eff/K0 slightly above 1).
+  A likely cause (not separated in these runs): the peak bunch potential (several hundred volts
+  for a 5x peak of the 10 mA beam) reaches the 300 V plug barrier, and each bunch passage
+  accelerates the electrons. The bunch itself
+  blows up in the 7 cm uncompensated drift before the cell (65x peak density at injection, thin
+  remnants in the cell). Electrons do not follow such bunches in this trap. This supports the
+  RF-averaged compensation limit of tasks 106, 117 and 118 for strongly bunched beams; task B4
+  tests the downstream section.
+- Limitations: small grid (4 particles per cell) and seeded start; core eta fluctuates strongly
+  between snapshots; the B_f 5 bunch is injected without the upstream compensation it would need.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
