@@ -283,6 +283,35 @@ Same for eta = 0.5 and 0.9; no radial loss in any case; a dt / 2.5 check agrees.
   held, the trap fills until the electron space charge reaches the plug barrier, so the steady
   state may overcompensate (eta > 1) rather than undercompensate. Both are open.
 
+### Task CW4 result: electron suppressor before the inflector (task 115)
+
+Axisymmetric (r, z) electrostatic model of the end of the compensated line
+(`plasma_column.suppressor`, `scripts/suppressor_scan.py`): grounded 10 mm pipe, ring suppressor
+(5 mm thick, aperture radius 5 or 7.5 mm) at -V_s, 10 mA beam (2 mm) compensated by eta_down up
+to the suppressor and uncompensated after it, inflector leakage as +V_inf on the pipe wall from
+30 mm downstream (illustrative stand-in: the real inflector field is not axisymmetric).
+Criterion: on-axis barrier (compensated-beam potential minus the lowest potential at and after
+the suppressor) >= 20 V, against the ~5 eV electrons of task C2.
+
+| eta_down | V_s needed, 5 mm aperture | V_s needed, 7.5 mm aperture |
+|---|---|---|
+| 0.5 | 62 V | 115 V |
+| 0.7 | 96 V | 154 V |
+| 0.9 | 122 V | 195 V |
+
+- Without a suppressor the potential rises by 19–68 V where the compensation ends (the
+  uncompensated beam downstream sits higher), so the electrons are pulled out of the line: a
+  suppressor is needed.
+- The voltage grows with eta_down (the compensated beam sits lower, ~16 V on axis at 0.9, so the
+  suppressor must undo more of the downstream beam potential) and with the aperture. A 5 mm
+  aperture at -150 to -200 V gives the margin for eta_down up to 0.9; the inflector leakage
+  (0–3 kV) changes the result by < 1 V because the suppressor screens it.
+- Effect on the 30 keV beam: the suppressor lens focal length is ~4 km at the needed voltage,
+  540 m at 300 V and 50 m at 1 kV (paraxial ray, beam space charge subtracted), negligible
+  compared with the solenoid and quadrupoles.
+- Limitations: axisymmetric, static, uniform beam; electrons treated by the on-axis barrier only
+  (no off-axis or magnetized orbits); real inflector field not modeled.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

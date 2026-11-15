@@ -91,6 +91,7 @@ Assessment combining these production results with the analytical estimates of t
 | Holding electrons through the 18 ns bunch gap | **Unknown** (needs B_z >= 53 mT) | Without it, electrons cross the beam in 1.1 ns and are lost each gap | No bunched-beam PIC runs yet |
 | Overcompensation (net focusing) | **Feasible** (no problem) | Electrons alone exceed n_b, but net eta <= 1 in every case | — |
 | Beam envelope and transmission into the inflector | **Partial** (DC: only with whole-line compensation) | Matched KV envelopes (task 106), 0.25 pi mm mrad: DC T = 0.17 uncompensated, 0.20 cell only, 1.0 whole line; bunched T < 0.01; task 112 (eta_cell 0.91): T >= 0.9 needs eta_down >= 0.69 at 0.25 pi mm mrad | Geometric estimate, no particle tracking; 2 mm parallel launch is emittance-limited at 1 pi mm mrad |
+| Holding the line electrons in front of the inflector | **Feasible** (model) | Task 115: a ring suppressor at -100 to -200 V (5 mm aperture) gives a >= 20 V barrier for eta_down 0.5–0.9; without it the potential step at the end of the compensation pulls electrons out | Axisymmetric electrostatic model; inflector field only as an illustrative wall potential |
 | Self-consistent proton-impact ionization | **Unknown** | Custom proton-impact MCC not run or verified | All production results use the seeded model |
 | Beam loss from charge exchange and scattering in the gas | **Unknown** | Not assessed | May limit how high the pressure can go |
 

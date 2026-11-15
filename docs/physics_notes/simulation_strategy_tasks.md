@@ -43,7 +43,7 @@ electron suppressor before the inflector (figure, panel a).
 | CW1 | Best C1/C4 configuration on the production grid: 0.15 T, 1 eV, 300 V / 10 mm plugs | WarpX 64x64x672 (production dz, z in [-0.07, 0.27] m), 975 ns, `scripts/run_cw_best_config.py` | Core eta_net 0.91 (0.81–1.00) from 490 to 975 ns; tau_c 4.2 us (eta_ss >= 0.05); beam divergence made mostly in the uncompensated drift before the cell | C1, C4 | done (task 111) |
 | CW2 | Transmission vs downstream compensation | Envelope model, eta_cell = 0.91 (CW1), eta_down 0–0.95, `scripts/transmission_vs_downstream.py` | 0.25 pi mm mrad: T >= 0.5 at eta_down 0.49, T >= 0.9 at 0.69; 0.5 pi mm mrad saturates at T ~0.56; 1.0 pi mm mrad emittance-dominated (T <= 0.16) | CW1 | done (task 112) |
 | CW3 | Electron retention in the main-solenoid and quadrupole region | WarpX section model with seeded residual-gas plasma; quadrupoles do not trap electrons | Achievable eta_downstream (input to CW2) | C1 | planned |
-| CW4 | Electron suppressor before the inflector | WarpX or analytic 2D field: suppressor voltage vs electron drain into the inflector field | Suppressor voltage | CW3 | planned |
+| CW4 | Electron suppressor before the inflector | Axisymmetric (r, z) Poisson model with the compensated beam and an illustrative inflector leakage potential (`scripts/suppressor_scan.py`) | 20 V on-axis barrier needs -62 / -96 / -122 V (5 mm aperture) or -115 / -154 / -195 V (7.5 mm) at eta_down 0.5 / 0.7 / 0.9; lens effect negligible (f ~ km) | CW3 | done (task 115) |
 | CW5 | Particle tracking through the line | Track the PIC beam distribution at the cell exit through solenoid/Q1/Q2 with the CW2 compensation | Transmission with halo, replacing the KV estimate | CW1, CW2 | planned |
 
 ## RF-bunched beam track
