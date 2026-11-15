@@ -352,6 +352,40 @@ PIC beams at the cell exit (z = 0.20 m), optics rematched by tracking:
 - Limitations: linear hard-edge lattice (rotation dropped in the Larmor frame), 2D slice space
   charge, no gas scattering, single-plane divergence limit at the inflector.
 
+### Task B5 result: sliced-bunch transport into the inflector acceptance (task 117)
+
+The best 36 deg window at the inflector is split into 9 slices of 4 deg; each slice is followed
+back along the line (ballistic sine buncher) and transported as its own KV envelope with its local
+perveance, all through one set of optics matched for the largest accepted current
+(`plasma_column.bunching.slice_bunching_along_line`, `scripts/sliced_bunch_transport.py`).
+Gain over an unbunched beam with the same compensation: G = sum_s f_s T_s / (0.1 T_DC), eta_cell
+0.91. Two compensation limits: RF-averaged, K = K0 (B_s - eta), and per slice (upper bound),
+K = K0 B_s (1 - eta). Positions other than the baseline are an ALTERNATIVE-PLACEMENT STUDY.
+
+| Buncher (drift to inflector) | Peak slice factor along the line | G, RF-averaged, eta_down 0 / 0.5 / 0.9 | G, per-slice bound, eta_down 0.5 / 0.9 |
+|---|---|---|---|
+| baseline, before the cell (1.12 m), 0.62 kV | 24 (at z = 0.8 m) | 0.010 / 0.003 / 0.001 | 0.02 / 0.59 |
+| between Q1 and Q2 (0.31 m), 2.25 kV | 24 (at z = 1.03 m) | 0.62 / 0.29 / 0.15 | 0.75 / 4.4 |
+| between Q2 and inflector (0.075 m), 8.7 kV | 17 (at z = 1.10 m) | 4.2 / 3.2 / 3.5 | 4.7 / 5.6 |
+
+Values for 0.25 pi mm mrad; 0.5 pi mm mrad is similar (baseline per-slice bound 1.3 at eta_down 0.9).
+
+- The sine buncher set for the best 36 deg window at the inflector over-bunches the core first:
+  every slice of the accepted bunch passes a crossover with a local current of ~22x the average
+  (4 deg slices; unchanged with 4x more particles) before the window fills again at the inflector.
+  The window bunching factor B_f = 5.7 used in tasks 105, 106 and 113 hides this, so the peak-slice
+  results there are optimistic.
+- Baseline buncher: the accepted bunch is lost (G <= 0.03) with RF-averaged compensation; even the
+  per-slice bound gives only G = 0.6 at eta_down 0.9 (task 106 found 0.99 with the window B_f).
+- Bunching between Q1 and Q2 does not pay with RF-averaged compensation (G = 0.15–0.6); it would pay
+  (G ~4.4) only if the electrons compensated each slice, which B4 tests.
+- Bunching over the last 7.5 cm keeps most of the gain (G = 3.2–4.2), but at 8.7 kV (+-29% energy
+  modulation) outside the ballistic model and the inflector energy acceptance, as in task 113.
+- Limitations: ballistic bunching (longitudinal space charge would blunt the crossover, so the
+  local factors are upper values and depend on the slice width near the caustic); independent
+  slices (bunch length ~ pipe radius at the focus overestimates the slice field); KV envelopes and
+  the geometric transmission estimate.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),

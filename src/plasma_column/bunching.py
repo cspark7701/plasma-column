@@ -155,3 +155,48 @@ def bunching_with_buncher_at(
         bf[down] = np.maximum(
             bunching_along_line(z[down] - buncher_z_m, buncher, acceptance_deg, n_particles)["bunching_factor"], 1.0)
     return bf
+
+
+def slice_bunching_along_line(
+    z_m: np.ndarray,
+    buncher_z_m: float,
+    buncher: BuncherModel,
+    focus_z_m: float,
+    acceptance_deg: float = 36.0,
+    n_slices: int = 9,
+    n_particles: int = 200_000,
+) -> dict[str, np.ndarray]:
+    """
+    Local current factor along the line of each longitudinal slice of the accepted bunch (task B5).
+
+    The accepted bunch is the best ``acceptance_deg`` phase window at ``focus_z_m`` (the inflector),
+    split into ``n_slices`` equal phase slices. A slice is followed back along the line by the
+    circular mean phase of its particles; its local current factor at z is the beam fraction within
+    +- half a slice width of that phase, divided by (slice width / 360 deg), so it is 1 for a DC beam
+    and upstream of the buncher. Returns the slice centres at the focus [deg], the beam fraction in
+    each slice, the local factors (n_slices, len(z)) and the window bunching factor at the focus.
+    """
+    z = np.asarray(z_m, float)
+    phi, e = sample_bunched_beam(buncher, n_particles)
+    psi_f = phases_at(focus_z_m - buncher_z_m, phi, e, buncher)
+    bf_window, centre = window_bunching_factor(psi_f, acceptance_deg)
+    width = math.radians(acceptance_deg / n_slices)
+    rel_f = (psi_f - math.radians(centre) + math.pi) % (2.0 * math.pi) - math.pi
+    edges = math.radians(-0.5 * acceptance_deg) + width * np.arange(n_slices + 1)
+    labels = np.digitize(rel_f, edges) - 1
+    factors = np.ones((n_slices, z.size))
+    for j, zj in enumerate(z):
+        if zj < buncher_z_m:
+            continue
+        psi = phases_at(zj - buncher_z_m, phi, e, buncher)
+        for s in range(n_slices):
+            sel = labels == s
+            if not np.any(sel):
+                factors[s, j] = 0.0
+                continue
+            mean = math.atan2(np.mean(np.sin(psi[sel])), np.mean(np.cos(psi[sel])))
+            d = (psi - mean + math.pi) % (2.0 * math.pi) - math.pi
+            factors[s, j] = np.mean(np.abs(d) < 0.5 * width) / (width / (2.0 * math.pi))
+    frac = np.array([np.mean(labels == s) for s in range(n_slices)])
+    return {"z_m": z, "slice_centre_deg": centre + np.degrees(0.5 * (edges[:-1] + edges[1:])),
+            "slice_fraction": frac, "slice_factor": factors, "bf_window": bf_window}

@@ -55,3 +55,18 @@ def test_buncher_at_position_shifts_profile():
     assert bf[0] == 1.0
     ref = bunching_along_line(np.array([0.0, 0.2, 0.5]), b, n_particles=50_000)["bunching_factor"]
     assert np.allclose(bf[1:], np.maximum(ref, 1.0), rtol=0.05)
+
+
+def test_slice_factors_dc_and_window_consistency():
+    from plasma_column.bunching import BuncherModel, slice_bunching_along_line
+
+    dc = slice_bunching_along_line(np.array([0.0, 0.5, 1.0]), 0.0, BuncherModel(voltage_V=0.0), 1.0,
+                                   n_particles=100_000)
+    assert np.allclose(dc["slice_factor"], 1.0, atol=0.1)
+    b = BuncherModel(voltage_V=620.0)
+    r = slice_bunching_along_line(np.array([0.0, 0.3, 1.12]), 0.3, b, 1.12, n_particles=100_000)
+    assert np.allclose(r["slice_factor"][:, 0], 1.0)  # upstream of the buncher
+    # The slice fractions add up to the window fraction; the local factors at the focus scatter
+    # around B_f (each is sampled at its slice's centroid, where the particles are).
+    assert r["slice_fraction"].sum() == pytest.approx(r["bf_window"] * 36.0 / 360.0, rel=0.02)
+    assert r["slice_factor"][:, -1].mean() == pytest.approx(r["bf_window"], rel=0.2)
