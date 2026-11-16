@@ -165,6 +165,16 @@ class PlasmaColumnConfig:
     # Solenoid
     solenoid_Bz: float = 0.15
     field_margin: float = 0.0
+    # Explicit hard-edge solenoid extent [m] (task CW3 section model); None = cell +- field_margin.
+    solenoid_zmin: Optional[float] = None
+    solenoid_zmax: Optional[float] = None
+    # Solenoid edge length [m] (task CW3). 0 = hard edge B_z only (tasks <= 111): no radial fringe
+    # field, so the beam gets no Busch entrance kick and the solenoid barely focuses it. > 0:
+    # B_z = B/2 [tanh((z - z0)/d) - tanh((z - z1)/d)] with the paraxial B_x,y = -(x,y)/2 dB_z/dz.
+    solenoid_fringe: float = 0.0
+    # Hard-edge quadrupoles (task CW3): "z0:z1:G;z0:z1:G" with gradient G [T/m], B_x = G y, B_y = G x
+    # (G > 0 focuses protons in x, as in plasma_column.transport). Empty = none.
+    quadrupoles: str = ""
     # Electrostatic end plugs (task 107): analytic potential phi(z) = -V * sum_k exp(-(z-z_k)^2/(2 w^2))
     # centred end_plug_offset outside each cell end (paraxial E_r = (r/2) phi''). V > 0 is a potential
     # hill for electrons. The offset (3 w by default) keeps the plugs off the seeded plasma, which would
@@ -317,6 +327,12 @@ def parse_args() -> PlasmaColumnConfig:
 
     p.add_argument("--solenoid_Bz", type=float, default=PlasmaColumnConfig.solenoid_Bz)
     p.add_argument("--field_margin", type=float, default=PlasmaColumnConfig.field_margin)
+    p.add_argument("--solenoid_zmin", type=float, default=None, help="Solenoid start [m] (default: cell start - margin).")
+    p.add_argument("--solenoid_zmax", type=float, default=None, help="Solenoid end [m] (default: cell end + margin).")
+    p.add_argument("--solenoid_fringe", type=float, default=PlasmaColumnConfig.solenoid_fringe,
+                   help="Solenoid tanh edge length [m]; 0 = hard edge without radial fringe field.")
+    p.add_argument("--quadrupoles", default=PlasmaColumnConfig.quadrupoles,
+                   help='Hard-edge quadrupoles "z0:z1:G;..." with G in T/m (B_x = G y, B_y = G x).')
     p.add_argument("--end_plug_voltage", type=float, default=PlasmaColumnConfig.end_plug_voltage,
                    help="Analytic end-plug potential depth [V] at both cell ends (>0 repels electrons; 0 = off).")
     p.add_argument("--end_plug_width", type=float, default=PlasmaColumnConfig.end_plug_width,
@@ -510,6 +526,37 @@ def end_plug_field_expressions(cfg: PlasmaColumnConfig, z0: float, z1: float) ->
         "Ex_expression": f"0.5*x*(-({V:.17e}))*({phi2})",
         "Ey_expression": f"0.5*y*(-({V:.17e}))*({phi2})",
     }
+
+
+def solenoid_field_expressions(B: float, z0: float, z1: float, fringe: float) -> dict[str, str]:
+    """
+    Solenoid field between z0 and z1. fringe = 0: hard-edge B_z only (no radial field). fringe = d > 0:
+    B_z = B/2 [tanh((z - z0)/d) - tanh((z - z1)/d)], B_x = -(x/2) dB_z/dz, B_y = -(y/2) dB_z/dz
+    (paraxial, divergence-free to first order in r), which gives the Busch kick at the edges.
+    """
+    if fringe <= 0.0:
+        return {"Bx_expression": "0.0", "By_expression": "0.0",
+                "Bz_expression": f"(z >= {z0:.17e})*(z <= {z1:.17e})*({B:.17e})"}
+    t0, t1 = f"tanh((z-({z0:.17e}))/{fringe:.17e})", f"tanh((z-({z1:.17e}))/{fringe:.17e})"
+    dbz = f"(({B:.17e})/(2.0*{fringe:.17e}))*((1.0-{t0}*{t0}) - (1.0-{t1}*{t1}))"
+    return {"Bx_expression": f"(-0.5*x*{dbz})", "By_expression": f"(-0.5*y*{dbz})",
+            "Bz_expression": f"(0.5*({B:.17e})*({t0} - {t1}))"}
+
+
+def quadrupole_field_expressions(spec: str) -> dict[str, str]:
+    """
+    Hard-edge quadrupole fields from "z0:z1:G;z0:z1:G" (G [T/m]): B_x = G y, B_y = G x inside
+    z0 <= z <= z1, so that G > 0 focuses protons (moving in +z) in x. Empty spec gives zero fields.
+    """
+    bx, by = [], []
+    for item in filter(None, (t.strip() for t in spec.split(";"))):
+        z0, z1, g = (float(v) for v in item.split(":"))
+        if z1 <= z0:
+            raise ValueError(f"quadrupole {item!r}: z1 must exceed z0")
+        win = f"(z >= {z0:.17e})*(z <= {z1:.17e})*({g:.17e})"
+        bx.append(f"{win}*y")
+        by.append(f"{win}*x")
+    return {"Bx_expression": " + ".join(bx) or "0.0", "By_expression": " + ".join(by) or "0.0"}
 
 
 def bunch_profile_kappa(bunching_factor: float, acceptance_deg: float) -> float:
@@ -1030,13 +1077,15 @@ def build_sim(cfg: PlasmaColumnConfig):
     )
 
     # Hard-edge solenoid particle field.
-    bz_z0 = z0 - cfg.field_margin
-    bz_z1 = z1 + cfg.field_margin
+    bz_z0 = z0 - cfg.field_margin if cfg.solenoid_zmin is None else cfg.solenoid_zmin
+    bz_z1 = z1 + cfg.field_margin if cfg.solenoid_zmax is None else cfg.solenoid_zmax
     plug_E = end_plug_field_expressions(cfg, z0, z1)
+    quad_B = quadrupole_field_expressions(cfg.quadrupoles)
+    sol_B = solenoid_field_expressions(cfg.solenoid_Bz, bz_z0, bz_z1, cfg.solenoid_fringe)
     solenoid_field = picmi.AnalyticAppliedField(
-        Bx_expression="0.0",
-        By_expression="0.0",
-        Bz_expression=f"(z >= {bz_z0:.17e})*(z <= {bz_z1:.17e})*{cfg.solenoid_Bz:.17e}",
+        Bx_expression=f"{quad_B['Bx_expression']} + {sol_B['Bx_expression']}",
+        By_expression=f"{quad_B['By_expression']} + {sol_B['By_expression']}",
+        Bz_expression=sol_B["Bz_expression"],
         **plug_E,
     )
 

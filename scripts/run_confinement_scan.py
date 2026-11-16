@@ -115,19 +115,20 @@ def finished(out: Path, steps: int) -> bool:
         return False
 
 
-def core_slots(parallel: int, cores: int) -> "queue.Queue[str]":
+def core_slots(parallel: int, cores: int, offset: int = 0) -> "queue.Queue[str]":
     """
     Disjoint CPU sets, one per parallel case. The driver sets OMP_PROC_BIND=close, which pins every
     process's threads from core 0 upward; without separate affinity masks, parallel cases share the
     same cores (task 107: 0.87 s/step instead of ~0.1 s/step). Each slot gets cores/2 physical cores
-    and their hyperthread siblings (logical CPU n pairs with n + n_physical).
+    and their hyperthread siblings (logical CPU n pairs with n + n_physical), starting at physical
+    core `offset` (so that two runners can share the machine).
     """
     n_logical = os.cpu_count() or 1
     n_phys = n_logical // 2
     per = max(1, cores // 2)
     slots: "queue.Queue[str]" = queue.Queue()
     for k in range(parallel):
-        phys = list(range(k * per, min((k + 1) * per, n_phys)))
+        phys = list(range(offset + k * per, min(offset + (k + 1) * per, n_phys)))
         if not phys:
             raise SystemExit(f"--parallel {parallel} x --cores {cores} exceeds {n_logical} logical CPUs")
         slots.put(",".join(str(c) for c in phys + [c + n_phys for c in phys]))

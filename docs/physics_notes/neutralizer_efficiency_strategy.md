@@ -455,6 +455,37 @@ in the trap cases, more than in the production-grid CW1 run.)
 - Limitations: small grid (4 particles per cell) and seeded start; core eta fluctuates strongly
   between snapshots; the B_f 5 bunch is injected without the upstream compensation it would need.
 
+### Task CW3 result: electron retention in the solenoid and quadrupole section (task 120)
+
+WarpX section model of the line after the cell (`scripts/run_line_section.py`): drift 0.10 m,
+main solenoid 0.25 m (0.23 T, 2 cm tanh edges with the paraxial radial fringe field, so the beam
+gets the Busch kick), drift, Q1 (-0.28 T/m), drift, Q2 (+0.85 T/m); 32 x 32 x 816, DC 10 mA beam,
+residual-gas plasma seeded along 0–0.77 m (analytic source estimate), H2 1e-5 Torr, no plugs,
+650 ns. Per region: tau_c of the electron count and late-time core eta_net
+(`scripts/analyze_line_section.py`).
+
+| Region | tau_c, solenoid + quads | tau_c, solenoid only | tau_c, no fields | Core eta_net (late, solenoid + quads) |
+|---|---|---|---|---|
+| drift before solenoid | 2.3 us | 2.6 us | 0.78 us | 0.64 |
+| main solenoid | 2.4 us | 3.0 us | 0.57 us | 0.92 |
+| drift solenoid–Q1 | 0.46 us | 0.59 us | 0.54 us | 0.89 |
+| Q1 | 0.57 us | 0.67 us | 0.90 us | 0.86 |
+| drift Q1–Q2 | 0.58 us | 0.66 us | 1.6 us | 0.82 |
+| Q2 | 0.71 us | 1.4 us | 3.4 us | 0.71 |
+
+- The main solenoid holds electrons ~4–5x longer than a field-free pipe (2.4–3.0 vs 0.57 us),
+  similar to the 0.15 T cell without plugs (2.15 us, task 107). The quadrupoles do not trap: in Q1,
+  Q2 and the drifts between them tau_c is 0.5–0.7 us, not longer (often shorter) than without fields.
+- The core stays compensated (eta_net 0.7–0.9) over 650 ns only because the seed has not yet
+  decayed. In steady state eta_ss ~ tau_c / tau_ion with tau_ion = 80 us at 1e-5 Torr gives ~0.03 in
+  the solenoid and < 0.01 in the quadrupoles, far below the eta_down ~ 0.7–0.9 that CW2/CW5 need.
+  Reaching 0.7 by residual gas alone would need tau_ion ~ tau_c / 0.7: ~3e-4 Torr in the solenoid
+  and ~1e-3 Torr in the quadrupoles (gas scattering and charge exchange then matter), or electron
+  traps (plugs) in the solenoid and clearing-free optics.
+- Caveats: seeded start; no plugs; small grid (task 114 found the PIC tau_c with plugs far shorter
+  than the single-particle bound, so these tau_c may be lower limits); fringe field only on the
+  solenoid (quadrupole edges hard).
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
