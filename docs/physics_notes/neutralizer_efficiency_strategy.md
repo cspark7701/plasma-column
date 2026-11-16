@@ -486,6 +486,32 @@ residual-gas plasma seeded along 0–0.77 m (analytic source estimate), H2 1e-5 
   than the single-particle bound, so these tau_c may be lower limits); fringe field only on the
   solenoid (quadrupole edges hard).
 
+### Task B4 result: strongly bunched beam in the solenoid and quadrupole section (task 121)
+
+Same section model as CW3 (solenoid with fringe field + Q1 + Q2, seeded residual-gas plasma,
+analytic source estimate) with an RF-bunched beam of B_f = 3 and 5.7 at the section entrance
+(`scripts/run_line_section.py --group b4`). Analysis per region and, for peak vs average, over
+three RF wavelengths in the main solenoid (z = 0.12–0.264 m, `analyze_bunched_cell.py --z_start 0.12`).
+
+| Quantity (main solenoid) | DC (CW3) | B_f 3 | B_f 5.7 |
+|---|---|---|---|
+| tau_c | 2.4 us | 0.22 us | 0.11 us |
+| eta_avg (core, 357–650 ns) | 0.92 | 0.07 +- 0.38 | -0.91 +- 0.18 |
+| eta_peak (top 10% of line density) | – | 0.04 +- 0.50 | -0.21 +- 0.12 |
+| static-cloud eta_avg / B_cell | – | 0.03 | -0.21 |
+| B_cell measured | – | 2.4 | 4.3 |
+
+- With bunches the seeded plasma is lost 10–20x faster than with a DC beam, in every region
+  (tau_c 0.1–0.5 us); at B_f 5.7 an ion excess is left in the solenoid (eta_net < 0).
+- The peak-bunch compensation equals the static-cloud value eta_avg / B_cell: the electrons do not
+  gather at the bunches (f_pe < f_RF). The RF-averaged limit K = K0 (B_f - eta_avg) of tasks 106,
+  117 and 118 applies; the per-slice upper bounds are not reachable.
+- Consequence: for a strongly bunched beam downstream, residual-gas compensation gives no benefit
+  and can make the peak space charge slightly worse. Only bunching close to the inflector
+  (alternative placement, tasks 113, 117, 118) leaves a gain.
+- Limitations: as CW3 (seeded, small grid, no plugs); density bunching at constant velocity at the
+  section entrance (no energy modulation); large snapshot fluctuations at B_f 3.
+
 ### Step 4 result: transport to the inflector (task 106)
 
 Matched KV envelope transport ([injection_line_transport.md](injection_line_transport.md)),
