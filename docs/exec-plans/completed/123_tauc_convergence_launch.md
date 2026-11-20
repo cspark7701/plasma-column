@@ -6,7 +6,7 @@
 time numerical? PIC gives tau_c = 4.2 us on the production grid (task 111) and 7.2 us on the
 plug-scan grid (task 109). Test electrons in the same static trap survive 100 us (task 114).
 
-Repository state at launch: `main` at `538375c`, clean apart from the new launcher.
+Repository state at launch: `main` at `5b32871`, clean apart from the new launcher.
 
 ---
 

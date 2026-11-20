@@ -3,7 +3,7 @@
   "command_line": "scripts/make_manuscript_study_results.py",
   "conda_env": "warpx-dev",
   "plasma_column_repo": {
-    "commit": "21f9413e89b1274d72e3d31eb56a399590ee7975",
+    "commit": "f134b13f5bac38f1439026ec4827c004442d6eca",
     "branch": "main",
     "dirty": true,
     "status": "?? paper/manuscript/study_data/\n?? scripts/make_manuscript_study_results.py"
@@ -35,7 +35,7 @@
       "timestamp": "2026-11-14T21:59:04.630228+00:00",
       "command_line": "scripts/transmission_vs_downstream.py",
       "plasma_column_repo": {
-        "commit": "9946f0b3300b0613926d485c98451c776b2a0bbd",
+        "commit": "f69b32957827503ebb3f1857ec92a1597d9e00a8",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/late_bunching_layout.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/transmission_vs_downstream.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
@@ -45,7 +45,7 @@
       "timestamp": "2026-11-15T01:44:13.327606+00:00",
       "command_line": "scripts/track_to_inflector.py --processes 2",
       "plasma_column_repo": {
-        "commit": "b0f6748ff2bcec94c86b4884a7aeb939e97e771e",
+        "commit": "5f5e0c8e2648e5cb7b3dc6023a60466d2ac65d2f",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/suppressor_scan.py\n?? scripts/track_to_inflector.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/particle_tracking.py\n?? src/plasma_column/suppressor.py\n?? tests/test_bunched_cell.py\n?? tests/test_particle_tracking.py\n?? tests/test_quadrupole_field.py\n?? tests/test_suppressor.py"
@@ -55,7 +55,7 @@
       "timestamp": "2026-11-14T23:26:09.054938+00:00",
       "command_line": "scripts/trap_orbit_tracking.py --processes 2",
       "plasma_column_repo": {
-        "commit": "934a10e361edcf110e907626819b8c77541eb4e6",
+        "commit": "21f7754b57e483d928713b87801ce75a84984f5b",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
@@ -65,7 +65,7 @@
       "timestamp": "2026-11-14T23:39:42.453233+00:00",
       "command_line": "scripts/suppressor_scan.py",
       "plasma_column_repo": {
-        "commit": "b0f6748ff2bcec94c86b4884a7aeb939e97e771e",
+        "commit": "5f5e0c8e2648e5cb7b3dc6023a60466d2ac65d2f",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/suppressor_scan.py\n?? scripts/track_to_inflector.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/particle_tracking.py\n?? src/plasma_column/suppressor.py\n?? tests/test_bunched_cell.py\n?? tests/test_particle_tracking.py\n?? tests/test_quadrupole_field.py\n?? tests/test_suppressor.py"
@@ -75,7 +75,7 @@
       "timestamp": "2026-11-14T22:47:11.218286+00:00",
       "command_line": "scripts/late_bunching_layout.py",
       "plasma_column_repo": {
-        "commit": "ea975b80afbc841e54da9bedc4a801aa3d33345a",
+        "commit": "f3695728516f7e5d5e6db4cc08cd3bb664453727",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/late_bunching_layout.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
@@ -85,7 +85,7 @@
       "timestamp": "2026-11-15T03:59:33.648846+00:00",
       "command_line": "scripts/sliced_bunch_transport.py --waveform sine",
       "plasma_column_repo": {
-        "commit": "4592b86a54678673e5ab6f6edd05a07e0d71f079",
+        "commit": "724d4f721b8bbb4d57e3abcc241f0d6442ee3ca7",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/sliced_bunch_transport.py\n?? src/plasma_column/bunched_cell.py\n?? tests/test_bunched_cell.py\n?? tests/test_quadrupole_field.py"
@@ -95,7 +95,7 @@
       "timestamp": "2026-11-15T05:53:55.021192+00:00",
       "command_line": "scripts/sliced_bunch_transport.py --waveform sawtooth",
       "plasma_column_repo": {
-        "commit": "c7a2b461e3fee10a6b9c43bedd6788e1319ebd91",
+        "commit": "e9d1c69de9f98d6601493fbdae959225cda7ae4b",
         "branch": "main",
         "dirty": true,
         "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? src/plasma_column/bunched_cell.py\n?? tests/test_bunched_cell.py\n?? tests/test_quadrupole_field.py"

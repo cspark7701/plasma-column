@@ -6,8 +6,8 @@
 electrons follow a strongly bunched beam downstream (f_pe vs f_RF), i.e. which compensation limit
 of tasks 117/118 applies?
 
-Repository state at start of the runs: `main` at `72ff151` (B4 launched 2026-11-15 14:55 on the
-cores freed by B2); code committed with CW3 in `1652a80`.
+Repository state at start of the runs: `main` at `48fee64` (B4 launched 2026-11-15 14:55 on the
+cores freed by B2); code committed with CW3 in `e8fa713`.
 
 ---
 

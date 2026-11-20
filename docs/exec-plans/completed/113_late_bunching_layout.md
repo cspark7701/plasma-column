@@ -7,7 +7,7 @@ position versus the bunched-beam current accepted by the inflector. Any buncher 
 than upstream of the neutralizer is an ALTERNATIVE-PLACEMENT STUDY (baseline: buncher ->
 neutralizer -> solenoid -> Q1 -> Q2 -> inflector).
 
-Repository state at start: `main` at `ea975b8`; uncommitted B2/C2/CW3 work in the tree.
+Repository state at start: `main` at `f369572`; uncommitted B2/C2/CW3 work in the tree.
 
 ---
 

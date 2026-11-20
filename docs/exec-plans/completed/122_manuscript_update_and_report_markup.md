@@ -6,7 +6,7 @@
 update the journal manuscript and proceedings drafts with the confinement, transport and
 bunched-beam studies.
 
-Repository state at start: `main` at `21f9413`, clean.
+Repository state at start: `main` at `f134b13`, clean.
 
 ---
 

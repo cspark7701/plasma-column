@@ -6,7 +6,7 @@
 residual-gas compensation electrons stay in the main solenoid and quadrupoles, and which
 eta_downstream can they give (input to CW2/CW5)?
 
-Repository state at start of the runs: `main` at `dfe0116` (CW3 launched 2026-11-15 18:33, after
+Repository state at start of the runs: `main` at `489951c` (CW3 launched 2026-11-15 18:33, after
 B2); driver changes uncommitted until now.
 
 ---

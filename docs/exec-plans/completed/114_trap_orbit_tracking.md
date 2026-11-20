@@ -5,7 +5,7 @@
 **Subject**: Task C2 of `docs/physics_notes/simulation_strategy_tasks.md`. Does the solenoid +
 end-plug trap hold electrons for tau_ion ~ 80 us, beyond the ~1 us reach of the PIC runs?
 
-Repository state at start: `main` at `934a10e`; uncommitted B2/CW3 work in the tree.
+Repository state at start: `main` at `21f7754`; uncommitted B2/CW3 work in the tree.
 
 ---
 

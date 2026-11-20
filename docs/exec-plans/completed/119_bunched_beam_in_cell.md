@@ -6,7 +6,7 @@
 survive the 18 ns gaps between bunches, and how does peak-bunch neutralization compare with the
 RF average?
 
-Repository state at start of the runs: `main` at `b0f6748` (runs launched 2026-11-14); committed
+Repository state at start of the runs: `main` at `5f5e0c8` (runs launched 2026-11-14); committed
 after tasks 115–118, which finished earlier. Uncommitted CW3/B4 work remains in the tree (both PIC
 groups running).
 

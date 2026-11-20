@@ -5,7 +5,7 @@
 **Subject**: Task B6 of `docs/physics_notes/simulation_strategy_tasks.md`. Does the stronger
 bunching of a sawtooth buncher (window B_f = 10 vs 5.7) still pay off with space charge?
 
-Repository state at start: `main` at `c7a2b46`; uncommitted B2 and CW3/B4 work in the tree (B2
+Repository state at start: `main` at `e9d1c69`; uncommitted B2 and CW3/B4 work in the tree (B2
 trap cases and B4 PIC runs running).
 
 ---

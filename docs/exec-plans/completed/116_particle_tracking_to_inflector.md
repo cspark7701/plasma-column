@@ -6,7 +6,7 @@
 transmission estimate by tracked particles, for model beams with tails and for the PIC beams at
 the cell exit.
 
-Repository state at start: `main` at `797e1c6`; uncommitted B2, CW3/B4 and B5 work in the tree
+Repository state at start: `main` at `a0d50fa`; uncommitted B2, CW3/B4 and B5 work in the tree
 (B2 and B5 running).
 
 ---

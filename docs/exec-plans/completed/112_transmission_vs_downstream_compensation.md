@@ -5,7 +5,7 @@
 **Subject**: Task CW2 of `docs/physics_notes/simulation_strategy_tasks.md`. Transmission of a DC
 beam into the inflector versus the compensation downstream of the cell, with the CW1 cell value.
 
-Repository state at start: `main` at `9946f0b`; uncommitted B2/C2/CW3/B3 work in the tree (not
+Repository state at start: `main` at `f69b329`; uncommitted B2/C2/CW3/B3 work in the tree (not
 part of this commit).
 
 ---

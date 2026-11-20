@@ -6,7 +6,7 @@
 current with the bunch resolved in longitudinal slices, instead of one peak slice with the window
 bunching factor.
 
-Repository state at start: `main` at `4592b86`; uncommitted B2 and CW3/B4 work in the tree (B2
+Repository state at start: `main` at `724d4f7`; uncommitted B2 and CW3/B4 work in the tree (B2
 PIC runs still running). B4 (PIC of the bunched beam downstream) has not run yet, so both
 compensation limits are reported; B4 decides which applies.
 

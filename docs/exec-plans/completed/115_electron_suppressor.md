@@ -5,7 +5,7 @@
 **Subject**: Task CW4 of `docs/physics_notes/simulation_strategy_tasks.md`. Which suppressor
 voltage keeps the compensating electrons of the line from draining into the inflector field?
 
-Repository state at start: `main` at `b0f6748`; uncommitted B2, CW3/B4 and CW5 work in the tree
+Repository state at start: `main` at `5f5e0c8`; uncommitted B2, CW3/B4 and CW5 work in the tree
 (B2 and CW3/B4 PIC runs still running). CW4 is committed before CW3 because it finished first and
 does not depend on the CW3 runs.
 
