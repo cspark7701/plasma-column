@@ -9,6 +9,14 @@
 \usepackage{xcolor}
 \usepackage{microtype}
 \usepackage{hyperref}
+\usepackage[normalem]{ulem}
+\usepackage{tcolorbox}
+
+% Markup against the current results (2026-11-20, tasks 96-121): struck red = superseded,
+% blue = current result, boxed = reviewer note. Task numbers refer to docs/exec-plans/completed/.
+\newcommand{\old}[1]{\textcolor{red!70!black}{\sout{#1}}}
+\newcommand{\new}[1]{\textcolor{blue!60!black}{#1}}
+\newcommand{\revnote}[1]{\begin{tcolorbox}[colback=yellow!8,colframe=orange!70!black,boxrule=0.5pt,left=4pt,right=4pt,top=2pt,bottom=2pt]\small\textbf{Markup (2026-11-20):} #1\end{tcolorbox}}
 
 \hypersetup{
     colorlinks=true,
@@ -31,8 +39,15 @@
 \maketitle
 
 \begin{abstract}
-High-current ($10\,\text{mA}$), low-energy ($30\,\text{keV}$) proton beams experience severe uncompensated space-charge forces during transport through low-energy beam transport (LEBT) lines prior to entering a cyclotron spiral inflector. This report consolidates the complete physics theoretical models, atomic collision kinematics, numerical particle-in-cell (PIC) simulation methodologies, diagnostics algorithms, and downstream transport optics for a compact gas-ionized plasma neutralizer cell. We systematically compare Hydrogen ($\text{H}_2$) and Krypton ($\text{Kr}$) neutralizer gases, accounting for laboratory-to-center-of-mass collision kinematics ($\sigma_{\text{Kr}} / \sigma_{\text{H2}} \approx 5.56$ at $30\,\text{keV}$). Four numerical simulation paradigms are benchmarked: vacuum reference transport, static analytical seeded compensation, dynamic Python callback source models, and fully self-consistent C++ Monte Carlo Collision (MCC) PICMI extensions. We demonstrate that operating a Krypton cell at $1.0 \times 10^{-6}\,\text{Torr}$ achieves space-charge perveance reduction equivalent to $1.0 \times 10^{-5}\,\text{Torr}$ of $\text{H}_2$ ($\eta_{\text{net}} \ge 90\%$), reducing transverse envelope expansion and raising inflector entrance transmission from $< 35\%$ (uncompensated) to $> 98\%$. Furthermore, we evaluate the impact of RF bunching on peak-bunch perveance degradation ($K_{\text{eff,peak}} / K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}} / B_f$), providing practical design guidelines and publication standards for compact cyclotron injection lines.
+High-current ($10\,\text{mA}$), low-energy ($30\,\text{keV}$) proton beams experience severe uncompensated space-charge forces during transport through low-energy beam transport (LEBT) lines prior to entering a cyclotron spiral inflector. This report consolidates the complete physics theoretical models, atomic collision kinematics, numerical particle-in-cell (PIC) simulation methodologies, diagnostics algorithms, and downstream transport optics for a compact gas-ionized plasma neutralizer cell. We systematically compare Hydrogen ($\text{H}_2$) and Krypton ($\text{Kr}$) neutralizer gases, accounting for laboratory-to-center-of-mass collision kinematics ($\sigma_{\text{Kr}} / \sigma_{\text{H2}} \approx 5.56$ at $30\,\text{keV}$). Four numerical simulation paradigms are benchmarked: vacuum reference transport, static analytical seeded compensation, dynamic Python callback source models, and \old{fully self-consistent C++ Monte Carlo Collision (MCC) PICMI extensions.} \new{a custom C++ proton-impact MCC extension, which is maintained as a WarpX patch but not yet validated and was not used in production.} \old{We demonstrate that operating a Krypton cell at $1.0 \times 10^{-6}\,\text{Torr}$ achieves space-charge perveance reduction equivalent to $1.0 \times 10^{-5}\,\text{Torr}$ of $\text{H}_2$ ($\eta_{\text{net}} \ge 90\%$), reducing transverse envelope expansion and raising inflector entrance transmission from $< 35\%$ (uncompensated) to $> 98\%$.} \new{In seeded-plasma PIC (an analytic source estimate), $\text{H}_2$ at $10^{-5}\,\text{Torr}$ reaches a beam-core $\eta_{\text{net}} = 0.96$, whereas Kr stays at 0.50--0.58 at every pressure because the heavy ions remain in the beam. Kr matches the $\text{H}_2$ build-up rate only at $1.8\times10^{-6}\,\text{Torr}$. With end plugs and the cell solenoid the cell keeps $\eta_{\text{net}} = 0.91$, but 90\% transmission into the inflector acceptance needs a downstream compensation of 0.69--0.9 along the solenoid and quadrupoles, where residual gas at $10^{-5}\,\text{Torr}$ provides at most 0.04.} Furthermore, we evaluate the impact of RF bunching on peak-bunch perveance degradation ($K_{\text{eff,peak}} / K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}} / B_f$), providing practical design guidelines and publication standards for compact cyclotron injection lines. \new{Electrons do not follow strong bunches, so only the RF-averaged compensation applies; a sine-bunched beam from the baseline buncher position delivers only 1\% of the DC accepted current (0.25\,$\pi$\,mm\,mrad).}
 \end{abstract}
+
+\revnote{This report predates the production PIC matrix (tasks 96--103) and the confinement,
+transport and bunched-beam studies (tasks 107--121). Struck-through red text is not supported by
+the current results; blue text gives the current result. The journal manuscript
+\texttt{paper/manuscript/plasma\_column\_prab.tex} carries the current numbers, generated from
+frozen data. All PIC results start from a seeded plasma, an analytic source estimate, not
+self-consistent proton-impact ionization.}
 
 \tableofcontents
 \newpage
@@ -42,8 +57,10 @@ High-current ($10\,\text{mA}$), low-energy ($30\,\text{keV}$) proton beams exper
 \subsection{Physics Context}
 High-intensity compact cyclotrons for medical isotope production, hadron therapy, and industrial particle applications require multi-milliampere ion beam currents injected at relatively low kinetic energies ($E_k = 30\,\text{keV}$ for protons, $\beta = v/c \approx 0.00799$). In uncompensated Low-Energy Beam Transport (LEBT) lines, the strong repulsive self-electric field generates severe beam perveance:
 \begin{equation}
-K_0 = \frac{q I_{\text{avg}}}{2\pi \varepsilon_0 m_p v_{\text{beam}}^3 \gamma^3} \approx 6.43 \times 10^{-4} \quad (\text{for } 30\,\text{keV}, 10\,\text{mA } p^+)
+K_0 = \frac{q I_{\text{avg}}}{2\pi \varepsilon_0 m_p v_{\text{beam}}^3 \gamma^3} \approx \text{\old{$6.43 \times 10^{-4}$}}\ \text{\new{$1.25 \times 10^{-3}$}} \quad (\text{for } 30\,\text{keV}, 10\,\text{mA } p^+)
 \end{equation}
+\revnote{The formula with the stated constants gives $1.25\times10^{-3}$
+(\texttt{plasma\_column.design\_estimates}); $6.43\times10^{-4}$ is about half of that.}
 Without space-charge mitigation, this high perveance induces rapid transverse beam blowup, causing heavy particle loss on apertures, emittance growth, and poor acceptance matching into the small aperture ($r_{\text{aperture}} \approx 5.0\,\text{mm}$) of the downstream spiral inflector.
 
 \subsection{Baseline Axial Injection Beamline Layout}
@@ -82,7 +99,13 @@ The time-dependent buildup of space-charge neutralization follows:
 \begin{equation}
 \eta(t) = \eta_{\text{ss}} \left( 1 - e^{-t/\tau} \right)
 \end{equation}
-where $\eta_{\text{ss}}$ is the steady-state equilibrium compensation level ($\approx 0.90 - 0.95$).
+where $\eta_{\text{ss}}$ is the steady-state equilibrium compensation level \old{($\approx 0.90 - 0.95$).} \new{(a free parameter of this law, set by the electron confinement time: $\eta_{\text{ss}} \simeq \min(1, \tau_c/\tau)$, with $\tau = 80\,\mu$s for $\text{H}_2$ at $10^{-5}\,\text{Torr}$).}
+\revnote{Measured confinement times bracket $\eta_{\text{ss}}$ widely. Production-grid PIC with
+end plugs gives $\tau_c = 4.2\,\mu$s, i.e.\ $\eta_{\text{ss}} \approx 0.05$ (task 111);
+test electrons in the same static trap survive $100\,\mu$s (task 114), which allows
+$\eta_{\text{ss}}$ near 1, reached after about $70\,\mu$s. The PIC convergence study of $\tau_c$
+(task 123) decides between them. A self-consistent build-up simulation (task C5) is blocked
+until the proton-impact source is validated.}
 
 \subsection{Laboratory vs Center-of-Mass Frame Cross Sections}
 Cross-section data are parameterized by center-of-mass energy $E_{\text{cm}}$:
@@ -109,18 +132,25 @@ Target Gas & $E_{\text{lab}}$ [keV] & $E_{\text{cm}}$ [keV] & $\sigma_{\text{ion
 \end{tabular}
 \end{table}
 
-\textbf{Key Takeaway}: Because $\sigma_{\text{Kr}} \approx 5.56 \, \sigma_{\text{H2}}$, a Krypton gas cell operates at a 5-to-10-fold lower neutral gas pressure ($1.0 \times 10^{-6}\,\text{Torr}$ vs $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$) while providing identical plasma generation rates, thereby minimizing emittance growth from elastic gas scattering.
+\textbf{Key Takeaway}: \old{Because $\sigma_{\text{Kr}} \approx 5.56 \, \sigma_{\text{H2}}$, a Krypton gas cell operates at a 5-to-10-fold lower neutral gas pressure ($1.0 \times 10^{-6}\,\text{Torr}$ vs $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$) while providing identical plasma generation rates, thereby minimizing emittance growth from elastic gas scattering.} \new{Because $\sigma_{\text{Kr}} \approx 5.56 \, \sigma_{\text{H2}}$, Kr gives the same ionization rate as $\text{H}_2$ at $10^{-5}\,\text{Torr}$ only at $1.8\times10^{-6}\,\text{Torr}$; at $10^{-6}\,\text{Torr}$ it builds up more slowly ($\tau = 145$ vs $80\,\mu$s). In seeded PIC the Kr$^+$ ions stay in the beam (expulsion time longer than the run), so Kr reaches only $\eta_{\text{net}} = 0.50$--0.58 at all pressures against 0.96 for $\text{H}_2$ (tasks 102--103).}
 
 \subsection{RF-Bunched Beam Space-Charge Compensation}
 Because the RF buncher is positioned upstream of the neutralizer, the beam enters the plasma cell already bunched. For an RF frequency $f_{\text{RF}}$ ($50\,\text{MHz}$) and phase width $\Delta \phi$, the bunching factor is:
 \begin{equation}
 B_f = \frac{I_{\text{peak}}}{I_{\text{avg}}} = \frac{360^\circ}{\Delta \phi}
 \end{equation}
+\revnote{$360^\circ/\Delta\phi$ holds only for a uniformly filled bunch (10 for $36^\circ$);
+$B_f$ is treated as a free parameter. Ballistic bunching gives $B_f = 1.3$ at the cell for the
+baseline buncher and 5.7 in the $36^\circ$ window at the inflector (task 105).}
 While plasma electrons form a quasi-steady background providing average neutralization $\eta_{\text{avg}} = N_e / N_p$, the peak-bunch instantaneous charge density is enhanced by $B_f$. The effective peak perveance reduction ratio is:
 \begin{equation}
 \frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{avg}}}{B_f}
 \end{equation}
 For example, at $B_f = 5.0$ and $\eta_{\text{avg}} = 0.90$, $K_{\text{eff,peak}} / K_{0,\text{peak}} \approx 1 - 0.90/5.0 = 0.82$. Thus, while average perveance is reduced by $90\%$, peak-bunch perveance is reduced by only $18\%$.
+\new{Bunched-beam PIC confirms that this static-cloud limit applies: in the line section with
+$B_f = 3$ and 5.7 the peak-bunch compensation equals $\eta_{\text{avg}}/B_{\text{cell}}$
+(0.04 and $-0.21$), and the electrons do not follow the bunches (task 121). In the cell, $B_f = 5$
+empties the end-plug trap within $0.12\,\mu$s (task 119).}
 
 \section{Literature Review and Related Work}
 
@@ -152,7 +182,7 @@ We benchmark four distinct simulation paradigms:
     \item \textbf{Baseline Reference (\texttt{vacuum})}: Uncompensated beam propagation in vacuum ($\eta = 0$).
     \item \textbf{Static Seeded Compensation (\texttt{static\_analytic\_seeded})}: Analytical background electron distribution pre-seeded in PICMI ($n_e \approx \eta_{\text{ss}} n_p$).
     \item \textbf{Dynamic Python Callback (\texttt{dynamic\_source\_approximation})}: Step-by-step pair creation using PyWarpX callback algorithms (\texttt{sim.user\_algorithm\_at\_step\_end}).
-    \item \textbf{Full Self-Consistent C++ MCC (\texttt{full\_self\_consistent\_cxx\_mcc})}: Fully self-consistent WarpX C++ Monte Carlo Collision extension tracking $p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$.
+    \item \textbf{Full Self-Consistent C++ MCC (\texttt{full\_self\_consistent\_cxx\_mcc})}: \old{Fully self-consistent} WarpX C++ Monte Carlo Collision extension tracking $p^+ + \text{Gas} \rightarrow p^+ + \text{Gas}^+ + e^-$. \new{Maintained as a patch against WarpX; its verification tests have analytic targets but have not been run with the patched build, so it is not validated. The production ``MCC'' cases use WarpX built-in electron-impact MCC on the seeded plasma, which changes $\eta_{\text{net}}$ by $\le 0.01$.}
 \end{enumerate}
 
 \section{Diagnostics and Downstream Transport Optics}
@@ -175,19 +205,22 @@ Transverse rms beam radii $R_x(z)$ and $R_y(z)$ evolve according to paraxial env
 \begin{equation}
 \frac{d^2 R_y}{dz^2} + k_y^2(z) R_y - \frac{2 K_0 (1 - \eta_{\text{net}})}{R_x + R_y} - \frac{\varepsilon_{y,n}^2}{\beta^2 \gamma^2 R_y^3} = 0
 \end{equation}
-Focusing strengths $k_x(z), k_y(z)$ incorporate the main solenoid ($B_z = 0.15\,\text{T}$) and quadrupole doublet Q1 ($G_1 = 5.0\,\text{T/m}$) and Q2 ($G_2 = -4.5\,\text{T/m}$).
+Focusing strengths $k_x(z), k_y(z)$ incorporate the main solenoid \old{($B_z = 0.15\,\text{T}$)} and quadrupole doublet \old{Q1 ($G_1 = 5.0\,\text{T/m}$) and Q2 ($G_2 = -4.5\,\text{T/m}$).} \new{Q1/Q2, rematched for every case: 0.21--0.29\,T and $|G| \le 1.5\,\text{T/m}$ in the transport studies (task 112). The 0.15\,T field is the cell solenoid, not the main solenoid.}
 
 \subsection{Inflector Entrance Acceptance}
 Transmission efficiency $T$ through the spiral inflector aperture ($r_{\text{aperture}} = 5.0\,\text{mm}$) is evaluated as:
 \begin{equation}
 T = \min\left( 1.0, \frac{r_{\text{aperture}}^2}{0.5(R_x^2 + R_y^2)} \right) \times 100\%
 \end{equation}
+\revnote{The transport studies use a geometric estimate with three factors: inside the 10\,mm pipe
+along the line, inside the 5\,mm inflector aperture, and inside the 50\,mrad divergence limit
+(task 112). Particle tracking with space charge (task 116) checks the envelope result.}
 
 \section{Simulation Results and Benchmarks}
 
 \begin{table}[h!]
 \centering
-\caption{Summary of Simulation Results Across Method Comparison Matrix}
+\caption{Summary of Simulation Results Across Method Comparison Matrix. \old{[Superseded: these values are not from the production runs; see Table~\ref{tab:results_current}.]}}
 \label{tab:results}
 \begin{tabular}{lccccc}
 \toprule
@@ -205,15 +238,52 @@ Case Name & Gas & Pressure [Torr] & $\eta_{\text{net,ss}}$ & $K_{\text{eff}}/K_0
 \end{tabular}
 \end{table}
 
+\revnote{Table~\ref{tab:results} was typed in before any production run (task 88 found the same
+values as string literals in \texttt{paper\_figures.py}). The $\eta$ values of the seeded cases are
+the \emph{input} $\eta_{\text{ss}}$ of the driver, the transmission column is not computed from
+these runs, and the C++ MCC rows were never run with proton-impact MCC.}
+
+\begin{table}[h!]
+\centering
+\caption{\new{Current results (DC beam, 10\,mA, beam-core values). PIC: seeded plasma (analytic source
+estimate), 218\,ns (tasks 96--103), 975\,ns for the end-plug trap (task 111). Transmission: envelope
+into the inflector acceptance at 0.25\,$\pi$\,mm\,mrad, with cell $\eta = 0.91$ (task 112).}}
+\label{tab:results_current}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccp{0.2\textwidth}}
+\toprule
+Case & Gas, pressure [Torr] & $\eta_{\text{net}}$ & $K_{\text{eff}}/K_0$ & Note \\
+\midrule
+vacuum reference & none & 0.00 & 1.00 & \\
+seeded & $\text{H}_2$, $10^{-6}$ & 0.41 & 0.59 & follows seed fraction \\
+seeded & $\text{H}_2$, $10^{-5}$ & 0.96 & 0.04 & $\text{H}_2^+$ expelled \\
+seeded & Kr, $10^{-6}$ & 0.50 & 0.50 & Kr$^+$ stays \\
+seeded + e-MCC & $\text{H}_2$ / Kr, design & 0.95 / 0.50 & & e-MCC effect $\le 0.01$ \\
+seeded, 0.15\,T, 10\,mm plugs & $\text{H}_2$, $10^{-5}$ & 0.91 (0.81--1.00) & 0.09 & $\tau_c = 4.2\,\mu$s \\
+\midrule
+\multicolumn{5}{p{0.95\textwidth}}{Transmission vs downstream compensation $\eta_{\text{down}}$ (KV envelope):
+$T = 0.21$ (0), 0.51 (0.5), 0.93 (0.7), 1.00 ($\ge 0.8$); Gaussian beam: 0.77 (0.7), 0.93 (0.9).} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \textbf{Main Findings}:
 \begin{enumerate}
-    \item Uncompensated vacuum transport results in beam envelope expansion ($R_x, R_y > 8.5\,\text{mm}$), yielding heavy aperture clipping ($T \approx 32.4\%$).
-    \item Neutralization with $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$ or $1.0 \times 10^{-6}\,\text{Torr}$ $\text{Kr}$ reduces effective perveance by $\sim 90\%$, enabling the solenoid and quadrupole doublet to focus the beam cleanly into the inflector aperture ($T > 98\%$).
-    \item Krypton achieves equivalent neutralization at a 10-fold lower operating pressure than $\text{H}_2$, minimizing beam degradation.
+    \item \old{Uncompensated vacuum transport results in beam envelope expansion ($R_x, R_y > 8.5\,\text{mm}$), yielding heavy aperture clipping ($T \approx 32.4\%$).} \new{Without compensation the envelope model transmits 21\% into the inflector acceptance (0.25\,$\pi$\,mm\,mrad, task 112).}
+    \item \old{Neutralization with $1.0 \times 10^{-5}\,\text{Torr}$ $\text{H}_2$ or $1.0 \times 10^{-6}\,\text{Torr}$ $\text{Kr}$ reduces effective perveance by $\sim 90\%$, enabling the solenoid and quadrupole doublet to focus the beam cleanly into the inflector aperture ($T > 98\%$).} \new{A seeded $\text{H}_2$ column reduces the core perveance by 96\% in the cell, but transmission depends on the compensation downstream: $T \ge 0.9$ needs $\eta_{\text{down}} \ge 0.69$ (KV) or about 0.9 (Gaussian tails). In the main solenoid and quadrupoles electrons stay 2.4--3.0 and 0.6--0.7\,$\mu$s, so residual gas at $10^{-5}\,\text{Torr}$ gives $\eta_{\text{ss}} \le 0.04$ there (task 120). Reaching 0.7 would need about $2\times10^{-4}\,\text{Torr}$ in the solenoid and $10^{-3}\,\text{Torr}$ in the quadrupoles, or electron traps.}
+    \item \old{Krypton achieves equivalent neutralization at a 10-fold lower operating pressure than $\text{H}_2$, minimizing beam degradation.} \new{Kr does not match $\text{H}_2$ at a tenfold lower pressure: equal build-up needs $1.8\times10^{-6}\,\text{Torr}$, and in seeded PIC Kr reaches only $\eta_{\text{net}} = 0.50$--0.58 because its ions stay in the beam.}
+    \item \new{Electron confinement, not ionization, sets the compensation. The 0.15\,T cell solenoid raises $\tau_c$ from 0.7 to 2.2\,$\mu$s; 5\,mm end plugs shorten it 2--5$\times$ and triple the beam divergence; 10--20\,mm plugs give 7--9\,$\mu$s at +11--15\% divergence (tasks 107--109).}
+    \item \new{Bunched beam: the baseline buncher delivers 1\% (sine) or 125\% (ideal sawtooth) of the DC accepted current without downstream compensation. Larger gains need a buncher between Q1 and Q2 or before the inflector, an alternative-placement study (tasks 113, 117, 118).}
 \end{enumerate}
 
 \section{Conclusion and Journal Publication Roadmap}
 This consolidated study establishes the physical and computational foundation for plasma-assisted space-charge neutralization in high-current compact cyclotron axial injection lines. Future journal publications (PRAB / NIM-A) will expand on 3D inflector entrance phase space matching and experimental validation.
+\new{The current results move the design question from the cell to the line: the cell can hold a
+compensating column, but the beam reaches the inflector only if the compensation is kept along the
+solenoid and quadrupoles, and a bunched beam gains over DC only with late or sawtooth bunching.
+Open items: PIC convergence of $\tau_c$ (task 123), validation of the proton-impact MCC extension
+and a self-consistent build-up (task C5), and charge-exchange and scattering losses.}
 
 \bibliographystyle{unsrt}
 \bibliography{references}

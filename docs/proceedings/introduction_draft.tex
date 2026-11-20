@@ -11,7 +11,7 @@ Department of Accelerator Science, Korea University, Sejong 30019, South Korea}
 \maketitle
 
 \begin{abstract}
-High-current compact cyclotrons require low-emittance transport of multi-milliampere low-energy proton beams through axial injection lines into a spiral inflector. Uncompensated space-charge forces in 30~keV beamlines cause rapid transverse beam blowup prior to matching lenses. This paper presents analytical models and Particle-in-Cell (PIC) WarpX simulations of a compact gas-ionized plasma neutralizer cell placed directly upstream of the main solenoid. We compare H$_2$ and Kr gas performance and evaluate the space-charge dilution caused by upstream RF bunching.
+High-current compact cyclotrons require low-emittance transport of multi-milliampere low-energy proton beams through axial injection lines into a spiral inflector. Uncompensated space-charge forces in 30~keV beamlines cause rapid transverse beam blowup prior to matching lenses. This paper presents analytical models and Particle-in-Cell (PIC) WarpX simulations of a compact gas-ionized plasma neutralizer cell placed directly upstream of the main solenoid. In a seeded plasma (an analytic source estimate), H$_2$ compensates 96\% of the beam-core space charge because its ions leave the beam, whereas Kr reaches only 50--58\%. With end plugs and a cell solenoid the electrons stay 4.2~$\mu$s and the core compensation is 91\%. Transport to the inflector, however, needs 70--90\% compensation along the solenoid and quadrupoles as well, and electrons do not follow strong RF bunches, so only the RF-averaged compensation acts on the bunch.
 \end{abstract}
 
 \section{INTRODUCTION}
@@ -30,8 +30,9 @@ While residual-gas space-charge compensation has been extensively investigated i
     \frac{K_{\text{eff,peak}}}{K_{0,\text{peak}}} \approx 1 - \frac{\eta_{\text{avg}}}{B_f}
     \end{equation}
     Even at 90\% average neutralization, 82\% of the peak space-charge force remains uncompensated during bunch passage.
+    \item \textbf{Electron Confinement}: Secondary electrons stream out of a short cell in about 100~ns, far shorter than the 80~$\mu$s ionization time of H$_2$ at $10^{-5}$~Torr. The achievable compensation is therefore set by electron confinement, in the cell and along the downstream optics, rather than by the ionization rate.
 \end{enumerate}
 
-In this paper, we evaluate neutralization kinetics, compare H$_2$ and Kr gas cell performance using WarpX PIC simulations, and define local vs.\ global space-charge diagnostic metrics.
+In this paper, we evaluate neutralization kinetics, compare H$_2$ and Kr gas cell performance using WarpX PIC simulations of a seeded plasma, measure the electron confinement time with a cell solenoid and end plugs, and follow the compensated beam to the inflector acceptance for DC and bunched beams. The PIC runs start from a prescribed plasma; a self-consistent build-up requires a validated proton-impact ionization source and is not modeled.
 
 \end{document}

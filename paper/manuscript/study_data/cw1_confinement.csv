@@ -1,0 +1,2 @@
+case_name,solenoid_Bz_T,electron_temperature_eV,end_plug_voltage_V,end_plug_width_m,end_plug_offset_m,t_end_ns,fit_window_ns,Ne_cell_end_over_start,Ni_cell_end_over_start,window_electron_loss_fraction,tau_c_fit_us,tau_c_2sigma_lower_bound_us,tau_c_late_fit_us,eta_ss_lower_bound,eta_net_local_end,eta_electron_only_local_end
+B0p15_Te1_V300_w10mm,0.15,1,300,0.01,0.03,974.801,487-975,0.805144,0.522613,0.113603,4.23046,4.13533,3.93635,0.0514859,0.933902,3.99636

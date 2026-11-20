@@ -1,0 +1,6 @@
+case_name,solenoid_Bz_T,electron_temperature_eV,end_plug_voltage_V,beam_bunching_factor,bunch_focus_study,t_end_ns,fit_window_ns,Ne_cell_end_over_start,Ni_cell_end_over_start,window_electron_loss_fraction,tau_c_fit_us,tau_c_2sigma_lower_bound_us,tau_c_late_fit_us,eta_ss_lower_bound,eta_net_local_end,eta_electron_only_local_end,end_plug_width_m,end_plug_offset_m
+open_Bf1p3,0,1,0,1.3,False,650,341-650,0.230073,0.0492141,0.622724,0.314214,0.298901,0.403979,0.0037214,0.583335,0.6127,,
+open_Bf5,0,1,0,5,True,650,341-650,0,0.0137779,0.999379,0.0223539,0.0201103,,0.000250378,-0.00910897,0,,
+trap_Bf1,0.15,1,300,1,False,650,341-650,0.844709,0.586036,0.0966644,2.96805,2.88296,2.99061,0.0358935,0.717254,4.48619,0.01,0.03
+trap_Bf1p3,0.15,1,300,1.3,False,650,341-650,0.712506,0.558057,0.213747,1.30675,1.24559,1.13505,0.0155079,0.67042,3.85297,0.01,0.03
+trap_Bf5,0.15,1,300,5,True,650,341-650,0.026029,0.120652,0.92733,0.117919,0.114273,0.105112,0.00142273,-0.0964822,0.155856,0.01,0.03

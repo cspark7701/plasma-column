@@ -6,12 +6,15 @@
 %          python scripts/make_manuscript_figures.py      (analytical, numbers.tex)
 %          python scripts/make_manuscript_pic_results.py  (production PIC, numbers_pic.tex,
 %                                                          pic_table.tex, pic_data/)
+%          python scripts/make_manuscript_study_results.py (confinement, transport and
+%                                                          bunched-beam studies, numbers_studies.tex,
+%                                                          study_data/)
 %          Do not type physics numbers into this file by hand.
 %
-% STATUS: DRAFT. The production PIC matrix (cases/production.yaml, 15 DC-beam cases) is
-% included in Sec. V. Sections marked \pending{} still need bunched-beam runs, a
-% confinement scan, a convergence study, transport to the inflector and validation of the
-% custom proton-impact MCC extension.
+% STATUS: DRAFT. Sec. V contains the production PIC matrix (cases/production.yaml, 15 DC-beam
+% cases) and the confinement, transport and bunched-beam studies (tasks 107-121). Sections
+% marked \pending{} still need the PIC convergence study of the confinement time (task 123,
+% running) and validation of the custom proton-impact MCC extension (task C5, blocked).
 
 \documentclass[aps,prab,10pt,twocolumn,superscriptaddress,showpacs,floatfix]{revtex4-2}
 
@@ -24,6 +27,7 @@
 \graphicspath{{figures/}}
 \input{numbers.tex}
 \input{numbers_pic.tex}
+\input{numbers_studies.tex}
 
 % Visible placeholder for content that needs production PIC results.
 \newcommand{\pending}[1]{\textcolor{red!70!black}{\textbf{[PENDING:} #1\textbf{]}}}
@@ -68,8 +72,17 @@ ion expulsion. At $\numpHtwo$~Torr $\Htwo$ the beam-core net neutralization reac
 \numpicHtwoeta{} ($\Keff/K_0=\numpicHtwokeff$) because $\Htwo^+$ ions leave the core, whereas
 for Kr it stays at \numpicKretamin--\numpicKretamax{} at all pressures because the heavy
 Kr$^+$ ions remain. These results start from a prescribed plasma and do not model the
-build-up itself.
-\pending{Bunched-beam PIC, envelope transport and inflector transmission.}
+build-up itself. Electrostatic end plugs at least 10~mm wide with the cell solenoid hold the
+electrons for \numstCWtauc~$\mu$s on the production grid, keeping \numstCWeta{} core
+compensation; narrow plugs shorten the confinement and degrade the beam. Envelope and particle
+tracking to the spiral inflector show that compensation in the cell alone is not sufficient:
+90\% transmission into the inflector acceptance needs a downstream compensation of
+\numstCWtwoetaninety--0.9 along the solenoid and quadrupoles, whereas the electron retention
+there limits residual-gas compensation at $\numpHtwo$~Torr to $\lesssim\numstCWthreeetasol$.
+Bunched-beam simulations show that the electrons do not follow strong bunches, so only the
+RF-averaged compensation applies, and a sine-bunched beam from the baseline buncher position
+delivers only \numstBfiveGbasea{} of the DC accepted current. The design therefore hinges on
+electron confinement downstream of the cell and on where and how the beam is bunched.
 \end{abstract}
 
 \maketitle
@@ -113,9 +126,10 @@ and ask what neutralization it can provide, on what time scale, and under which
 confinement conditions. Section~\ref{sec:concept} defines the design point.
 Section~\ref{sec:model} develops closed-form estimates for perveance, ionization,
 confinement and bunched-beam effects. Section~\ref{sec:methods} describes the
-WarpX/PICMI simulation framework and its verification plan. Section~\ref{sec:results}
-summarizes the analytical results and the production PIC results for a DC beam, and
-Sec.~\ref{sec:discussion} discusses design implications and limitations.
+WarpX/PICMI simulation framework, the transport and bunching models and the
+verification plan. Section~\ref{sec:results} presents the analytical results, the production
+PIC results for a DC beam, the electron-confinement studies, transport to the inflector and
+the bunched beam, and Sec.~\ref{sec:discussion} discusses design implications and limitations.
 
 % =====================================================================
 \section{Beamline and neutralizer concept}
@@ -330,7 +344,7 @@ accumulated during a bunch is therefore lost before the next bunch arrives, and 
 $\etaavg$ cannot be sustained. Holding the electrons transversely during the gap
 requires a Larmor radius well below $a$. Taking $r_L=a/10$ for \numEeev-eV electrons gives
 $B_z\approx\numBconfine$~mT, which motivates the optional local solenoid field of the
-cell.
+cell. The bunched-beam simulations of Sec.~\ref{sec:bunched} test both effects.
 
 \subsection{Time-scale hierarchy}
 
@@ -409,8 +423,46 @@ is injected at $z=-2$~cm with four macroparticles per cell (weight $\approx1.2\t
 the plasma uses 16 macroparticles per cell. On a $32\times32\times256$ grid over a matched
 28~ns window, the electrostatic solver reproduces electromagnetic global particle counts
 within 1\% and local core values within about 10\% at 1/14 of the step count.
-\pending{Convergence study in grid size, macroparticles per cell and $\Delta t$ on the
-production grid.}
+\pending{Convergence of the electron confinement time in grid size, macroparticles per cell
+and $\Delta t$ (task 123, running).}
+
+\subsection{Confinement, transport and bunching models}
+\label{sec:studymodels}
+
+\emph{Confinement runs} use the seeded model on a $32\times32\times256$ grid at the
+production time step for \numstCOtend~ns, with the cell solenoid field $B_z$, the seed
+electron temperature $T_e$ and electrostatic end plugs (ring electrodes of width $w$ at
+voltage $-V$) as parameters. The confinement time $\tau_c$ is fitted to the decay of the
+electron number in the cell over the second half of the run. The best configuration is
+repeated on the production grid with a longer domain ($-7\le z\le27$~cm) for
+\numstCWtendns~ns. A \emph{guiding-centre test-electron model} follows electrons in the
+static fields of the same trap (plugs, solenoid and the compensated beam well) with elastic
+e-$\Htwo$ collisions and beam heating for \numstCtwotend~$\mu$s, which PIC cannot reach.
+
+\emph{Transport to the inflector} uses the KV envelope equations through the cell, the
+main solenoid and the Q1/Q2 doublet, with the cell compensation from the PIC runs and a
+uniform downstream compensation $\eta_{\mathrm{down}}$ as a parameter; the solenoid and
+quadrupole strengths are rematched for each case. Transmission is a geometric estimate of the
+beam fraction inside the 10~mm pipe and inside the inflector acceptance (5~mm radius,
+50~mrad). Two-dimensional particle tracking
+with space charge checks the envelope result for KV and Gaussian beams and transports the
+macroparticles taken from the PIC cell exit.
+
+\emph{Electron retention downstream} is computed with a WarpX section model of the line
+(solenoid with fringe field, hard-edge quadrupoles) filled with a seeded residual-gas plasma
+at $\numpHtwo$~Torr. An axisymmetric Poisson model sizes an electron suppressor ring before
+the inflector; the inflector field is represented by an illustrative leakage potential.
+
+\emph{Bunched beams} are modeled in PIC with a von Mises current profile at $B_f=1.3$ (the
+bunching at the cell for the baseline buncher) and $B_f=5$ (a bunch-focus study), in the cell
+and in the line section. Transport of the bunch uses nine 4$^\circ$ slices of the
+36$^\circ$ inflector acceptance window, each with its local current from ballistic bunching,
+through common matched optics. Compensation enters either RF-averaged,
+$\Keff=K_0(B_s-\etaavg)$ for a slice with local current factor $B_s$, or per slice,
+$\Keff=K_0B_s(1-\eta)$, which is an upper bound. The figure of merit is the accepted-current
+gain over a DC beam, $G=\sum_s f_sT_s/(0.1\,T_{\mathrm{DC}})$, with $f_s$ the current
+fraction and $T_s$ the transmission of slice $s$. Buncher positions other than the cell
+entrance are an \emph{alternative-placement study}.
 
 \subsection{Diagnostics}
 
@@ -552,18 +604,143 @@ The global ratio $(N_e-N_i)/N_p$ over the whole domain is only \numpicHtwoglobal
 $\Htwo$ design case, against \numpicHtwoeta{} in the core. This confirms that global particle
 counts cannot be used to claim local compensation.
 
-\pending{Still required:}
-\begin{enumerate}
-\item Electron confinement time in the cell as a function of $B_z$ and electrode
-bias, to test Eq.~\eqref{eq:balance}, and runs long enough for the Kr ions to leave.
-\item Bunched-beam runs resolving the bunch and gap. These would give the RF-averaged and peak-bunch
-$\eta$, to be compared with Eq.~\eqref{eq:peak} and with the electron-loss estimate
-during the gap.
-\item rms size, divergence and emittance at the cell exit, and envelope transport
-through the solenoid and Q1/Q2 to the inflector entrance, with transmission into the
-inflector acceptance.
-\item Proton-impact MCC (level~4) once the extension is validated.
-\end{enumerate}
+\subsection{Electron confinement in the cell}
+\label{sec:confinement}
+
+Figure~\ref{fig:confinement} collects the fitted confinement times. Without a magnetic field
+the electrons leave the cell with $\tau_c=\numstCOtauBzero~\mu$s; the 0.15~T cell solenoid
+raises this to \numstCOtauBhigh~$\mu$s ($T_e=1$~eV). Narrow (5~mm) end plugs at 300~V do the
+opposite: they shorten $\tau_c$ by a factor \numstCOplugratiomin--\numstCOplugratiomax{} in
+every case of the scan, and the strong lens field of the plug triples the exit divergence of
+the beam (\numstCthreedivnoplug{} to \numstCthreedivplug~mrad) and raises its rms emittance
+\numstCthreeremit-fold. Wider plugs behave differently. At 300~V, plugs of 10 and 20~mm width
+give $\tau_c=\numstCFtauwten$ and \numstCFtauwtwenty~$\mu$s, against \numstCFtaunoplug~$\mu$s
+without plugs and \numstCFtauwfive~$\mu$s with 5~mm plugs in the same longer domain, while the
+divergence at the cell end grows by only \numstCFdivincrmin--\numstCFdivincrmax\%.
+
+The selected configuration (0.15~T, 1~eV, 300~V, 10~mm plugs) on the production grid keeps
+the core compensation at $\eta_{\mathrm{net}}=\numstCWeta$ (range
+\numstCWetamin--\numstCWetamax) from \numstCWfromns{} to \numstCWtendns~ns, with
+$\tau_c=\numstCWtauc~\mu$s. The beam leaves the domain with
+$r_{\mathrm{rms}}=\numstCWrexit$~mm and \numstCWdivexit~mrad; most of this divergence is
+produced in the uncompensated drift before the cell.
+
+The PIC confinement times are short compared with the guiding-centre test-electron result.
+In the static trap with plugs of 100~V or more, at least \numstCtwosurvmin{} of the test
+electrons survive \numstCtwotend~$\mu$s, for well depths down to \numstCtwowellmin~V, while
+they heat to \numstCtwoenergylow~eV (1~eV birth) or \numstCtwoenergyhigh~eV (10~eV birth).
+Without plugs they leave in \numstCtwoopentaumin--\numstCtwoopentaumax~$\mu$s, close to the
+PIC values. The electron loss in the plugged PIC runs is therefore caused by collective or
+numerical effects absent from the test-particle model, and the PIC $\tau_c$ is a lower bound
+until its convergence is shown.
+\pending{Convergence of $\tau_c$ with grid, macroparticles per cell and time step (task 123).}
+
+\begin{figure}[tb]
+\includegraphics[width=\columnwidth]{fig9_confinement_times}
+\caption{Fitted electron confinement times from the seeded PIC runs: the cell with and without
+end plugs (DC beam), the cell trap and the main solenoid with a bunched beam, and the
+solenoid and quadrupoles of the line section at $\numpHtwo$~Torr. Dashed: the $\tau_c$
+needed for $\eta_{\mathrm{ss}}=0.7$ at $\numpHtwo$~Torr $\Htwo$ [Eq.~\eqref{eq:balance}].}
+\label{fig:confinement}
+\end{figure}
+
+\paragraph*{Steady state.} The seeded runs show that a confined plasma compensates the beam;
+they do not show that the gas can maintain it. In the balance of Eq.~\eqref{eq:balance}
+with $\tau_{\mathrm{ion}}=\numstSStauion~\mu$s, the two confinement results bracket the
+steady state. With the PIC value $\tau_c=\numstCWtauc~\mu$s, $\eta_{\mathrm{ss}}\approx
+\numstCWetass$, reached after about \numstSSbuildpic~$\mu$s. With the test-electron result
+($\tau_c\gg\tau_{\mathrm{ion}}$), $\eta_{\mathrm{ss}}$ is limited only by the collapse of the
+well, and $\eta=0.9$ is reached after about \numstSSbuildninety~$\mu$s. A self-consistent
+build-up simulation would decide between the two; it requires the validated proton-impact
+source of Sec.~\ref{sec:verification} and is left for future work.
+
+\subsection{Transport to the inflector}
+\label{sec:transport}
+
+Figure~\ref{fig:transmission} shows the transmission into the inflector acceptance as a
+function of the downstream compensation, with the cell compensation fixed at the CW1 value.
+For a normalized edge emittance of 0.25~$\pi$~mm~mrad, an uncompensated line transmits
+\numstCWtwoTzero; $T\ge0.5$ needs $\eta_{\mathrm{down}}\ge\numstCWtwoetahalf$ and $T\ge0.9$
+needs $\eta_{\mathrm{down}}\ge\numstCWtwoetaninety$. At 0.5~$\pi$~mm~mrad transmission
+saturates at \numstCWtwoTmidemit{}, and at 1.0~$\pi$~mm~mrad the beam is emittance-dominated
+($T\le\numstCWtwoThighemit$). Particle tracking of a KV beam agrees with the envelope to within
+\numstCWfiveKVdev{} for $\eta_{\mathrm{down}}\ge0.5$. A Gaussian beam of the same rms
+emittance loses its tails: $T=\numstCWfiveGseven$ and \numstCWfiveGnine{} at
+$\eta_{\mathrm{down}}=0.7$ and 0.9, so about 0.9 is needed in practice. The macroparticle beam
+from the CW1 cell exit reaches only $T=\numstCWfivepicmin$--\numstCWfivepicmax{} because it
+leaves the cell too wide; a beam injected closer to the cell reaches \numstCWfiveshortnine{} at
+$\eta_{\mathrm{down}}=0.9$. The CW1 runs used a hard-edge cell solenoid, which does not focus,
+so this result is pessimistic.
+
+\begin{figure}[tb]
+\includegraphics[width=\columnwidth]{fig10_transmission_downstream}
+\caption{Transmission into the inflector acceptance versus uniform downstream compensation,
+cell compensation from CW1. Lines: KV envelope for three normalized edge emittances. Open
+symbols: Gaussian beams tracked with space charge. Diamonds: macroparticles from the CW1 PIC
+cell exit, tracked with rematched optics.}
+\label{fig:transmission}
+\end{figure}
+
+Can residual gas provide this downstream compensation? The section model gives
+$\tau_c=\numstCWthreesolmin$--\numstCWthreesolmax~$\mu$s in the main solenoid (fringe field
+included; \numstCWthreenofields~$\mu$s without fields) and
+\numstCWthreequadmin--\numstCWthreequadmax~$\mu$s in the quadrupoles, which do not trap
+electrons (Fig.~\ref{fig:confinement}). At $\numpHtwo$~Torr this gives
+$\eta_{\mathrm{ss}}\approx\numstCWthreeetasolmin$--\numstCWthreeetasol{} in the solenoid and
+$<0.01$ in the quadrupoles, far below the 0.7--0.9 required. Reaching 0.7 with these
+confinement times would need about $\numstCWthreepsol$~Torr in the solenoid and
+$\numstCWthreepquad$~Torr in the quadrupoles, where gas scattering and charge exchange must be
+assessed. Electrons that are held in the line must also be kept out of the inflector field: a
+suppressor ring before the inflector needs $-\numstCWfourVsmalla$, $-\numstCWfourVsmallb$ and
+$-\numstCWfourVsmallc$~V (5~mm aperture) or $-\numstCWfourVlargea$ to $-\numstCWfourVlargec$~V
+(7.5~mm) for a 20~V barrier at $\eta_{\mathrm{down}}=0.5$, 0.7 and 0.9, and its lens effect on
+the beam is negligible (focal length $\ge\numstCWfourfocalmin$~km).
+
+\subsection{Bunched beam}
+\label{sec:bunched}
+
+In the cell, the bunching from the baseline buncher position is weak ($B_{\mathrm{cell}}=
+\numstBtwoBcell$ for $B_f=1.3$). With the trap, the RF-averaged compensation stays at
+\numstBtwoetabase{} (DC: \numstBtwoetadc), but $\tau_c$ falls from \numstBtwotaudc{} to
+\numstBtwotaubase~$\mu$s. Without plugs it is \numstBtwoetaopen{} with
+$\tau_c=\numstBtwotauopen~\mu$s. The peak-bunch value, \numstBtwopeakbase, cannot be
+separated from the average at this modulation (snapshot spread \numstBtwopeakstd). A strongly
+bunched beam ($B_f=5$, a bunch-focus study) empties the trap within $\tau_c=
+\numstBtwotaufocus~\mu$s and leaves an ion excess ($\etaavg=\numstBtwoetafocus$).
+
+Downstream, where the bunching grows toward the inflector, the section model with $B_f=3$ and
+5.7 shows that the electrons do not follow the bunches. The peak-bunch compensation equals the
+static-cloud value $\etaavg/B_{\mathrm{cell}}$ of Eq.~\eqref{eq:peak}:
+\numstBfourpeaka{} against \numstBfourstatica{} at $B_{\mathrm{cell}}=\numstBfourBcella$ and
+\numstBfourpeakb{} against \numstBfourstaticb{} at $B_{\mathrm{cell}}=\numstBfourBcellb$, and
+$\tau_c$ in the solenoid drops to \numstBfourtaua{} and \numstBfourtaub~$\mu$s. The
+RF-averaged compensation model is therefore the relevant one, not the per-slice bound.
+
+Figure~\ref{fig:gain} shows what this means for the accepted current. With the sine buncher at
+the cell entrance ($B_f=\numstBfiveBf$ in the 36$^\circ$ window at the inflector) the slices
+pass through a crossover with a local current factor of up to \numstBfiveslicebase{} before the
+inflector, and the accepted current is only $G=\numstBfiveGbasea$, \numstBfiveGbaseb{} and
+\numstBfiveGbasec{} of a DC beam for $\eta_{\mathrm{down}}=0$, 0.5 and 0.9. Even the per-slice
+bound gives only \numstBfiveboundbase. Moving the buncher downstream is an
+alternative-placement study: between Q1 and Q2 ($\numstBfiveVq$~kV) $G=\numstBfiveGqa$ to
+\numstBfiveGqc, and between Q2 and the inflector ($\numstBfiveVlate$~kV, outside the range of
+the ballistic model) $G=\numstBfiveGlateb$--\numstBfiveGlatea. An ideal sawtooth waveform
+($B_f=\numstBsixBf$) avoids the crossover. At the cell entrance it gives $G=\numstBsixGbasea$
+without downstream compensation, and between Q1 and Q2 ($\numstBsixVq$~kV) \numstBsixGqc--%
+\numstBsixGqa. For upstream buncher positions $G$ decreases as $\eta_{\mathrm{down}}$ rises: RF-averaged
+compensation removes at most $\etaavg$ from a slice perveance of $B_sK_0$, so the accepted bunch
+current barely changes while the DC reference transmission rises from \numstCWtwoTzero{}
+toward 1.
+
+\begin{figure*}[t]
+\includegraphics[width=0.85\textwidth]{fig11_bunched_gain}
+\caption{Accepted-current gain over a DC beam for nine 4$^\circ$ slices of the 36$^\circ$
+inflector window, normalized edge emittance 0.25~$\pi$~mm~mrad, for the buncher at the cell
+entrance (baseline) and at two downstream positions (alternative-placement study).
+(a)~Sine buncher. (b)~Ideal sawtooth. Symbols: RF-averaged compensation for three downstream
+compensation levels; bars: per-slice upper bound at $\eta_{\mathrm{down}}=0.9$. Dotted: DC beam.}
+\label{fig:gain}
+\end{figure*}
 
 % =====================================================================
 \section{Discussion}
@@ -592,8 +769,20 @@ cross sections are required.}
 Placing the cell before the solenoid lets it act on the beam before magnetic focusing.
 The solenoid fringe field can contribute to transverse electron confinement, whereas
 electrostatic elements and the buncher gap clear electrons and bound the compensated
-section. Alternative placements are outside the baseline design and are not considered
-here.
+section. Moving the neutralizer is outside the baseline design and is not considered here.
+Moving the \emph{buncher} downstream is studied in Sec.~\ref{sec:bunched} as an explicitly
+labeled alternative-placement study, because it is the only change that gives the bunched beam
+a gain over a DC beam.
+
+\paragraph{Downstream compensation.}
+The cell is not the bottleneck. The PIC results show that a trapped column in the cell keeps
+$\eta_{\mathrm{net}}\approx\numstCWeta$, but transport to the inflector needs
+$\eta_{\mathrm{down}}\approx\numstCWtwoetaninety$--0.9 along the solenoid and the
+quadrupoles as well, and residual gas at $\numpHtwo$~Torr provides
+$\lesssim\numstCWthreeetasol$ there. Options are a higher local pressure in the solenoid
+(about $\numstCWthreepsol$~Torr), electron traps (end electrodes) along the solenoid, or a
+shorter uncompensated path between the cell and the inflector. Each must be checked against
+scattering, charge exchange and the gas load on the cyclotron.
 
 \paragraph{Overcompensation.}
 Values of $\Keff/K_0<0$ correspond to net negative charge in the core and focus the
@@ -605,7 +794,9 @@ $\Htwo$ design case [Fig.~\ref{fig:pictime}(a)].
 
 \paragraph{Limitations.}
 The analytical results are closed-form estimates for a uniform round beam. The envelope
-model is laminar and slice-based. The confinement estimate uses a single
+model is laminar and slice-based; the transport results use KV envelopes, geometric
+transmission and a uniform downstream compensation, and the bunching model is ballistic
+without longitudinal space charge, which would blunt the crossover. The confinement estimate uses a single
 secondary-electron energy of \numEeev~eV. The bunched-beam bound assumes a static
 background. Cross sections come from a semi-empirical model at the edge of its validated
 range. The PIC results cover a DC beam for \numpicns~ns, i.e.\ $\numpicovertau\,\tau_{\mathrm{ion}}$.
@@ -613,27 +804,41 @@ They start from a prescribed plasma whose density follows the analytic build-up 
 is an analytic source estimate and not self-consistent proton-impact ionization. The cell
 has a uniform 0.15~T solenoid, which confines electrons transversely, and no end
 electrodes. Electrons can leave the cell axially, but the free-escape time
-(\numtescapens~ns) is about half the run, so axial losses are only partly developed. The only dynamic-source
-run uses a rate rescaled by 1000. No grid or particle-number convergence study has been
-done on the production grid.
+(\numtescapens~ns) is about half the run, so axial losses are only partly developed. The
+confinement studies run for \numstCOtend--\numstCWtendns~ns, so $\tau_c$ of several
+$\mu$s is extrapolated from a partial decay, and the PIC values disagree with the
+test-electron model; their convergence is being tested. The cell solenoid of the confinement
+runs is hard-edged and does not focus the beam. The only dynamic-source run uses a rate
+rescaled by 1000, and the steady state at the design pressure is bracketed analytically,
+not simulated.
 
 % =====================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-A compact beam-ionized gas cell upstream of the main solenoid is a plausible way to
-reduce the perveance of a multi-mA, 30-keV proton beam in a compact-cyclotron injection
-line. However, its performance is controlled by electron confinement rather than by
-the ionization rate or the gas species. For a DC beam, longitudinal confinement is needed
-to raise cell-local neutralization above the free-escape level. For the RF-bunched beam
-that actually enters the cell, transverse confinement during the inter-bunch gap is
-required, and even ideal average compensation leaves most of the peak-bunch space charge.
-Three-dimensional electrostatic PIC simulations of a DC beam in a seeded plasma column
-with a 0.15~T cell solenoid add a further requirement: the ions must leave the beam. With
-$\Htwo$, whose ions are expelled in tens of nanoseconds, the beam core reaches
-$\eta_{\mathrm{net}}=\numpicHtwoeta$. With Kr, whose ions stay for longer than the run,
-it stays near \numpicKreta{}--\numpicKretamax{} independent of pressure.
-\pending{Final conclusions after the bunched-beam, confinement and transport studies.}
+A compact beam-ionized gas cell upstream of the main solenoid can compensate a multi-mA,
+30-keV proton beam locally, but only with electron confinement, and compensation in the cell
+alone does not deliver the beam to the spiral inflector. The main results are:
+\begin{enumerate}
+\item The achievable neutralization is set by electron confinement, not by the ionization
+rate or the gas species. Freely escaping electrons limit the cell to $\eta\sim10^{-3}$. In
+seeded PIC, $\Htwo$ reaches $\eta_{\mathrm{net}}=\numpicHtwoeta$ because its ions leave the
+beam, whereas Kr stays near \numpicKreta{}--\numpicKretamax.
+\item The cell solenoid and end plugs at least 10~mm wide give $\tau_c=\numstCWtauc~\mu$s and
+$\eta_{\mathrm{net}}=\numstCWeta$ on the production grid; 5~mm plugs shorten $\tau_c$ and
+triple the beam divergence. Test electrons in the same static trap survive
+\numstCtwotend~$\mu$s, so the steady state lies between $\eta_{\mathrm{ss}}\approx
+\numstCWetass$ and the well-limited value near 1.
+\item 90\% transmission into the inflector acceptance needs $\eta_{\mathrm{down}}\approx
+\numstCWtwoetaninety$--0.9 along the solenoid and quadrupoles. Residual gas at $\numpHtwo$~Torr
+provides $\lesssim\numstCWthreeetasol$ there, so downstream compensation, not the cell, limits
+the design.
+\item Electrons do not follow strong bunches. Only the RF-averaged compensation applies,
+$\Keff/K_0\approx1-\etaavg/B_f$ at the peak, and a sine-bunched beam from the baseline buncher
+position transmits \numstBfiveGbasea{} of the DC accepted current. A gain over DC needs
+late bunching or a sawtooth waveform (alternative-placement study).
+\end{enumerate}
+\pending{Final conclusions after the $\tau_c$ convergence study (task 123).}
 
 \begin{acknowledgments}
 \pending{Funding acknowledgments.}
@@ -651,6 +856,10 @@ and Figs.~\ref{fig:pictime}--\ref{fig:picpressure} are generated by
 \texttt{cases/production.yaml}. The script freezes the beam-core values, time series and
 radial profiles in \texttt{paper/manuscript/pic\_data/} together with the run metadata,
 and \texttt{--from\_frozen} rebuilds the figures and macros without the simulation output.
+The confinement, transport and bunched-beam numbers and
+Figs.~\ref{fig:confinement}--\ref{fig:gain} are generated in the same way by
+\texttt{python scripts/make\_manuscript\_study\_results.py}, which freezes the study
+summaries in \texttt{paper/manuscript/study\_data/}.
 
 \bibliography{references}
 

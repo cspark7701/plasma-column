@@ -1,0 +1,170 @@
+{
+  "generated": "2026-11-20T00:48:53.442328+00:00",
+  "command_line": "scripts/make_manuscript_study_results.py",
+  "conda_env": "warpx-dev",
+  "plasma_column_repo": {
+    "commit": "21f9413e89b1274d72e3d31eb56a399590ee7975",
+    "branch": "main",
+    "dirty": true,
+    "status": "?? paper/manuscript/study_data/\n?? scripts/make_manuscript_study_results.py"
+  },
+  "results_dir": "/home/cspark/Work/projects/plasma-column/results",
+  "sources": {
+    "c1_confinement": "confinement_scan/analysis/confinement_summary.csv",
+    "c1_beam_quality": "confinement_scan/analysis/beam_quality.csv",
+    "c4_confinement": "plug_scan/analysis/confinement_summary.csv",
+    "c4_beam_quality": "plug_scan/analysis/beam_quality.csv",
+    "cw1_confinement": "cw_best_config/analysis/confinement_summary.csv",
+    "cw1_time_series": "cw_best_config/analysis/confinement_time_series.csv",
+    "cw1_beam_quality": "cw_best_config/analysis/beam_quality.csv",
+    "c2_trap": "trap_orbit_tracking/trap_summary.csv",
+    "cw2_transmission": "transmission_vs_downstream/transmission_vs_downstream.csv",
+    "cw5_tracking": "track_to_inflector/track_summary.csv",
+    "cw3_line_section": "line_section/analysis/line_section_summary.csv",
+    "cw4_suppressor": "suppressor_scan/suppressor_scan.json",
+    "b2_bunched_cell": "bunched_cell/analysis/bunched_cell_summary.csv",
+    "b2_confinement": "bunched_cell/analysis/confinement_summary.csv",
+    "b4_line_section": "line_section_bunched/analysis/line_section_summary.csv",
+    "b4_bunched": "line_section_bunched/analysis/bunched_cell_summary.csv",
+    "b3_late_bunching": "late_bunching_layout/late_bunching_layout.csv",
+    "b5_sine": "sliced_bunch_transport/sliced_bunch_sine.csv",
+    "b6_sawtooth": "sliced_bunch_transport/sliced_bunch_sawtooth.csv"
+  },
+  "runs": {
+    "transmission_vs_downstream/transmission_vs_downstream.json": {
+      "timestamp": "2026-11-14T21:59:04.630228+00:00",
+      "command_line": "scripts/transmission_vs_downstream.py",
+      "plasma_column_repo": {
+        "commit": "9946f0b3300b0613926d485c98451c776b2a0bbd",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/late_bunching_layout.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/transmission_vs_downstream.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
+      }
+    },
+    "track_to_inflector/track_summary.json": {
+      "timestamp": "2026-11-15T01:44:13.327606+00:00",
+      "command_line": "scripts/track_to_inflector.py --processes 2",
+      "plasma_column_repo": {
+        "commit": "b0f6748ff2bcec94c86b4884a7aeb939e97e771e",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/suppressor_scan.py\n?? scripts/track_to_inflector.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/particle_tracking.py\n?? src/plasma_column/suppressor.py\n?? tests/test_bunched_cell.py\n?? tests/test_particle_tracking.py\n?? tests/test_quadrupole_field.py\n?? tests/test_suppressor.py"
+      }
+    },
+    "trap_orbit_tracking/trap_summary.json": {
+      "timestamp": "2026-11-14T23:26:09.054938+00:00",
+      "command_line": "scripts/trap_orbit_tracking.py --processes 2",
+      "plasma_column_repo": {
+        "commit": "934a10e361edcf110e907626819b8c77541eb4e6",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
+      }
+    },
+    "suppressor_scan/suppressor_scan.json": {
+      "timestamp": "2026-11-14T23:39:42.453233+00:00",
+      "command_line": "scripts/suppressor_scan.py",
+      "plasma_column_repo": {
+        "commit": "b0f6748ff2bcec94c86b4884a7aeb939e97e771e",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/suppressor_scan.py\n?? scripts/track_to_inflector.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/particle_tracking.py\n?? src/plasma_column/suppressor.py\n?? tests/test_bunched_cell.py\n?? tests/test_particle_tracking.py\n?? tests/test_quadrupole_field.py\n?? tests/test_suppressor.py"
+      }
+    },
+    "late_bunching_layout/late_bunching_layout.json": {
+      "timestamp": "2026-11-14T22:47:11.218286+00:00",
+      "command_line": "scripts/late_bunching_layout.py",
+      "plasma_column_repo": {
+        "commit": "ea975b80afbc841e54da9bedc4a801aa3d33345a",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/late_bunching_layout.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/trap_orbit_tracking.py\n?? src/plasma_column/bunched_cell.py\n?? src/plasma_column/electron_trap.py\n?? tests/test_bunched_cell.py\n?? tests/test_electron_trap.py\n?? tests/test_quadrupole_field.py"
+      }
+    },
+    "sliced_bunch_transport/sliced_bunch_sine.json": {
+      "timestamp": "2026-11-15T03:59:33.648846+00:00",
+      "command_line": "scripts/sliced_bunch_transport.py --waveform sine",
+      "plasma_column_repo": {
+        "commit": "4592b86a54678673e5ab6f6edd05a07e0d71f079",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n M src/plasma_column/bunching.py\n M tests/test_bunching.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? scripts/sliced_bunch_transport.py\n?? src/plasma_column/bunched_cell.py\n?? tests/test_bunched_cell.py\n?? tests/test_quadrupole_field.py"
+      }
+    },
+    "sliced_bunch_transport/sliced_bunch_sawtooth.json": {
+      "timestamp": "2026-11-15T05:53:55.021192+00:00",
+      "command_line": "scripts/sliced_bunch_transport.py --waveform sawtooth",
+      "plasma_column_repo": {
+        "commit": "c7a2b461e3fee10a6b9c43bedd6788e1319ebd91",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/plasma_column_mcc_picmi_v7.py\n M scripts/run_confinement_scan.py\n?? scripts/analyze_bunched_cell.py\n?? scripts/analyze_line_section.py\n?? scripts/run_bunched_cell.py\n?? scripts/run_line_section.py\n?? src/plasma_column/bunched_cell.py\n?? tests/test_bunched_cell.py\n?? tests/test_quadrupole_field.py"
+      }
+    },
+    "cw_best_config/B0p15_Te1_V300_w10mm/metadata.json": {
+      "timestamp": "2026-10-27T17:53:30.922865+00:00",
+      "command_line": [
+        "/home/cspark/Work/simulation_codes-working/miniforge3/envs/warpx-dev/bin/python3",
+        "/home/cspark/Work/projects/plasma-column/scripts/plasma_column_mcc_picmi_v7.py",
+        "--run",
+        "--output_dir",
+        "/home/cspark/Work/projects/plasma-column/results/cw_best_config/B0p15_Te1_V300_w10mm",
+        "--max_steps",
+        "68594",
+        "--diag_period",
+        "3429",
+        "--checkpoint_period",
+        "17148",
+        "--cores",
+        "24",
+        "--gpu",
+        "auto",
+        "--solenoid_Bz",
+        "0.15",
+        "--electron_temperature_eV",
+        "1.0",
+        "--end_plug_voltage",
+        "300.0",
+        "--end_plug_width",
+        "0.01",
+        "--end_plug_offset",
+        "0.03",
+        "--gas",
+        "H2",
+        "--pressure_torr",
+        "1e-5",
+        "--neutralization",
+        "-1",
+        "--solver",
+        "es",
+        "--dt",
+        "9.4760501726e-12",
+        "--nx",
+        "64",
+        "--ny",
+        "64",
+        "--nz",
+        "672",
+        "--zmin",
+        "-0.07",
+        "--zmax",
+        "0.27",
+        "--nppc_beam",
+        "4",
+        "--nppc_plasma",
+        "16",
+        "--reduced_diag_period",
+        "50",
+        "--mcc",
+        "electron_impact"
+      ],
+      "plasma_column_repo": {
+        "commit": "39ae9f16d5144ac9212ef2fe5622bd7195cc6a24",
+        "branch": "main",
+        "dirty": true,
+        "status": "M scripts/run_confinement_scan.py\n?? scripts/run_cw_best_config.py"
+      }
+    }
+  },
+  "labels": "PIC studies: seeded plasma (analytic source estimate). Buncher positions other than the cell entrance: ALTERNATIVE-PLACEMENT STUDY. B_f = 5 cell runs: bunch-focus study."
+}

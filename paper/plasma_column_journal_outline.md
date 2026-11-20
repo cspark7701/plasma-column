@@ -13,7 +13,9 @@
 - Local volume-averaged beam-core perveance reduction $K_{\text{eff,local}}/K_0$.
 - RF-bunched beam interpretation ($K_{\text{eff,peak}}/K_{0,\text{peak}} \approx 1 - \eta_{\text{avg}}/B_f$).
 - Ion expulsion decides the result within 218 ns: H2 core $\eta_{\text{net}} \approx 0.96$, Kr $\approx 0.50$–$0.58$ (Kr$^+$ retained).
-- Downstream transport to the spiral inflector and transmission: pending (not yet computed from PIC output).
+- Electron confinement sets the compensation: cell solenoid + >= 10 mm end plugs give tau_c = 4.2 us and core eta_net = 0.91 on the production grid; test electrons in the same trap survive 100 us, so eta_ss lies between ~0.05 and ~1 (PIC convergence pending, task 123).
+- Transport to the inflector: T >= 0.9 needs downstream compensation 0.69–0.9 along solenoid and quadrupoles; residual gas at 1e-5 Torr gives <= 0.04 there.
+- Bunched beam: electrons do not follow strong bunches (RF-averaged limit applies); the baseline sine buncher delivers 1% of the DC accepted current; gains need late or sawtooth bunching (alternative-placement study).
 
 ---
 
@@ -49,6 +51,9 @@
   3. `Python callback dynamic source`: not in production (tau_ion >> run); one run with the rate x1000, labeled rescaled (`callback_H2_accel_x1000_rescaled`)
   4. `Seeded + WarpX electron-impact MCC` (`cxx_mcc_H2_1e-5Torr` / `cxx_mcc_Kr_1e-6Torr`); custom proton-impact MCC pending validation
 - Numerics: 64x64x512, electrostatic FFT solver, 0.15 T cell solenoid, dt = 9.48 ps, 23000 steps (218 ns).
+- Confinement runs: 32x32x256, 650 ns, B_z / T_e / end-plug scans; best configuration on 64x64x672 for 975 ns; guiding-centre test electrons to 100 us.
+- Transport: KV envelope and 2D space-charge particle tracking with rematched solenoid and Q1/Q2; WarpX line-section model for electron retention; axisymmetric Poisson model of the suppressor.
+- Bunched beam: von Mises current profile in PIC (B_f 1.3, 5, line section 3, 5.7); sliced-bunch transport with nine 4-degree slices.
 - Diagnostics and local compensation metrics ($\eta_{\text{local,net}}$, $K_{\text{eff,local}}/K_0$).
 
 ---
@@ -57,6 +62,7 @@
 - Cross-section interpolation (center-of-mass energy conversion).
 - Fixed-rate ionization benchmark.
 - Time-step convergence ($\Delta t, \Delta t/2, \Delta t/4$).
+- PIC convergence of the electron confinement time (grid, particles per cell, time step): task 123, running.
 - Macroparticle-weight consistency ($N_{\text{phys}} = w \cdot N_{\text{macro}}$).
 - Status: proton-impact MCC tests pending; ES vs EM solver check done (1% global, ~10% local).
 
@@ -66,19 +72,21 @@
 - $\text{H}_2$ vs $\text{Kr}$ neutralization build-up time (analytic) and seeded-plasma PIC response (Table II, Figs. 6–8 of the manuscript).
 - Ion retention: H2+ expelled (13% of seed left in core), Kr+ retained (80%).
 - Local beam-core effective perveance ratio $K_{\text{eff,local}}/K_0$.
-- Beam envelope reduction ($R_x(z), R_y(z)$).
-- Bunched-beam peak perveance ($K_{\text{eff,peak}}/K_{0,\text{peak}}$ vs $B_f$).
-- Downstream inflector acceptance and transmission efficiency ($T\%$).
+- Electron confinement in the cell: B_z and end-plug scans, production-grid trap, test-electron comparison (Fig. 9).
+- Steady state bracketed analytically from the measured tau_c (no self-consistent build-up; C5 blocked).
+- Transmission into the inflector acceptance vs downstream compensation (Fig. 10); downstream electron retention; suppressor.
+- Bunched beam: cell and line-section PIC, sliced-bunch accepted-current gain for sine and sawtooth bunchers (Fig. 11).
 
 ---
 
 ## 7. Discussion
-- Placement before solenoid vs alternative downstream placements.
-- Gas pressure and scattering trade-off ($\text{H}_2$ at $10^{-5}\text{ Torr}$ vs $\text{Kr}$ at $10^{-6}\text{ Torr}$).
+- Placement before solenoid (baseline); buncher placement downstream only as a labeled alternative-placement study.
+- Downstream compensation is the limiting requirement: higher local pressure (~2e-4 Torr in the solenoid), electron traps, or a shorter uncompensated path.
+- Gas pressure and scattering trade-off; Kr equals the H2 build-up rate at 1.8e-6 Torr (not 1e-6), and its ions stay in the beam.
 - Overcompensation risk ($K_{\text{eff,local}}/K_0 < 0$).
 - Experimental implementation requirements (differential pumping, gas cell design).
 
 ---
 
 ## 8. Conclusion
-- Summary of compact plasma column neutralizer performance and injection optics enhancement.
+- The cell can hold a compensating column, but delivery to the inflector depends on compensation along the solenoid and quadrupoles and, for the bunched beam, on where and how it is bunched.
