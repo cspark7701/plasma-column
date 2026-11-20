@@ -32,6 +32,7 @@ proton-impact ionization.
 | C3 | Plug-field effect on the beam | Beam rms emittance and size at the cell exit, plug on vs off (from C1 data) | 5 mm, 300 V plugs triple the exit divergence (7.6 → 23.9 mrad at 0.15 T) and quadruple eps_n,rms; no-plug beam leaves at 2.5 mm, 7.6 mrad | C1 | done (task 108) |
 | C4 | Plug voltage and width scan around the C1 optimum | WarpX small grid, 0.15 T, 1 eV, 100–300 V, w = 5–20 mm, longer domain, `scripts/run_plug_scan.py` | Plugs >= 10 mm wide double to triple tau_c (3.4 → 7–9 us, eta_ss ~0.08) at +10–15% divergence; 5 mm plugs still harmful; selected 300 V, 10 mm for CW1 | C1, C3 | done (task 109) |
 | C5 | Self-consistent build-up from zero | Needs a validated proton-impact ionization source (WarpX extension) | Build-up time with the trap | WarpX source work | blocked (no validated p+ impact source) |
+| C6 | PIC convergence of tau_c (PIC 4.2 us vs test electrons >> 100 us) | CW1 physics, 650 ns, one numerical change per case: grid 32/48/64, nppc_plasma 4/16/32/64, dt/2, e-MCC off (`scripts/run_tauc_convergence.py`) | Whether the PIC tau_c (and eta_ss ~0.05) is numerical; decides the steady-state bracket used in the manuscript | C2, CW1 | running (task 123, launched 2026-11-20) |
 
 ## CW (DC) beam track
 
