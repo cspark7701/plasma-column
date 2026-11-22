@@ -168,9 +168,9 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
     df = pd.DataFrame(data, columns=cols)
 
     if "step" not in df.columns and ncols >= 1:
-        df.rename(columns={cols[0]: "step"}, inplace=True)
+        df = df.rename(columns={cols[0]: "step"})
     if "time" not in df.columns and ncols >= 2:
-        df.rename(columns={cols[1]: "time"}, inplace=True)
+        df = df.rename(columns={cols[1]: "time"})
 
     if "Np" not in df.columns:
         # Physical counts are the per-species "<species>_weight()" columns. WarpX writes
@@ -207,9 +207,11 @@ def load_particle_number_diagnostic(filepath: str | Path, use_cache: bool = Fals
 
     # Sort and deduplicate by step to handle restarted runs cleanly
     if "step" in df.columns:
-        df.drop_duplicates(subset=["step"], keep="last", inplace=True)
-        df.sort_values(by="step", inplace=True)
-        df.reset_index(drop=True, inplace=True)
+        df = (
+            df.drop_duplicates(subset=["step"], keep="last")
+            .sort_values(by="step")
+            .reset_index(drop=True)
+        )
 
     return df
 
